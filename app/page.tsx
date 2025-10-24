@@ -1,10 +1,12 @@
 "use client"
 
 import {FileText} from "lucide-react"
-import {useEffect} from "react"
+import React from "react"
 
 import {DocumentList} from "@/components/document-list"
+import {ErrorBoundaryWithSuspense} from "@/components/error-boundary"
 import {FileUpload} from "@/components/file-upload"
+import {DocumentListLoading, FileUploadLoading} from "@/components/loading-fallback"
 import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
 import {loadDocuments} from "@/lib/store/slices/documents-slice"
 
@@ -12,7 +14,7 @@ export default function HomePage() {
   const dispatch = useAppDispatch()
   const {items: documents, loading} = useAppSelector(state => state.documents)
 
-  useEffect(() => {
+  React.useEffect(() => {
     dispatch(loadDocuments())
   }, [dispatch])
 
@@ -34,7 +36,9 @@ export default function HomePage() {
 
       <main className="container mx-auto px-4 py-8">
         {documents.length === 0 && !loading ? (
-          <FileUpload variant="dropzone" />
+          <ErrorBoundaryWithSuspense suspenseFallback={<FileUploadLoading />}>
+            <FileUpload variant="dropzone" />
+          </ErrorBoundaryWithSuspense>
         ) : (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -44,9 +48,13 @@ export default function HomePage() {
                   {`You have ${documents.length} document${documents.length === 1 ? "" : "s"}`}
                 </p>
               </div>
-              <FileUpload />
+              <ErrorBoundaryWithSuspense suspenseFallback={<FileUploadLoading />}>
+                <FileUpload />
+              </ErrorBoundaryWithSuspense>
             </div>
-            <DocumentList documents={documents} loading={loading} />
+            <ErrorBoundaryWithSuspense suspenseFallback={<DocumentListLoading />}>
+              <DocumentList documents={documents} loading={loading} />
+            </ErrorBoundaryWithSuspense>
           </div>
         )}
       </main>

@@ -2,8 +2,7 @@
 
 import {Loader2, Upload} from "lucide-react"
 import {useRouter} from "next/navigation"
-import type React from "react"
-import {useRef, useState} from "react"
+import React from "react"
 
 import {DuplicateDialog} from "@/components/duplicate-dialog"
 import {Button} from "@/components/ui/button"
@@ -48,10 +47,10 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
   const router = useRouter()
   const dispatch = useAppDispatch()
   const {toast} = useToast()
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [uploading, setUploading] = useState(false)
-  const [isDragging, setIsDragging] = useState(false)
-  const [duplicateDialog, setDuplicateDialog] = useState<DuplicateDialogState>(initialDuplicateDialogState)
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = React.useState(false)
+  const [isDragging, setIsDragging] = React.useState(false)
+  const [duplicateDialog, setDuplicateDialog] = React.useState<DuplicateDialogState>(initialDuplicateDialogState)
 
   const documents = useAppSelector(state => state.documents.items)
 

@@ -3,6 +3,8 @@ import type {Metadata} from "next"
 import {Geist, Geist_Mono} from "next/font/google"
 import type React from "react"
 
+import {ErrorBoundaryWithSuspense} from "@/components/error-boundary"
+import LoadingFallback from "@/components/loading-fallback"
 import {ThemeProvider} from "@/components/theme-provider"
 import {Toaster} from "@/components/ui/toaster"
 import StoreProvider from "@/lib/providers/store-provider"
@@ -26,7 +28,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`font-sans antialiased`} suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
-          <StoreProvider>{children}</StoreProvider>
+          <ErrorBoundaryWithSuspense suspenseFallback={<LoadingFallback />}>
+            <StoreProvider>{children}</StoreProvider>
+          </ErrorBoundaryWithSuspense>
           <Toaster />
           <Analytics />
         </ThemeProvider>
