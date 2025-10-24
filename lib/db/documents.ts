@@ -46,7 +46,9 @@ export const documentService = {
 
   async getAllDocuments(): Promise<Result<PDFDocumentMeta[], DatabaseError>> {
     try {
-      const documents = await db.documents.orderBy("updatedAt").reverse().toArray()
+      let query = db.documents.orderBy("updatedAt").reverse()
+
+      const documents = await query.toArray()
       // Return metadata only (without blob) for list views
       const metadataOnly = documents.map(doc => ({
         id: doc.id,
@@ -63,6 +65,20 @@ export const documentService = {
         success: false,
         error: new DatabaseError(
           `Failed to get all documents: ${error instanceof Error ? error.message : "Unknown error"}`,
+        ),
+      }
+    }
+  },
+
+  async getDocumentsCount(): Promise<Result<number, DatabaseError>> {
+    try {
+      const count = await db.documents.count()
+      return {success: true, data: count}
+    } catch (error) {
+      return {
+        success: false,
+        error: new DatabaseError(
+          `Failed to get documents count: ${error instanceof Error ? error.message : "Unknown error"}`,
         ),
       }
     }

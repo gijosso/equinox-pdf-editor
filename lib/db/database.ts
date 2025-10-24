@@ -8,8 +8,8 @@ export class Database extends Dexie {
   constructor() {
     super("PDFEditorDB")
     this.version(1).stores({
-      documents: "id, name, createdAt, updatedAt, currentVersionId, fileHash",
-      versions: "id, documentId, versionNumber, createdAt",
+      documents: "id, name, createdAt, updatedAt, currentVersionId, fileHash, [name+updatedAt]",
+      versions: "id, documentId, versionNumber, createdAt, [documentId+createdAt]",
     })
   }
 }
