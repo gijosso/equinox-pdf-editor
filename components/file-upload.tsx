@@ -17,11 +17,12 @@ import {
   cn,
   computeFileHash,
   generateDocumentId,
-  generatePDFThumbnail,
   generateUniqueName,
   generateVersionId,
+  isValidFileSize,
+  isValidPdfFile,
+  processFile,
 } from "@/lib/utils"
-import {isValidFileSize, isValidFileType} from "@/lib/utils"
 
 interface FileUploadProps {
   variant?: "button" | "dropzone"
@@ -54,8 +55,8 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
 
   const documents = useAppSelector(selectAllDocuments)
 
-  const processFile = async (file: File, forceName?: string) => {
-    const isValidPDF = await isValidFileType(file)
+  const handleFile = async (file: File, forceName?: string) => {
+    const isValidPDF = await isValidPdfFile(file)
     if (!isValidPDF) {
       toast({
         title: "Invalid PDF file",
@@ -99,15 +100,11 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
         return
       }
 
-      const blob = new Blob([await file.arrayBuffer()], {
-        type: "application/pdf",
-      })
-      const thumbnail = await generatePDFThumbnail(blob)
+      const {fileHash: processedHash, thumbnail, documentName, blob} = await processFile(file, documents)
+
       const now = new Date()
       const documentId = generateDocumentId()
       const versionId = generateVersionId()
-
-      const documentName = forceName || file.name
 
       const document: PDFDocument = {
         id: documentId,
@@ -116,7 +113,7 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
         createdAt: now.toISOString(),
         updatedAt: now.toISOString(),
         currentVersionId: versionId,
-        fileHash,
+        fileHash: processedHash,
         thumbnail,
       }
 
@@ -156,7 +153,7 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
-    await processFile(file)
+    await handleFile(file)
   }
 
   const handleDrop = async (e: React.DragEvent) => {
@@ -166,12 +163,12 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
       return
     }
 
-    await processFile(file)
+    await handleFile(file)
   }
 
   const handleDuplicateConfirm = async () => {
     if (duplicateDialog.file) {
-      await processFile(duplicateDialog.file, duplicateDialog.name)
+      await handleFile(duplicateDialog.file, duplicateDialog.name)
     }
 
     setDuplicateDialog(initialDuplicateDialogState)
