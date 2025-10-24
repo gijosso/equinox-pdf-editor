@@ -78,8 +78,35 @@ export const formatDate = (dateString: string, options = defaultFormatDatOptions
   return new Intl.DateTimeFormat("en-US", options).format(new Date(dateString))
 }
 
-export const isValidFileType = (file: File | Blob) => {
-  return file.type === "application/pdf"
+export const isValidFileType = async (file: File | Blob): Promise<boolean> => {
+  // First check MIME type as a quick filter
+  if (file.type !== "application/pdf") {
+    return false
+  }
+
+  try {
+    // Read the first 4 bytes to check PDF magic signature
+    const arrayBuffer = await file.arrayBuffer()
+    const uint8Array = new Uint8Array(arrayBuffer)
+
+    const pdfSignature = [0x25, 0x50, 0x44, 0x46] // %PDF
+
+    if (uint8Array.length < 4) {
+      return false
+    }
+
+    // Check if the first 4 bytes match PDF signature
+    for (let i = 0; i < 4; i++) {
+      if (uint8Array[i] !== pdfSignature[i]) {
+        return false
+      }
+    }
+
+    return true
+  } catch (error) {
+    console.error("Error validating PDF file signature:", error)
+    return false
+  }
 }
 
 export const maxFileSize = 50 * 1024 * 1024 // 50MB

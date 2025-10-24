@@ -56,10 +56,11 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
   const documents = useAppSelector(state => state.documents.items)
 
   const processFile = async (file: File, forceName?: string) => {
-    if (!isValidFileType(file)) {
+    const isValidPDF = await isValidFileType(file)
+    if (!isValidPDF) {
       toast({
-        title: "Invalid file type",
-        description: "Please upload a PDF file",
+        title: "Invalid PDF file",
+        description: "Error while uploading the PDF file",
         variant: "destructive",
       })
       return
