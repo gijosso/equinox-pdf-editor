@@ -5,7 +5,7 @@ import React from "react"
 
 import {DocumentList} from "@/components/document-list"
 import {ErrorBoundaryWithSuspense} from "@/components/error-boundary"
-import {FileUpload} from "@/components/file-upload"
+import {LazyFileUpload} from "@/components/lazy-components"
 import {DocumentListLoading, FileUploadLoading} from "@/components/loading-fallback"
 import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
 import {selectAllDocuments, selectLoading} from "@/lib/store/selectors"
@@ -39,7 +39,7 @@ export default function HomePage() {
       <main className="container mx-auto px-4 py-8">
         {documents.length === 0 && !loading ? (
           <ErrorBoundaryWithSuspense suspenseFallback={<FileUploadLoading />}>
-            <FileUpload variant="dropzone" />
+            <LazyFileUpload variant="dropzone" />
           </ErrorBoundaryWithSuspense>
         ) : (
           <div className="space-y-6">
@@ -51,7 +51,7 @@ export default function HomePage() {
                 </p>
               </div>
               <ErrorBoundaryWithSuspense suspenseFallback={<FileUploadLoading />}>
-                <FileUpload />
+                <LazyFileUpload />
               </ErrorBoundaryWithSuspense>
             </div>
             <ErrorBoundaryWithSuspense suspenseFallback={<DocumentListLoading />}>
