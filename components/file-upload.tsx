@@ -79,8 +79,18 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
 
     try {
       const fileHash = await computeFileHash(file)
-      const existingDoc = await dbHelpers.getDocumentByHash(fileHash)
+      const existingDocResult = await dbHelpers.getDocumentByHash(fileHash)
 
+      if (!existingDocResult.success) {
+        toast({
+          title: "Database error",
+          description: "Failed to check for existing documents",
+          variant: "destructive",
+        })
+        return
+      }
+
+      const existingDoc = existingDocResult.data
       if (existingDoc && !forceName) {
         const existingNames = documents.map(d => d.name)
         const name = generateUniqueName(file.name, existingNames)

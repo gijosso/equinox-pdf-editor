@@ -17,33 +17,55 @@ const initialState: DocumentsState = {
   error: null,
 }
 
-export const loadDocuments = createAsyncThunk("documents/loadDocuments", async () => {
-  // Get documents from IndexDB database
-  const documents = await dbHelpers.getAllDocuments()
+export const loadDocuments = createAsyncThunk("documents/loadDocuments", async (_, {rejectWithValue}) => {
+  const result = await dbHelpers.getAllDocuments()
 
-  return documents
+  if (!result.success) {
+    return rejectWithValue(result.error.message)
+  }
+
+  return result.data
 })
 
-export const addDocument = createAsyncThunk("documents/addDocument", async (doc: PDFDocument) => {
-  await dbHelpers.addDocument(doc)
+export const addDocument = createAsyncThunk("documents/addDocument", async (doc: PDFDocument, {rejectWithValue}) => {
+  const result = await dbHelpers.addDocument(doc)
+
+  if (!result.success) {
+    return rejectWithValue(result.error.message)
+  }
 
   return doc
 })
 
-export const deleteDocument = createAsyncThunk("documents/deleteDocument", async (id: string) => {
-  await dbHelpers.deleteDocument(id)
+export const deleteDocument = createAsyncThunk("documents/deleteDocument", async (id: string, {rejectWithValue}) => {
+  const result = await dbHelpers.deleteDocument(id)
+
+  if (!result.success) {
+    return rejectWithValue(result.error.message)
+  }
 
   return id
 })
 
-export const loadVersions = createAsyncThunk("documents/loadVersions", async (documentId: string) => {
-  const versions = await dbHelpers.getVersionsByDocument(documentId)
+export const loadVersions = createAsyncThunk(
+  "documents/loadVersions",
+  async (documentId: string, {rejectWithValue}) => {
+    const result = await dbHelpers.getVersionsByDocument(documentId)
 
-  return {documentId, versions}
-})
+    if (!result.success) {
+      return rejectWithValue(result.error.message)
+    }
 
-export const addVersion = createAsyncThunk("documents/addVersion", async (version: PDFVersion) => {
-  await dbHelpers.addVersion(version)
+    return {documentId, versions: result.data}
+  },
+)
+
+export const addVersion = createAsyncThunk("documents/addVersion", async (version: PDFVersion, {rejectWithValue}) => {
+  const result = await dbHelpers.addVersion(version)
+
+  if (!result.success) {
+    return rejectWithValue(result.error.message)
+  }
 
   return version
 })
