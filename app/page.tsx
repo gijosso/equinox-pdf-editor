@@ -8,11 +8,13 @@ import {ErrorBoundaryWithSuspense} from "@/components/error-boundary"
 import {FileUpload} from "@/components/file-upload"
 import {DocumentListLoading, FileUploadLoading} from "@/components/loading-fallback"
 import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {loadDocuments} from "@/lib/store/slices/documents-slice"
+import {selectAllDocuments, selectLoading} from "@/lib/store/selectors"
+import {loadDocuments} from "@/lib/store/slices"
 
 export default function HomePage() {
   const dispatch = useAppDispatch()
-  const {items: documents, loading} = useAppSelector(state => state.documents)
+  const documents = useAppSelector(selectAllDocuments)
+  const loading = useAppSelector(selectLoading)
 
   React.useEffect(() => {
     dispatch(loadDocuments())

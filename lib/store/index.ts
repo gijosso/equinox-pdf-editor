@@ -1,6 +1,6 @@
 import {configureStore} from "@reduxjs/toolkit"
 
-import documentsReducer from "./slices/documents-slice"
+import documentsReducer from "./slices/documents"
 
 export const makeStore = () => {
   return configureStore({

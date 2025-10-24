@@ -9,12 +9,12 @@ import {Card} from "@/components/ui/card"
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu"
 import {useToast} from "@/hooks/use-toast"
 import {useAppDispatch} from "@/lib/store/hooks"
-import {deleteDocument} from "@/lib/store/slices/documents-slice"
-import type {PDFDocument} from "@/lib/types"
+import {deleteDocument} from "@/lib/store/slices"
+import type {PDFDocumentMeta} from "@/lib/types"
 import {formatDate} from "@/lib/utils"
 
 interface DocumentListProps {
-  documents: PDFDocument[]
+  documents: PDFDocumentMeta[]
   loading: boolean
 }
 

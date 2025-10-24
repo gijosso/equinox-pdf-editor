@@ -8,11 +8,11 @@ import {DuplicateDialog} from "@/components/duplicate-dialog"
 import {Button} from "@/components/ui/button"
 import {Draggable} from "@/components/ui/draggable"
 import {useToast} from "@/hooks/use-toast"
-import {dbHelpers} from "@/lib/db"
+import {documentService} from "@/lib/db/documents"
 import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {addDocument} from "@/lib/store/slices/documents-slice"
-import {addVersion} from "@/lib/store/slices/documents-slice"
-import type {PDFDocument, PDFVersion} from "@/lib/types"
+import {selectAllDocuments} from "@/lib/store/selectors"
+import {addDocumentWithVersion} from "@/lib/store/slices"
+import type {PDFDocument, PDFDocumentMeta, PDFVersion} from "@/lib/types"
 import {
   cn,
   computeFileHash,
@@ -29,7 +29,7 @@ interface FileUploadProps {
 
 type DuplicateDialogState = {
   open: boolean
-  existingDoc: PDFDocument | null
+  existingDoc: PDFDocumentMeta | null
   name: string
   file: File | null
   fileHash: string
@@ -52,7 +52,7 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
   const [isDragging, setIsDragging] = React.useState(false)
   const [duplicateDialog, setDuplicateDialog] = React.useState<DuplicateDialogState>(initialDuplicateDialogState)
 
-  const documents = useAppSelector(state => state.documents.items)
+  const documents = useAppSelector(selectAllDocuments)
 
   const processFile = async (file: File, forceName?: string) => {
     const isValidPDF = await isValidFileType(file)
@@ -78,12 +78,12 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
 
     try {
       const fileHash = await computeFileHash(file)
-      const existingDocResult = await dbHelpers.getDocumentByHash(fileHash)
+      const existingDocResult = await documentService.getDocumentByHash(fileHash)
 
       if (!existingDocResult.success) {
         toast({
-          title: "Database error",
-          description: "Failed to check for existing documents",
+          title: "Document error",
+          description: "An error occurred while checking for existing documents",
           variant: "destructive",
         })
         return
@@ -129,8 +129,7 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
         annotations: [],
       }
 
-      await dispatch(addDocument(document)).unwrap()
-      await dispatch(addVersion(version)).unwrap()
+      await dispatch(addDocumentWithVersion({document, version})).unwrap()
 
       toast({
         title: "Upload successful",
