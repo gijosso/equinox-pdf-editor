@@ -17,7 +17,6 @@ export const documentSelectors = {
   documentCount: createSelector([selectDocumentsState], state => state.documents.ids.length),
 }
 
-// Export individual selectors for convenience
 export const {
   loading: selectLoading,
   error: selectError,

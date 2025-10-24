@@ -26,13 +26,6 @@ export const versionSelectors = {
 
       return {...document, versions}
     }),
-
-  // Version statistics
-  versionCountByDocument: (documentId: string) =>
-    createSelector([selectDocumentsState], state => {
-      const versionIds = state.versions.byDocument[documentId] || []
-      return versionIds.length
-    }),
 }
 
 export const {
@@ -40,5 +33,4 @@ export const {
   versionById: selectVersionById,
   versionsCount: selectVersionsCount,
   documentWithVersions: selectDocumentWithVersions,
-  versionCountByDocument: selectVersionCountByDocument,
 } = versionSelectors
