@@ -9,17 +9,9 @@ export const makeStore = () => {
     },
     middleware: getDefaultMiddleware =>
       getDefaultMiddleware({
-        // Suppress serialized checks (persisted through IndexedDB)
+        // Suppress blob checks (persisted through IndexedDB)
         serializableCheck: {
-          ignoredActions: [
-            "documents/loadDocuments/fulfilled",
-            "documents/addDocument",
-            "documents/updateDocument",
-            "documents/loadDocuments",
-            "documents/addVersion",
-          ],
-          ignoredActionPaths: ["payload.blob", "meta.arg.blob"],
-          ignoredPaths: ["documents.items"],
+          ignoredActionPaths: ["payload.document.blob", "meta.arg.document.blob"],
         },
       }),
     devTools: process.env.NODE_ENV !== "production",
