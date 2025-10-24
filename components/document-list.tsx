@@ -3,6 +3,7 @@
 import {FileText, Loader2, MoreVertical, Trash2} from "lucide-react"
 import Image from "next/image"
 import {useRouter} from "next/navigation"
+import React from "react"
 
 import {Button} from "@/components/ui/button"
 import {Card} from "@/components/ui/card"
@@ -18,27 +19,30 @@ interface DocumentListProps {
   loading: boolean
 }
 
-export function DocumentList({documents, loading}: DocumentListProps) {
+export const DocumentList = React.memo<DocumentListProps>(({documents, loading}) => {
   const router = useRouter()
   const dispatch = useAppDispatch()
   const {toast} = useToast()
 
-  const handleDelete = async (id: string, name: string) => {
-    try {
-      await dispatch(deleteDocument(id)).unwrap()
-      toast({
-        title: "Document deleted",
-        description: `${name} has been deleted`,
-      })
-    } catch (error) {
-      console.error("Delete error:", error)
-      toast({
-        title: "Delete failed",
-        description: "There was an error deleting the document",
-        variant: "destructive",
-      })
-    }
-  }
+  const handleDelete = React.useCallback(
+    async (id: string, name: string) => {
+      try {
+        await dispatch(deleteDocument(id)).unwrap()
+        toast({
+          title: "Document deleted",
+          description: `${name} has been deleted`,
+        })
+      } catch (error) {
+        console.error("Delete error:", error)
+        toast({
+          title: "Delete failed",
+          description: "There was an error deleting the document",
+          variant: "destructive",
+        })
+      }
+    },
+    [dispatch, toast],
+  )
 
   if (loading) {
     return (
@@ -97,4 +101,4 @@ export function DocumentList({documents, loading}: DocumentListProps) {
       ))}
     </div>
   )
-}
+})
