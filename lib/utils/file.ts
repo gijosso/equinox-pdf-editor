@@ -1,4 +1,4 @@
-import {PDFDocument, PDFDocumentWithBlob, PDFVersion} from "../types"
+import {PDFDocumentWithBlob, PDFVersion} from "../types"
 import {generatePDFThumbnail} from "./pdf"
 import {fileToXFDF} from "./xfdf"
 

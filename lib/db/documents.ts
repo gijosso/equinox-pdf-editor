@@ -1,4 +1,4 @@
-import type {PDFDocument} from "../types"
+import type {PDFDocument, PDFDocumentWithBlob} from "../types"
 import {db} from "./database"
 
 export type Result<T, E = Error> = {success: true; data: T} | {success: false; error: E}
@@ -20,7 +20,7 @@ export class DocumentNotFoundError extends DatabaseError {
 }
 
 export const documentService = {
-  async addDocument(doc: PDFDocument): Promise<Result<string, DatabaseError>> {
+  async addDocument(doc: PDFDocumentWithBlob): Promise<Result<string, DatabaseError>> {
     try {
       const id = await db.documents.add(doc)
       return {success: true, data: id}
@@ -35,11 +35,30 @@ export const documentService = {
   async getDocument(id: string): Promise<Result<PDFDocument | undefined, DatabaseError>> {
     try {
       const document = await db.documents.get(id)
-      return {success: true, data: document}
+      if (!document) {
+        return {success: true, data: undefined}
+      }
+      // Return metadata only (without blob)
+      const {blob, ...metadata} = document
+      return {success: true, data: metadata}
     } catch (error) {
       return {
         success: false,
         error: new DatabaseError(`Failed to get document: ${error instanceof Error ? error.message : "Unknown error"}`),
+      }
+    }
+  },
+
+  async getDocumentWithBlob(id: string): Promise<Result<PDFDocumentWithBlob | undefined, DatabaseError>> {
+    try {
+      const document = await db.documents.get(id)
+      return {success: true, data: document}
+    } catch (error) {
+      return {
+        success: false,
+        error: new DatabaseError(
+          `Failed to get document with blob: ${error instanceof Error ? error.message : "Unknown error"}`,
+        ),
       }
     }
   },

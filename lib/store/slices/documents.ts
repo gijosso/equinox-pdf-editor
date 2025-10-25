@@ -1,7 +1,7 @@
 import {createAsyncThunk, createSlice} from "@reduxjs/toolkit"
 
 import {documentService} from "@/lib/db/documents"
-import type {NormalizedDocumentsState, PDFDocument, PDFVersion} from "@/lib/types"
+import type {NormalizedDocumentsState, PDFDocument, PDFDocumentWithBlob, PDFVersion} from "@/lib/types"
 
 import {addDocumentWithVersion, deleteDocumentWithVersions, updateDocumentWithVersion} from "./atomic"
 
@@ -80,15 +80,20 @@ export const loadDocuments = createAsyncThunk("documents/loadDocuments", async (
   return result.data
 })
 
-export const addDocument = createAsyncThunk("documents/addDocument", async (doc: PDFDocument, {rejectWithValue}) => {
-  const result = await documentService.addDocument(doc)
+export const addDocument = createAsyncThunk(
+  "documents/addDocument",
+  async (doc: PDFDocumentWithBlob, {rejectWithValue}) => {
+    const result = await documentService.addDocument(doc)
 
-  if (!result.success) {
-    return rejectWithValue(result.error.message)
-  }
+    if (!result.success) {
+      return rejectWithValue(result.error.message)
+    }
 
-  return doc
-})
+    // Return metadata only (without blob) for Redux state
+    const {blob, ...metadata} = doc
+    return metadata
+  },
+)
 
 export const deleteDocument = createAsyncThunk("documents/deleteDocument", async (id: string, {rejectWithValue}) => {
   const result = await documentService.deleteDocument(id)

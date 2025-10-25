@@ -1,68 +1,47 @@
 "use client"
 
 import {ChevronDown, ChevronUp, Search, X} from "lucide-react"
-import React from "react"
+import {useState} from "react"
 
 import {Button} from "@/components/ui/button"
 import {Input} from "@/components/ui/input"
+import {usePDFSearch} from "@/hooks/use-pdf-search"
 import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {
-  selectActiveDocumentCurrentSearchIndex,
-  selectActiveDocumentSearchQuery,
-  selectActiveDocumentSearchResults,
-} from "@/lib/store/selectors"
-import {
-  clearSearch,
-  nextSearchResult,
-  prevSearchResult,
-  setCurrentPage,
-  setSearchQuery,
-  setSearchResults,
-} from "@/lib/store/slices"
+import {setSearchQuery} from "@/lib/store/slices/editor"
 
 export function SearchBar() {
   const dispatch = useAppDispatch()
   const activeDocumentId = useAppSelector(state => state.editor.activeDocumentId)
-  const searchQuery = useAppSelector(selectActiveDocumentSearchQuery)
-  const searchResults = useAppSelector(selectActiveDocumentSearchResults)
-  const currentSearchIndex = useAppSelector(selectActiveDocumentCurrentSearchIndex)
-  const [isSearching, setIsSearching] = React.useState(false)
-  const [isPdfLoading, setIsPdfLoading] = React.useState(false)
+  const [localSearchQuery, setLocalSearchQuery] = useState("")
+
+  const {searchResults, currentSearchIndex, isSearching, clearSearch, goToNextResult, goToPreviousResult} =
+    usePDFSearch(activeDocumentId)
 
   const handleNext = () => {
-    if (!activeDocumentId) return
-    dispatch(nextSearchResult(activeDocumentId))
-    if (searchResults.length > 0) {
-      const nextIndex = (currentSearchIndex + 1) % searchResults.length
-      const nextResult = searchResults[nextIndex]
-      dispatch(setCurrentPage({documentId: activeDocumentId, page: nextResult.pageNumber}))
-    }
+    goToNextResult()
   }
 
   const handlePrev = () => {
-    if (!activeDocumentId) return
-    dispatch(prevSearchResult(activeDocumentId))
-    if (searchResults.length > 0) {
-      const prevIndex = (currentSearchIndex - 1 + searchResults.length) % searchResults.length
-      const prevResult = searchResults[prevIndex]
-      dispatch(setCurrentPage({documentId: activeDocumentId, page: prevResult.pageNumber}))
-    }
+    goToPreviousResult()
   }
 
   const handleClear = () => {
-    if (!activeDocumentId) {
-      return
-    }
+    setLocalSearchQuery("")
+    clearSearch()
+    dispatch(setSearchQuery({documentId: activeDocumentId!, query: ""}))
+  }
 
-    dispatch(clearSearch(activeDocumentId))
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setLocalSearchQuery(value)
+    dispatch(setSearchQuery({documentId: activeDocumentId!, query: value}))
   }
 
   if (!activeDocumentId) {
     return null
   }
 
-  // If PDF blob is not loaded (still null), show loading indicator and disable input
-  if (isPdfLoading) {
+  if (isSearching) {
     return (
       <div className="flex items-center gap-2 border-border pr-4">
         <span className="text-sm text-muted-foreground">Loading PDF...</span>
@@ -71,18 +50,18 @@ export function SearchBar() {
   }
 
   return (
-    <div className="flex items-center gap-2 border-border pr-4">
+    <div className="flex items-center gap-2 border-border">
       <div className="relative">
         <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           type="text"
           placeholder="Search in document..."
-          value={searchQuery}
-          onChange={e => dispatch(setSearchQuery({documentId: activeDocumentId, query: e.target.value}))}
+          value={localSearchQuery}
+          onChange={handleInputChange}
           className="h-8 w-64 pl-8 pr-8 bg-muted"
-          disabled={isPdfLoading || isSearching}
+          disabled={isSearching}
         />
-        {searchQuery && (
+        {localSearchQuery && (
           <Button
             variant="ghost"
             size="sm"

@@ -10,15 +10,14 @@ import {Sidebar} from "./sidebar"
 
 export function EditorLayout() {
   const sidebarOpen = useAppSelector(selectActiveDocumentSidebarOpen)
-  const isDiffMode = useAppSelector(selectActiveDocumentIsDiffMode)
   const activeDocumentId = useAppSelector(state => state.editor.activeDocumentId)
 
   return (
     <div className="flex h-screen flex-col bg-background">
       <EditorHeader />
-      {!isDiffMode && <EditorToolbar />}
+      <EditorToolbar />
       <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 overflow-hidden transition-all duration-300 ease-in-out">
+        <div className="flex-1 min-w-0 transition-all duration-300 ease-in-out">
           {activeDocumentId ? (
             <PDFViewer documentId={activeDocumentId} />
           ) : (
@@ -32,7 +31,7 @@ export function EditorLayout() {
         <div
           className={`h-full border-l border-border bg-card transition-all duration-300 ease-in-out ${
             sidebarOpen ? "w-80" : "w-0"
-          } overflow-hidden`}
+          } overflow-hidden shrink-0`}
         >
           <Sidebar />
         </div>
