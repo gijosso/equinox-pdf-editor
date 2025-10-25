@@ -1,4 +1,4 @@
-import type {PDFDocument, PDFVersion} from "../types"
+import type {PDFDocument, PDFDocumentWithBlob, PDFVersion} from "../types"
 import {db} from "./database"
 import {DatabaseError, DocumentNotFoundError, type Result} from "./documents"
 import {documentService} from "./documents"
@@ -6,7 +6,7 @@ import {versionService} from "./versions"
 
 export const atomicService = {
   async addDocumentWithVersion(
-    document: PDFDocument,
+    document: PDFDocumentWithBlob,
     version: PDFVersion,
   ): Promise<Result<{documentId: string; versionId: string}, DatabaseError>> {
     try {

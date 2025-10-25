@@ -1,7 +1,9 @@
 import {createAsyncThunk, createSlice} from "@reduxjs/toolkit"
 
 import {documentService} from "@/lib/db/documents"
-import type {NormalizedDocumentsState, PDFDocument} from "@/lib/types"
+import type {NormalizedDocumentsState, PDFDocument, PDFVersion} from "@/lib/types"
+
+import {addDocumentWithVersion, deleteDocumentWithVersions, updateDocumentWithVersion} from "./atomic"
 
 const initialState: NormalizedDocumentsState = {
   documents: {
@@ -35,6 +37,36 @@ const updateDocumentInState = (state: NormalizedDocumentsState, documentId: stri
   const document = state.documents.entities[documentId]
   if (document) {
     Object.assign(document, updates)
+  }
+}
+
+const addVersionToState = (state: NormalizedDocumentsState, version: PDFVersion) => {
+  state.versions.entities[version.id] = version
+  if (!state.versions.ids.includes(version.id)) {
+    state.versions.ids.push(version.id)
+  }
+
+  // Add to document's version list
+  if (!state.versions.byDocument[version.documentId]) {
+    state.versions.byDocument[version.documentId] = []
+  }
+  if (!state.versions.byDocument[version.documentId].includes(version.id)) {
+    state.versions.byDocument[version.documentId].push(version.id)
+  }
+}
+
+const removeVersionFromState = (state: NormalizedDocumentsState, versionId: string) => {
+  const version = state.versions.entities[versionId]
+  if (version) {
+    delete state.versions.entities[versionId]
+    state.versions.ids = state.versions.ids.filter(id => id !== versionId)
+
+    // Remove from document's version list
+    if (state.versions.byDocument[version.documentId]) {
+      state.versions.byDocument[version.documentId] = state.versions.byDocument[version.documentId].filter(
+        id => id !== versionId,
+      )
+    }
   }
 }
 
@@ -115,6 +147,24 @@ export const documentsSlice = createSlice({
       .addCase(updateDocument.fulfilled, (state, action) => {
         const {id, updates} = action.payload
         updateDocumentInState(state, id, updates)
+      })
+      // Handle atomic actions
+      .addCase(addDocumentWithVersion.fulfilled, (state, action) => {
+        const {document, version} = action.payload
+        // Remove blob from document before storing in Redux
+        const {blob, ...documentWithoutBlob} = document
+        addDocumentToState(state, documentWithoutBlob)
+        addVersionToState(state, version)
+      })
+      .addCase(updateDocumentWithVersion.fulfilled, (state, action) => {
+        const {documentId, documentUpdates, version} = action.payload
+        updateDocumentInState(state, documentId, documentUpdates)
+        addVersionToState(state, version)
+      })
+      .addCase(deleteDocumentWithVersions.fulfilled, (state, action) => {
+        const documentId = action.payload
+        removeDocumentFromState(state, documentId)
+        removeVersionFromState(state, documentId)
       })
   },
 })

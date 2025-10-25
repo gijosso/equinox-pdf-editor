@@ -6,7 +6,11 @@ export interface PDFDocument {
   updatedAt: string
   currentVersionId: string
   fileHash: string // SHA-256 hash of the file content
-  thumbnail?: string // Added thumbnail data URL for preview
+  thumbnail: string // Base64 encoded thumbnail
+}
+
+export interface PDFDocumentWithBlob extends PDFDocument {
+  blob: Blob
 }
 
 // Normalized state structure
