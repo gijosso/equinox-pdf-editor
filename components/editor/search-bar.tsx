@@ -50,7 +50,7 @@ export function SearchBar() {
   }
 
   return (
-    <div className="flex items-center gap-2 border-border">
+    <div className="flex items-center border-border gap-4">
       <div className="relative">
         <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -75,11 +75,11 @@ export function SearchBar() {
       </div>
 
       {searchResults.length > 0 && (
-        <>
-          <span className="text-sm text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground w-12 text-center">
             {currentSearchIndex + 1} of {searchResults.length}
           </span>
-          <div className="flex gap-1">
+          <div>
             <Button variant="ghost" size="sm" onClick={handlePrev} className="h-8 w-8 p-0" disabled={isSearching}>
               <ChevronUp className="h-4 w-4" />
             </Button>
@@ -87,7 +87,7 @@ export function SearchBar() {
               <ChevronDown className="h-4 w-4" />
             </Button>
           </div>
-        </>
+        </div>
       )}
 
       {isSearching && <span className="text-sm text-muted-foreground">Searching...</span>}
