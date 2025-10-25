@@ -1,3 +1,4 @@
+import {PDFDocument, PDFVersion} from "../types"
 import {generatePDFThumbnail} from "./pdf"
 
 export async function computeFileHash(file: File | Blob): Promise<string> {
@@ -84,7 +85,6 @@ export async function processFile(
   fileHash: string
   thumbnail: string
   documentName: string
-  blob: Blob
 }> {
   if (!cacheInitialized) {
     existingDocuments.forEach(doc => documentNamesCache.add(doc.name))
@@ -92,17 +92,12 @@ export async function processFile(
   }
 
   const fileHash = await computeFileHash(file)
-  const blob = new Blob([await file.arrayBuffer()], {type: "application/pdf"})
-  const thumbnail = await generatePDFThumbnail(blob)
+  // const blob = new Blob([await file.arrayBuffer()], {type: "application/pdf"})
+  const thumbnail = await generatePDFThumbnail(file)
   const documentName = generateUniqueNameOptimized(file.name, documentNamesCache)
   documentNamesCache.add(documentName)
 
-  return {
-    fileHash,
-    thumbnail,
-    documentName,
-    blob,
-  }
+  return {fileHash, thumbnail, documentName}
 }
 
 // Optimized unique name generation using Set for O(1) lookups
@@ -134,4 +129,33 @@ export function updateDocumentNamesCache(documentNames: string[]) {
   documentNamesCache.clear()
   documentNames.forEach(name => documentNamesCache.add(name))
   cacheInitialized = true
+}
+
+export const uploadNewFile = async (file: File, documents: Array<{name: string}>) => {
+  const {fileHash: processedHash, thumbnail, documentName} = await processFile(file, documents)
+
+  const now = new Date()
+  const documentId = generateDocumentId()
+  const versionId = generateVersionId()
+
+  const document: PDFDocument = {
+    id: documentId,
+    name: documentName,
+    createdAt: now.toISOString(),
+    updatedAt: now.toISOString(),
+    currentVersionId: versionId,
+    fileHash: processedHash,
+    thumbnail,
+  }
+
+  const version: PDFVersion = {
+    id: versionId,
+    documentId,
+    versionNumber: 1,
+    message: "Initial upload",
+    createdAt: now.toISOString(),
+    xfdf: "",
+  }
+
+  return {document, version}
 }

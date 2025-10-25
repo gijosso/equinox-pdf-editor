@@ -1,11 +1,13 @@
 import {configureStore} from "@reduxjs/toolkit"
 
 import documentsReducer from "./slices/documents"
+import editorReducer from "./slices/editor"
 
 export const makeStore = () => {
   return configureStore({
     reducer: {
       documents: documentsReducer,
+      editor: editorReducer,
     },
     middleware: getDefaultMiddleware =>
       getDefaultMiddleware({

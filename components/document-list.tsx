@@ -11,11 +11,11 @@ import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 import {useToast} from "@/hooks/use-toast"
 import {useAppDispatch} from "@/lib/store/hooks"
 import {deleteDocument} from "@/lib/store/slices"
-import type {PDFDocumentMeta} from "@/lib/types"
+import type {PDFDocument} from "@/lib/types"
 import {formatDate} from "@/lib/utils"
 
 interface DocumentListProps {
-  documents: PDFDocumentMeta[]
+  documents: PDFDocument[]
   loading: boolean
 }
 

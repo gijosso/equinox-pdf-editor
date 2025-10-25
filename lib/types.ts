@@ -1,5 +1,5 @@
 // Normalized document metadata (without blob)
-export interface PDFDocumentMeta {
+export interface PDFDocument {
   id: string
   name: string
   createdAt: string
@@ -9,15 +9,10 @@ export interface PDFDocumentMeta {
   thumbnail?: string // Added thumbnail data URL for preview
 }
 
-// Full document with blob (for database operations)
-export interface PDFDocument extends PDFDocumentMeta {
-  blob: Blob
-}
-
 // Normalized state structure
 export interface NormalizedDocumentsState {
   documents: {
-    entities: Record<string, PDFDocumentMeta>
+    entities: Record<string, PDFDocument>
     ids: string[]
   }
   versions: {
@@ -35,7 +30,7 @@ export interface PDFVersion {
   versionNumber: number
   message: string
   createdAt: string
-  annotations: Annotation[]
+  xfdf: string // XFDF string instead of JS objects
   textContent?: string
 }
 
@@ -45,4 +40,18 @@ export interface Annotation {
   pageNumber: number
   createdAt: string
   content: string
+  x?: number
+  y?: number
+  width?: number
+  height?: number
+  text?: string
+  color?: string
+  fontSize?: number
+}
+
+export interface AnnotationDiff {
+  id: string
+  type: "added" | "removed" | "modified"
+  annotation: Annotation
+  oldAnnotation?: Annotation
 }

@@ -1,4 +1,4 @@
-import type {PDFDocument, PDFDocumentMeta} from "../types"
+import type {PDFDocument} from "../types"
 import {db} from "./database"
 
 export type Result<T, E = Error> = {success: true; data: T} | {success: false; error: E}
@@ -44,7 +44,7 @@ export const documentService = {
     }
   },
 
-  async getAllDocuments(): Promise<Result<PDFDocumentMeta[], DatabaseError>> {
+  async getAllDocuments(): Promise<Result<PDFDocument[], DatabaseError>> {
     try {
       let query = db.documents.orderBy("updatedAt").reverse()
 
@@ -84,7 +84,7 @@ export const documentService = {
     }
   },
 
-  async updateDocument(id: string, updates: Partial<PDFDocumentMeta>): Promise<Result<void, DatabaseError>> {
+  async updateDocument(id: string, updates: Partial<PDFDocument>): Promise<Result<void, DatabaseError>> {
     try {
       const document = await db.documents.get(id)
       if (!document) {
@@ -122,7 +122,7 @@ export const documentService = {
     }
   },
 
-  async getDocumentByHash(fileHash: string): Promise<Result<PDFDocumentMeta | undefined, DatabaseError>> {
+  async getDocumentByHash(fileHash: string): Promise<Result<PDFDocument | undefined, DatabaseError>> {
     try {
       const document = await db.documents.where("fileHash").equals(fileHash).first()
       if (!document) {
@@ -130,7 +130,7 @@ export const documentService = {
       }
 
       // Return metadata only
-      const metadata: PDFDocumentMeta = {
+      const metadata: PDFDocument = {
         id: document.id,
         name: document.name,
         createdAt: document.createdAt,

@@ -1,7 +1,7 @@
 import {createAsyncThunk, createSlice} from "@reduxjs/toolkit"
 
 import {documentService} from "@/lib/db/documents"
-import type {NormalizedDocumentsState, PDFDocument, PDFDocumentMeta, PDFVersion} from "@/lib/types"
+import type {NormalizedDocumentsState, PDFDocument} from "@/lib/types"
 
 const initialState: NormalizedDocumentsState = {
   documents: {
@@ -18,7 +18,7 @@ const initialState: NormalizedDocumentsState = {
 }
 
 // Helper functions for normalized state updates
-const addDocumentToState = (state: NormalizedDocumentsState, document: PDFDocumentMeta) => {
+const addDocumentToState = (state: NormalizedDocumentsState, document: PDFDocument) => {
   state.documents.entities[document.id] = document
   if (!state.documents.ids.includes(document.id)) {
     state.documents.ids.unshift(document.id)
@@ -31,11 +31,7 @@ const removeDocumentFromState = (state: NormalizedDocumentsState, documentId: st
   delete state.versions.byDocument[documentId]
 }
 
-const updateDocumentInState = (
-  state: NormalizedDocumentsState,
-  documentId: string,
-  updates: Partial<PDFDocumentMeta>,
-) => {
+const updateDocumentInState = (state: NormalizedDocumentsState, documentId: string, updates: Partial<PDFDocument>) => {
   const document = state.documents.entities[documentId]
   if (document) {
     Object.assign(document, updates)
@@ -74,7 +70,7 @@ export const deleteDocument = createAsyncThunk("documents/deleteDocument", async
 
 export const updateDocument = createAsyncThunk(
   "documents/updateDocument",
-  async ({id, updates}: {id: string; updates: Partial<PDFDocumentMeta>}, {rejectWithValue}) => {
+  async ({id, updates}: {id: string; updates: Partial<PDFDocument>}, {rejectWithValue}) => {
     const result = await documentService.updateDocument(id, updates)
 
     if (!result.success) {

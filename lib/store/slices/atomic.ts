@@ -1,7 +1,7 @@
 import {createAsyncThunk} from "@reduxjs/toolkit"
 
 import {atomicService} from "@/lib/db/atomic"
-import type {PDFDocument, PDFDocumentMeta, PDFVersion} from "@/lib/types"
+import type {PDFDocument, PDFVersion} from "@/lib/types"
 
 export const addDocumentWithVersion = createAsyncThunk(
   "atomic/addDocumentWithVersion",
@@ -25,7 +25,7 @@ export const updateDocumentWithVersion = createAsyncThunk(
       version,
     }: {
       documentId: string
-      documentUpdates: Partial<PDFDocumentMeta>
+      documentUpdates: Partial<PDFDocument>
       version: PDFVersion
     },
     {rejectWithValue},

@@ -12,17 +12,8 @@ import {documentService} from "@/lib/db/documents"
 import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
 import {selectAllDocuments} from "@/lib/store/selectors"
 import {addDocumentWithVersion} from "@/lib/store/slices"
-import type {PDFDocument, PDFDocumentMeta, PDFVersion} from "@/lib/types"
-import {
-  cn,
-  computeFileHash,
-  generateDocumentId,
-  generateUniqueName,
-  generateVersionId,
-  isValidFileSize,
-  isValidPdfFile,
-  processFile,
-} from "@/lib/utils"
+import type {PDFDocument} from "@/lib/types"
+import {cn, computeFileHash, generateUniqueName, isValidFileSize, isValidPdfFile, uploadNewFile} from "@/lib/utils"
 
 interface FileUploadProps {
   variant?: "button" | "dropzone"
@@ -30,7 +21,7 @@ interface FileUploadProps {
 
 type DuplicateDialogState = {
   open: boolean
-  existingDoc: PDFDocumentMeta | null
+  existingDoc: PDFDocument | null
   name: string
   file: File | null
   fileHash: string
@@ -100,44 +91,19 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
         return
       }
 
-      const {fileHash: processedHash, thumbnail, documentName, blob} = await processFile(file, documents)
-
-      const now = new Date()
-      const documentId = generateDocumentId()
-      const versionId = generateVersionId()
-
-      const document: PDFDocument = {
-        id: documentId,
-        name: documentName,
-        blob,
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
-        currentVersionId: versionId,
-        fileHash: processedHash,
-        thumbnail,
-      }
-
-      const version: PDFVersion = {
-        id: versionId,
-        documentId,
-        versionNumber: 1,
-        message: "Initial upload",
-        createdAt: now.toISOString(),
-        annotations: [],
-      }
-
+      const {document, version} = await uploadNewFile(file, documents)
       await dispatch(addDocumentWithVersion({document, version})).unwrap()
 
       toast({
         title: "Upload successful",
-        description: `${documentName} has been uploaded`,
+        description: `${document.name} has been uploaded`,
       })
 
       if (fileInputRef.current) {
         fileInputRef.current.value = ""
       }
 
-      router.push(`/editor/${documentId}`)
+      router.push(`/editor/${document.id}`)
     } catch (error) {
       console.error("Upload error:", error)
       toast({

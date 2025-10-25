@@ -1,4 +1,4 @@
-import type {PDFDocument, PDFDocumentMeta, PDFVersion} from "../types"
+import type {PDFDocument, PDFVersion} from "../types"
 import {db} from "./database"
 import {DatabaseError, DocumentNotFoundError, type Result} from "./documents"
 import {documentService} from "./documents"
@@ -38,7 +38,7 @@ export const atomicService = {
 
   async updateDocumentWithVersion(
     documentId: string,
-    documentUpdates: Partial<PDFDocumentMeta>,
+    documentUpdates: Partial<PDFDocument>,
     version: PDFVersion,
   ): Promise<Result<{documentId: string; versionId: string}, DatabaseError>> {
     try {
