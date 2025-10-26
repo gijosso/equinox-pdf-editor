@@ -5,9 +5,12 @@ import React from "react"
 
 import {Button} from "@/components/ui/button"
 import {ScrollArea} from "@/components/ui/scroll-area"
-import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {selectAnnotations, selectEditorState} from "@/lib/store/selectors"
-import {deleteAnnotation, setCurrentPage} from "@/lib/store/slices"
+import {
+  useDeleteAnnotationMutation,
+  useGetAnnotationsByVersionQuery,
+  useGetDocumentEditorQuery,
+  useSaveDocumentEditorMutation,
+} from "@/lib/store/api"
 import type {Annotation, AnnotationType} from "@/lib/types"
 import {formatDate} from "@/lib/utils"
 
@@ -21,15 +24,46 @@ const ANNOTATIONS_CONFIGS = {
 
 const ANNOTATION_CONFIGS_ARRAY = Object.values(ANNOTATIONS_CONFIGS)
 
+interface SidebarAnnotationsProps {
+  documentId: string
+}
+
 const AnnotationItem = React.memo(
   ({documentId, versionId, annotation}: {documentId: string; versionId: string; annotation: Annotation}) => {
-    const dispatch = useAppDispatch()
+    const [deleteAnnotation] = useDeleteAnnotationMutation()
+    const [saveDocumentEditor] = useSaveDocumentEditorMutation()
+    const {data: editor} = useGetDocumentEditorQuery(documentId, {
+      skip: !documentId,
+    })
+
+    const handleSetCurrentPage = async (pageNumber: number) => {
+      if (!editor || !documentId) return
+
+      const updatedEditor = {
+        ...editor,
+        currentPage: pageNumber,
+      }
+
+      try {
+        await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
+      } catch (error) {
+        console.error("Failed to set current page:", error)
+      }
+    }
 
     // Safety check for annotation type
     const annotationConfig = ANNOTATIONS_CONFIGS[annotation.type as AnnotationType]
     if (!annotationConfig) {
       console.warn(`Unknown annotation type: ${annotation.type}`, annotation)
       return null
+    }
+
+    const handleDelete = async () => {
+      try {
+        await deleteAnnotation(annotation.id).unwrap()
+      } catch (error) {
+        console.error("Failed to delete annotation:", error)
+      }
     }
 
     return (
@@ -40,7 +74,7 @@ const AnnotationItem = React.memo(
             <div className="flex-1 min-w-0 max-w-full h-full flex flex-col justify-between">
               <div>
                 <button
-                  onClick={() => dispatch(setCurrentPage({documentId, page: annotation.pageNumber || 1}))}
+                  onClick={() => handleSetCurrentPage(annotation.pageNumber || 1)}
                   className="text-sm font-medium capitalize text-foreground"
                 >
                   {annotationConfig.label}
@@ -77,12 +111,7 @@ const AnnotationItem = React.memo(
               </div>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 shrink-0"
-            onClick={() => dispatch(deleteAnnotation({documentId, versionId, id: annotation.id}))}
-          >
+          <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={handleDelete}>
             <Trash2 className="h-3 w-3" />
           </Button>
         </div>
@@ -93,9 +122,20 @@ const AnnotationItem = React.memo(
 
 AnnotationItem.displayName = "AnnotationItem"
 
-export function SidebarAnnotations() {
-  const annotations = useAppSelector(selectAnnotations)
-  const {documentId, currentVersionId} = useAppSelector(selectEditorState)
+export function SidebarAnnotations({documentId}: SidebarAnnotationsProps) {
+  const {data: editor} = useGetDocumentEditorQuery(documentId, {
+    skip: !documentId,
+  })
+  const currentVersionId = editor?.currentVersionId || null
+
+  const {
+    data: annotations = [],
+    isLoading,
+    error,
+  } = useGetAnnotationsByVersionQuery(currentVersionId || "", {
+    skip: !currentVersionId,
+  })
+
   const [viewMode, setViewMode] = React.useState<"all" | "grouped">("all")
   const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(new Set())
 
@@ -106,7 +146,7 @@ export function SidebarAnnotations() {
       redaction: [],
     } satisfies {[K in AnnotationType]: Annotation[]}
 
-    for (const annotation of annotations || []) {
+    for (const annotation of annotations) {
       if (annotation.type in groups) {
         groups[annotation.type as keyof typeof groups].push(annotation)
       }
@@ -125,6 +165,32 @@ export function SidebarAnnotations() {
       }
       return next
     })
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex h-full flex-col">
+        <div className="flex items-center justify-between border-b border-border h-18 p-4">
+          <p className="text-sm text-muted-foreground">Loading annotations...</p>
+        </div>
+        <ScrollArea className="flex-1 overflow-auto bg-muted">
+          <div className="p-4 text-center text-muted-foreground">Loading...</div>
+        </ScrollArea>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-full flex-col">
+        <div className="flex items-center justify-between border-b border-border h-18 p-4">
+          <p className="text-sm text-muted-foreground">Error loading annotations</p>
+        </div>
+        <ScrollArea className="flex-1 overflow-auto bg-muted">
+          <div className="p-4 text-center text-destructive">Failed to load annotations</div>
+        </ScrollArea>
+      </div>
+    )
   }
 
   return (

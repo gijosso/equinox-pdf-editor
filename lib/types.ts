@@ -1,16 +1,4 @@
-// Normalized document metadata (without blob)
-export interface PDFDocument {
-  id: string
-  name: string
-  createdAt: string
-  updatedAt: string
-  currentVersionId: string
-  fileHash: string // SHA-256 hash of the file content
-  thumbnail: string // Base64 encoded thumbnail
-}
-
-// Normalized state structure
-export interface NormalizedDocumentsState {
+export interface NormalizedState {
   documents: {
     entities: Record<string, PDFDocument>
     ids: string[]
@@ -22,6 +10,17 @@ export interface NormalizedDocumentsState {
   }
   loading: boolean
   error: string | null
+}
+
+// Normalized document metadata (without blob)
+export interface PDFDocument {
+  id: string
+  name: string
+  createdAt: string
+  updatedAt: string
+  currentVersionId: string
+  fileHash: string // SHA-256 hash of the file content
+  thumbnail: string // Base64 encoded thumbnail
 }
 
 export interface PDFVersion {
@@ -38,6 +37,7 @@ export interface PDFVersion {
 export type AnnotationType = "highlight" | "note" | "redaction"
 export interface Annotation {
   id: string
+  versionId: string // Reference to the version this annotation belongs to
   type: AnnotationType
   pageNumber: number
   createdAt: string
@@ -78,7 +78,7 @@ export interface EditorTool {
   size?: number
 }
 
-export interface DocumentEditorState {
+export interface DocumentEditor {
   documentId: string
   currentVersionId: string | null // Track current version
   isEditing: boolean
@@ -107,17 +107,49 @@ export interface DocumentEditorState {
   compareVersionIds: string[]
 }
 
-export interface VersionEditorState {
+export interface VersionEditor {
   versionId: string
   annotations: Annotation[]
 }
 
-export interface EditorState {
+export interface Editor {
   documentId: string | null
-  byDocument: Record<string, DocumentEditorState>
-  byVersion: Record<string, VersionEditorState> // Store annotations by version
+  byDocument: Record<string, DocumentEditor>
+  byVersion: Record<string, VersionEditor> // Store annotations by version
   loading: boolean
   error: string | null
+}
+
+export interface EditorRecord {
+  id: string // documentId
+  documentId: string
+  currentVersionId: string | null
+  isEditing: boolean
+  selectedAnnotations: string[]
+  viewport: EditorViewport
+  activeTool: EditorTool
+  sidebarOpen: boolean
+  lastSaved?: string
+  hasUnsavedChanges: boolean
+  currentPage: number
+  totalPages: number
+  searchQuery: string
+  searchResults: SearchResult[]
+  currentSearchIndex: number
+  history: any[]
+  historyIndex: number
+  isDiffMode: boolean
+  compareVersionIds: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface VersionEditorRecord {
+  id: string // versionId
+  versionId: string
+  annotations: Annotation[]
+  createdAt: string
+  updatedAt: string
 }
 
 export interface SearchResult {

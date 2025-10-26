@@ -4,17 +4,24 @@ import {ArrowLeft, GitCompare} from "lucide-react"
 import React from "react"
 
 import {Button} from "@/components/ui/button"
-import {useGetVersionsByDocumentQuery} from "@/lib/store/api"
-import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {selectEditorState} from "@/lib/store/selectors"
-import {setCompareVersions, toggleDiffMode} from "@/lib/store/slices"
+import {useGetDocumentEditorQuery, useGetVersionsByDocumentQuery, useSaveDocumentEditorMutation} from "@/lib/store/api"
 import type {AnnotationDiff} from "@/lib/types"
 import {loadAnnotationsFromVersion} from "@/lib/utils/xfdf"
 
-export function DiffView() {
-  const dispatch = useAppDispatch()
-  const {documentId, compareVersionIds} = useAppSelector(selectEditorState)
-  const {data: versions = []} = useGetVersionsByDocumentQuery(documentId || "", {
+interface DiffViewProps {
+  documentId: string
+}
+
+export function DiffView({documentId}: DiffViewProps) {
+  const [saveDocumentEditor] = useSaveDocumentEditorMutation()
+
+  // Get editor state from API
+  const {data: editor} = useGetDocumentEditorQuery(documentId, {
+    skip: !documentId,
+  })
+  const compareVersionIds = editor?.compareVersionIds || []
+
+  const {data: versions = []} = useGetVersionsByDocumentQuery(documentId, {
     skip: !documentId,
   })
   const [diffs, setDiffs] = React.useState<AnnotationDiff[]>([])
@@ -72,9 +79,21 @@ export function DiffView() {
     return version?.versionNumber.toString()
   }
 
-  const handleExitDiff = () => {
-    dispatch(toggleDiffMode(documentId))
-    dispatch(setCompareVersions({documentId, versionIds: []}))
+  const handleExitDiff = async () => {
+    if (!editor || !documentId) return
+
+    // Update editor state to exit diff mode
+    const updatedEditor = {
+      ...editor,
+      isDiffMode: false,
+      compareVersionIds: [],
+    }
+
+    try {
+      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
+    } catch (error) {
+      console.error("Failed to exit diff mode:", error)
+    }
   }
 
   return (

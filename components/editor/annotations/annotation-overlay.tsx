@@ -2,9 +2,7 @@
 
 import React from "react"
 
-import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {selectAnnotations, selectEditorState} from "@/lib/store/selectors/editor"
-import {updateAnnotation} from "@/lib/store/slices/editor"
+import {useGetAnnotationsByVersionQuery, useGetDocumentEditorQuery, useUpdateAnnotationMutation} from "@/lib/store/api"
 import type {Annotation} from "@/lib/types"
 
 import {AnnotationHighlight} from "./annotation-highlight"
@@ -15,16 +13,23 @@ interface AnnotationOverlayProps {
   scale: number
   pageWidth: number
   pageHeight: number
+  documentId: string
 }
 
-export function AnnotationOverlay({scale}: AnnotationOverlayProps) {
-  const dispatch = useAppDispatch()
-  const annotations = useAppSelector(selectAnnotations)
-  const {currentPage, documentId, activeTool, currentVersionId} = useAppSelector(selectEditorState)
+export function AnnotationOverlay({scale, documentId}: AnnotationOverlayProps) {
+  const {data: editor} = useGetDocumentEditorQuery(documentId, {skip: !documentId})
+  const currentVersionId = editor?.currentVersionId || null
+  const activeTool = editor?.activeTool || {type: "select"}
+  const currentPage = editor?.currentPage || 1
+  const [updateAnnotation] = useUpdateAnnotationMutation()
+
+  const {data: annotations = []} = useGetAnnotationsByVersionQuery(currentVersionId || "", {
+    skip: !currentVersionId,
+  })
 
   // Filter annotations for current page
   const pageAnnotations = React.useMemo(
-    () => annotations?.filter(annotation => annotation.pageNumber === currentPage) || [],
+    () => annotations.filter(annotation => annotation.pageNumber === currentPage) || [],
     [annotations, currentPage],
   )
 
@@ -32,12 +37,14 @@ export function AnnotationOverlay({scale}: AnnotationOverlayProps) {
   const isSelectToolActive = activeTool.type === "select"
 
   const handleUpdateAnnotation = React.useCallback(
-    (annotation: Annotation) => {
-      if (documentId && currentVersionId) {
-        dispatch(updateAnnotation({documentId, versionId: currentVersionId, id: annotation.id, updates: annotation}))
+    async (annotation: Annotation) => {
+      try {
+        await updateAnnotation({id: annotation.id, updates: annotation}).unwrap()
+      } catch (error) {
+        console.error("Failed to update annotation:", error)
       }
     },
-    [dispatch, documentId, currentVersionId],
+    [updateAnnotation],
   )
 
   if (pageAnnotations.length === 0) {

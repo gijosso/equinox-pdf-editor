@@ -3,10 +3,7 @@
 import {Loader2} from "lucide-react"
 import React from "react"
 
-import {useGetDocumentQuery} from "@/lib/store/api"
-import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {selectEditorState} from "@/lib/store/selectors"
-import {openDocument, setCurrentVersion} from "@/lib/store/slices/editor"
+import {useGetDocumentEditorQuery, useGetDocumentQuery, useSaveDocumentEditorMutation} from "@/lib/store/api"
 
 import {ErrorBoundaryWithSuspense} from "../error-boundary"
 import {EditorLoading} from "../loading"
@@ -20,16 +17,45 @@ interface EditorPageProps {
 }
 
 export function EditorPage({documentId}: EditorPageProps) {
-  const dispatch = useAppDispatch()
+  const [saveDocumentEditor] = useSaveDocumentEditorMutation()
   const {data: documentMetadata, isLoading, error} = useGetDocumentQuery(documentId, {skip: !documentId})
+  const {data: editor} = useGetDocumentEditorQuery(documentId, {skip: !documentId})
 
   React.useEffect(() => {
-    dispatch(openDocument(documentId))
-    // Set current version when document is loaded
-    if (documentMetadata?.currentVersionId) {
-      dispatch(setCurrentVersion({documentId, versionId: documentMetadata.currentVersionId}))
+    // Initialize editor state when document is loaded
+    if (documentMetadata && !editor) {
+      const initialEditor = {
+        documentId,
+        currentVersionId: documentMetadata.currentVersionId,
+        isEditing: false,
+        selectedAnnotations: [],
+        viewport: {x: 0, y: 0, zoom: 1},
+        activeTool: {type: "select" as const},
+        sidebarOpen: true,
+        hasUnsavedChanges: false,
+        currentPage: 1,
+        totalPages: 1,
+        searchQuery: "",
+        searchResults: [],
+        currentSearchIndex: 0,
+        history: [],
+        historyIndex: 0,
+        isDiffMode: false,
+        compareVersionIds: [],
+      }
+
+      saveDocumentEditor({documentId, editor: initialEditor})
     }
-  }, [dispatch, documentId, documentMetadata?.currentVersionId])
+
+    // Update current version when document metadata changes
+    if (documentMetadata && editor && editor.currentVersionId !== documentMetadata.currentVersionId) {
+      const updatedEditor = {
+        ...editor,
+        currentVersionId: documentMetadata.currentVersionId,
+      }
+      saveDocumentEditor({documentId, editor: updatedEditor})
+    }
+  }, [documentId, documentMetadata, editor, saveDocumentEditor])
 
   if (isLoading) {
     return (
@@ -54,22 +80,30 @@ export function EditorPage({documentId}: EditorPageProps) {
 
   return (
     <ErrorBoundaryWithSuspense suspenseFallback={<EditorLoading />}>
-      <Editor />
+      <Editor documentId={documentId} />
     </ErrorBoundaryWithSuspense>
   )
 }
 
-export function Editor() {
-  const {documentId, sidebarOpen} = useAppSelector(selectEditorState)
+interface EditorProps {
+  documentId: string
+}
+
+export function Editor({documentId}: EditorProps) {
+  const {data: editor} = useGetDocumentEditorQuery(documentId, {
+    skip: !documentId,
+  })
+
+  const sidebarOpen = editor?.sidebarOpen || false
 
   return (
     <div className="flex h-screen flex-col bg-background">
-      <EditorHeader />
-      <Toolbar />
+      <EditorHeader documentId={documentId} />
+      <Toolbar documentId={documentId} />
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 min-w-0 transition-all duration-300 ease-in-out">
           {documentId ? (
-            <PDFViewer />
+            <PDFViewer documentId={documentId} />
           ) : (
             <div className="flex h-full items-center justify-center">
               <div className="text-center">
@@ -84,7 +118,7 @@ export function Editor() {
           } overflow-hidden shrink-0`}
         >
           <div className={`h-full w-80 transition-opacity duration-200 ${sidebarOpen ? "opacity-100" : "opacity-0"}`}>
-            <Sidebar />
+            <Sidebar documentId={documentId} />
           </div>
         </div>
       </div>

@@ -3,13 +3,35 @@
 import {ChevronLeft, ChevronRight} from "lucide-react"
 
 import {Button} from "@/components/ui/button"
-import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {selectEditorState} from "@/lib/store/selectors"
-import {setCurrentPage} from "@/lib/store/slices/editor"
+import {useGetDocumentEditorQuery, useSaveDocumentEditorMutation} from "@/lib/store/api"
 
-export function ToolbarPage() {
-  const dispatch = useAppDispatch()
-  const {documentId, currentPage, totalPages} = useAppSelector(selectEditorState)
+interface ToolbarPageProps {
+  documentId: string
+}
+
+export function ToolbarPage({documentId}: ToolbarPageProps) {
+  const [saveDocumentEditor] = useSaveDocumentEditorMutation()
+  const {data: editor} = useGetDocumentEditorQuery(documentId, {
+    skip: !documentId,
+  })
+
+  const currentPage = editor?.currentPage || 1
+  const totalPages = editor?.totalPages || 1
+
+  const handlePageChange = async (newPage: number) => {
+    if (!editor || !documentId) return
+
+    const updatedEditor = {
+      ...editor,
+      currentPage: newPage,
+    }
+
+    try {
+      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
+    } catch (error) {
+      console.error("Failed to change page:", error)
+    }
+  }
 
   return (
     <div className="">
@@ -17,15 +39,8 @@ export function ToolbarPage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() =>
-            dispatch(
-              setCurrentPage({
-                documentId,
-                page: Math.max(1, (currentPage || 1) - 1),
-              }),
-            )
-          }
-          disabled={(currentPage && currentPage <= 1) || false}
+          onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+          disabled={currentPage <= 1}
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -35,15 +50,8 @@ export function ToolbarPage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() =>
-            dispatch(
-              setCurrentPage({
-                documentId,
-                page: Math.min(totalPages || 0, (currentPage || 0) + 1),
-              }),
-            )
-          }
-          disabled={(currentPage && currentPage >= (totalPages || 0)) || false}
+          onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+          disabled={currentPage >= totalPages}
         >
           <ChevronRight className="h-4 w-4" />
         </Button>

@@ -6,27 +6,60 @@ import {useState} from "react"
 import {Button} from "@/components/ui/button"
 import {Input} from "@/components/ui/input"
 import {usePDFSearch} from "@/hooks/use-pdf-search"
-import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {selectEditorState} from "@/lib/store/selectors"
-import {setSearchQuery} from "@/lib/store/slices/editor"
+import {useGetDocumentEditorQuery, useSaveDocumentEditorMutation} from "@/lib/store/api"
 
-export function ToolbarSearch() {
-  const dispatch = useAppDispatch()
-  const {documentId, searchResults, currentSearchIndex} = useAppSelector(selectEditorState)
+interface ToolbarSearchProps {
+  documentId: string
+}
+
+export function ToolbarSearch({documentId}: ToolbarSearchProps) {
+  const [saveDocumentEditor] = useSaveDocumentEditorMutation()
+  const {data: editor} = useGetDocumentEditorQuery(documentId, {
+    skip: !documentId,
+  })
+
+  const searchResults = editor?.searchResults || []
+  const currentSearchIndex = editor?.currentSearchIndex || 0
   const [localSearchQuery, setLocalSearchQuery] = useState("")
 
-  const {isSearching, clearSearch, goToNextResult, goToPreviousResult} = usePDFSearch()
+  const {isSearching, clearSearch, goToNextResult, goToPreviousResult} = usePDFSearch(documentId)
 
-  const handleClear = () => {
+  const handleClear = async () => {
     setLocalSearchQuery("")
     clearSearch()
-    dispatch(setSearchQuery({documentId, query: ""}))
+
+    if (!editor || !documentId) return
+
+    const updatedEditor = {
+      ...editor,
+      searchQuery: "",
+      searchResults: [],
+      currentSearchIndex: 0,
+    }
+
+    try {
+      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
+    } catch (error) {
+      console.error("Failed to clear search:", error)
+    }
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setLocalSearchQuery(value)
-    dispatch(setSearchQuery({documentId, query: value}))
+
+    if (!editor || !documentId) return
+
+    const updatedEditor = {
+      ...editor,
+      searchQuery: value,
+    }
+
+    try {
+      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
+    } catch (error) {
+      console.error("Failed to update search query:", error)
+    }
   }
 
   return (

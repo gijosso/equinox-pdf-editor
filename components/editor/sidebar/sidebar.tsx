@@ -3,7 +3,11 @@
 import {LazyAnnotations, LazyEditHistory} from "@/components/lazy"
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs"
 
-export function Sidebar() {
+interface SidebarProps {
+  documentId: string
+}
+
+export function Sidebar({documentId}: SidebarProps) {
   return (
     <Tabs defaultValue="annotations" className="flex h-full flex-col" data-sidebar>
       <div className="border-b border-border p-4">
@@ -18,11 +22,11 @@ export function Sidebar() {
       </div>
 
       <TabsContent value="annotations" className="mt-0 flex-1 overflow-hidden">
-        <LazyAnnotations />
+        <LazyAnnotations documentId={documentId} />
       </TabsContent>
 
       <TabsContent value="history" className="mt-0 flex-1 overflow-hidden">
-        <LazyEditHistory />
+        <LazyEditHistory documentId={documentId} />
       </TabsContent>
     </Tabs>
   )

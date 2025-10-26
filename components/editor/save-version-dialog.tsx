@@ -8,20 +8,28 @@ import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} fro
 import {Label} from "@/components/ui/label"
 import {Textarea} from "@/components/ui/textarea"
 import {useToast} from "@/hooks/use-toast"
-import {useUpdateDocumentWithVersionMutation} from "@/lib/store/api"
-import {useAppSelector} from "@/lib/store/hooks"
-import {selectAnnotations, selectEditorState} from "@/lib/store/selectors"
+import {
+  useGetAnnotationsByVersionQuery,
+  useGetDocumentEditorQuery,
+  useUpdateDocumentWithVersionMutation,
+} from "@/lib/store/api"
 import {saveVersion} from "@/lib/utils/version"
 
 interface SaveVersionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onVersionSaved?: () => void
+  documentId: string
 }
 
-export function SaveVersionDialog({open, onOpenChange, onVersionSaved}: SaveVersionDialogProps) {
-  const annotations = useAppSelector(selectAnnotations)
-  const {documentId, currentPage} = useAppSelector(selectEditorState)
+export function SaveVersionDialog({open, onOpenChange, onVersionSaved, documentId}: SaveVersionDialogProps) {
+  const {data: editor} = useGetDocumentEditorQuery(documentId, {skip: !documentId})
+  const currentVersionId = editor?.currentVersionId || null
+
+  const {data: annotations = []} = useGetAnnotationsByVersionQuery(currentVersionId || "", {
+    skip: !currentVersionId,
+  })
+
   const [updateDocumentWithVersion, {isLoading: saving}] = useUpdateDocumentWithVersionMutation()
   const [message, setMessage] = React.useState("")
   const {toast} = useToast()
@@ -81,7 +89,6 @@ export function SaveVersionDialog({open, onOpenChange, onVersionSaved}: SaveVers
               <p>This version will include:</p>
               <ul className="mt-1 list-disc list-inside">
                 <li>{annotations.length} annotations</li>
-                <li>Current page: {currentPage}</li>
               </ul>
             </div>
           </div>

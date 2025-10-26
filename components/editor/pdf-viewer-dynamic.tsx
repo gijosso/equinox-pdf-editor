@@ -1,6 +1,11 @@
 "use client"
 
 import dynamic from "next/dynamic"
+import React from "react"
+
+interface PDFViewerProps {
+  documentId: string
+}
 
 // Dynamically import the PDF viewer to avoid SSR issues
 const PDFViewerInternal = dynamic(() => import("./pdf-viewer").then(mod => ({default: mod.PDFViewer})), {
@@ -13,8 +18,8 @@ const PDFViewerInternal = dynamic(() => import("./pdf-viewer").then(mod => ({def
       </div>
     </div>
   ),
-})
+}) as React.ComponentType<PDFViewerProps>
 
-export function PDFViewer() {
-  return <PDFViewerInternal />
+export function PDFViewer({documentId}: PDFViewerProps) {
+  return <PDFViewerInternal documentId={documentId} />
 }

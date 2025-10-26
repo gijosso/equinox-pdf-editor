@@ -4,13 +4,18 @@ import React from "react"
 import "react-pdf/dist/Page/AnnotationLayer.css"
 import "react-pdf/dist/Page/TextLayer.css"
 
-import {useAppSelector} from "@/lib/store/hooks"
-import {selectCurrentPage, selectCurrentSearchIndex, selectSearchResults} from "@/lib/store/selectors/editor"
+import {useGetDocumentEditorQuery} from "@/lib/store/api"
 
-export function SearchHighlightOverlay({scale}: {scale: number}) {
-  const searchResults = useAppSelector(selectSearchResults)
-  const currentSearchIndex = useAppSelector(selectCurrentSearchIndex)
-  const currentPage = useAppSelector(selectCurrentPage)
+interface SearchHighlightOverlayProps {
+  scale: number
+  documentId: string
+}
+
+export function SearchHighlightOverlay({scale, documentId}: SearchHighlightOverlayProps) {
+  const {data: editor} = useGetDocumentEditorQuery(documentId, {skip: !documentId})
+  const searchResults = editor?.searchResults || []
+  const currentSearchIndex = editor?.currentSearchIndex || 0
+  const currentPage = editor?.currentPage || 1
 
   // TODO: properly wait for text layer rendering
   React.useEffect(() => {

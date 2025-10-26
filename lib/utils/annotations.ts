@@ -7,6 +7,7 @@ import type {Annotation, AnnotationType} from "@/lib/types"
 import type {XFDFAnnotation} from "./xfdf"
 
 export interface AnnotationCreationOptions {
+  versionId: string // Required: the version this annotation belongs to
   pageNumber: number
   x: number
   y: number
@@ -29,6 +30,7 @@ export function createHighlightAnnotation(options: AnnotationCreationOptions): A
 
   return {
     id,
+    versionId: options.versionId,
     type: "highlight",
     xfdfType: "highlight",
     pageNumber: options.pageNumber,
@@ -64,6 +66,7 @@ export function createNoteAnnotation(options: AnnotationCreationOptions): Annota
 
   return {
     id,
+    versionId: options.versionId,
     type: "note",
     xfdfType: "text",
     pageNumber: options.pageNumber,
@@ -88,6 +91,7 @@ export function createRedactionAnnotation(options: AnnotationCreationOptions): A
 
   return {
     id,
+    versionId: options.versionId,
     type: "redaction",
     xfdfType: "redaction",
     pageNumber: options.pageNumber,
@@ -201,7 +205,10 @@ export function annotationToXFDF(annotation: Annotation): string {
 /**
  * Parse XFDF annotation back to Annotation object
  */
-export function convertXFDFAnnotationsToAnnotations(xfdfAnnotations: XFDFAnnotation[]): Annotation[] {
+export function convertXFDFAnnotationsToAnnotations(
+  xfdfAnnotations: XFDFAnnotation[],
+  versionId: string,
+): Annotation[] {
   return xfdfAnnotations.map(xfdfAnnotation => {
     // Map XFDF type to our annotation type
     let annotationType: AnnotationType
@@ -222,6 +229,7 @@ export function convertXFDFAnnotationsToAnnotations(xfdfAnnotations: XFDFAnnotat
 
     return {
       id: xfdfAnnotation.id,
+      versionId: versionId,
       type: annotationType,
       pageNumber: xfdfAnnotation.pageNumber,
       x: xfdfAnnotation.x,
@@ -239,7 +247,7 @@ export function convertXFDFAnnotationsToAnnotations(xfdfAnnotations: XFDFAnnotat
   })
 }
 
-export function parseXFDFAnnotation(xfdfElement: Element): Annotation | null {
+export function parseXFDFAnnotation(xfdfElement: Element, versionId: string): Annotation | null {
   try {
     const id = xfdfElement.getAttribute("id")
     const xfdfType = xfdfElement.getAttribute("type") as "highlight" | "text" | "redaction"
@@ -279,6 +287,7 @@ export function parseXFDFAnnotation(xfdfElement: Element): Annotation | null {
 
     return {
       id,
+      versionId: versionId,
       type: annotationType,
       xfdfType,
       pageNumber,

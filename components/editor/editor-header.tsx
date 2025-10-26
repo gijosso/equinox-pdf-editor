@@ -6,28 +6,59 @@ import React from "react"
 
 import {Button} from "@/components/ui/button"
 import {usePDFBlob} from "@/hooks/use-pdf-blob"
-import {useGetDocumentQuery, useGetVersionsByDocumentQuery} from "@/lib/store/api"
-import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {selectAnnotations, selectEditorState} from "@/lib/store/selectors"
-import {toggleSidebar} from "@/lib/store/slices"
+import {
+  useGetAnnotationsByVersionQuery,
+  useGetDocumentEditorQuery,
+  useGetDocumentQuery,
+  useGetVersionsByDocumentQuery,
+  useSaveDocumentEditorMutation,
+} from "@/lib/store/api"
 
 import {SaveVersionDialog} from "./save-version-dialog"
 import {VersionHistoryDialog} from "./version-history-dialog"
 
-export function EditorHeader() {
+interface EditorHeaderProps {
+  documentId: string
+}
+
+export function EditorHeader({documentId}: EditorHeaderProps) {
   const router = useRouter()
-  const dispatch = useAppDispatch()
-  const annotations = useAppSelector(selectAnnotations)
-  const {documentId, sidebarOpen} = useAppSelector(selectEditorState)
-  const {data: documentMetadata} = useGetDocumentQuery(documentId || "", {skip: !documentId})
-  const {data: versions = []} = useGetVersionsByDocumentQuery(documentId || "", {skip: !documentId})
-  const {refreshBlob} = usePDFBlob()
+  const [saveDocumentEditor] = useSaveDocumentEditorMutation()
+
+  // Get editor state from API
+  const {data: editor} = useGetDocumentEditorQuery(documentId, {
+    skip: !documentId,
+  })
+  const currentVersionId = editor?.currentVersionId || null
+  const sidebarOpen = editor?.sidebarOpen || false
+
+  const {data: annotations = []} = useGetAnnotationsByVersionQuery(currentVersionId || "", {
+    skip: !currentVersionId,
+  })
+  const {data: documentMetadata} = useGetDocumentQuery(documentId, {skip: !documentId})
+  const {data: versions = []} = useGetVersionsByDocumentQuery(documentId, {skip: !documentId})
+  const {refreshBlob} = usePDFBlob(documentId)
 
   // Find current version number
   const currentVersion = versions.find(v => v.id === documentMetadata?.currentVersionId)
   const versionNumber = currentVersion?.versionNumber
   const [showSaveDialog, setShowSaveDialog] = React.useState(false)
   const [showHistoryDialog, setShowHistoryDialog] = React.useState(false)
+
+  const handleToggleSidebar = async () => {
+    if (!editor || !documentId) return
+
+    const updatedEditor = {
+      ...editor,
+      sidebarOpen: !editor.sidebarOpen,
+    }
+
+    try {
+      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
+    } catch (error) {
+      console.error("Failed to toggle sidebar:", error)
+    }
+  }
 
   return (
     <>
@@ -56,14 +87,19 @@ export function EditorHeader() {
             <Save className="mr-2 h-4 w-4" />
             Save Version
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => documentId && dispatch(toggleSidebar(documentId))}>
+          <Button variant="ghost" size="icon" onClick={handleToggleSidebar}>
             <PanelRight className={`h-5 w-5 ${sidebarOpen ? "text-primary" : ""}`} />
           </Button>
         </div>
       </header>
 
-      <SaveVersionDialog open={showSaveDialog} onOpenChange={setShowSaveDialog} onVersionSaved={refreshBlob} />
-      <VersionHistoryDialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog} />
+      <SaveVersionDialog
+        open={showSaveDialog}
+        onOpenChange={setShowSaveDialog}
+        onVersionSaved={refreshBlob}
+        documentId={documentId}
+      />
+      <VersionHistoryDialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog} documentId={documentId} />
     </>
   )
 }

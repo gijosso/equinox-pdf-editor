@@ -1,7 +1,9 @@
-import type {PDFDocument, PDFVersion} from "../types"
+import type {Annotation, DocumentEditor, PDFDocument, PDFVersion, VersionEditor} from "../types"
+import {annotationService} from "./annotations"
 import {db} from "./database"
 import {DatabaseError, DocumentNotFoundError, type Result} from "./documents"
 import {documentService} from "./documents"
+import {editorService} from "./editor"
 import {versionService} from "./versions"
 
 export const atomicService = {
@@ -191,6 +193,175 @@ export const atomicService = {
             ? error
             : new DatabaseError(
                 `Failed to get current version blob: ${error instanceof Error ? error.message : "Unknown error"}`,
+              ),
+      }
+    }
+  },
+
+  /**
+   * Add annotations to a version atomically
+   */
+  async addAnnotationsToVersion(versionId: string, annotations: Annotation[]): Promise<Result<void, DatabaseError>> {
+    try {
+      return await db.transaction("rw", [db.annotations], async () => {
+        for (const annotation of annotations) {
+          const result = await annotationService.addAnnotation(annotation)
+          if (!result.success) {
+            throw result.error
+          }
+        }
+        return {success: true, data: undefined}
+      })
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof DatabaseError
+            ? error
+            : new DatabaseError(
+                `Failed to add annotations to version: ${error instanceof Error ? error.message : "Unknown error"}`,
+              ),
+      }
+    }
+  },
+
+  /**
+   * Update annotations for a version atomically (replace all)
+   */
+  async updateVersionAnnotations(versionId: string, annotations: Annotation[]): Promise<Result<void, DatabaseError>> {
+    try {
+      return await db.transaction("rw", [db.annotations], async () => {
+        // Delete existing annotations
+        const deleteResult = await annotationService.deleteAnnotationsByVersion(versionId)
+        if (!deleteResult.success) {
+          throw deleteResult.error
+        }
+
+        // Add new annotations
+        for (const annotation of annotations) {
+          const result = await annotationService.addAnnotation(annotation)
+          if (!result.success) {
+            throw result.error
+          }
+        }
+        return {success: true, data: undefined}
+      })
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof DatabaseError
+            ? error
+            : new DatabaseError(
+                `Failed to update version annotations: ${error instanceof Error ? error.message : "Unknown error"}`,
+              ),
+      }
+    }
+  },
+
+  /**
+   * Save document editor atomically
+   */
+  async saveDocumentEditor(documentId: string, editor: DocumentEditor): Promise<Result<void, DatabaseError>> {
+    try {
+      return await db.transaction("rw", [db.editorStates], async (): Promise<Result<void, DatabaseError>> => {
+        const result = await editorService.saveDocumentEditor(documentId, editor)
+        if (!result.success) {
+          return result
+        }
+        return {success: true, data: undefined}
+      })
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof DatabaseError
+            ? error
+            : new DatabaseError(
+                `Failed to save document editor: ${error instanceof Error ? error.message : "Unknown error"}`,
+              ),
+      }
+    }
+  },
+
+  /**
+   * Save version editor atomically
+   */
+  async saveVersionEditor(versionId: string, editor: VersionEditor): Promise<Result<void, DatabaseError>> {
+    try {
+      return await db.transaction("rw", [db.versionEditorStates], async (): Promise<Result<void, DatabaseError>> => {
+        const result = await editorService.saveVersionEditor(versionId, editor)
+        if (!result.success) {
+          return result
+        }
+        return {success: true, data: undefined}
+      })
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof DatabaseError
+            ? error
+            : new DatabaseError(
+                `Failed to save version editor: ${error instanceof Error ? error.message : "Unknown error"}`,
+              ),
+      }
+    }
+  },
+
+  /**
+   * Load complete editor for a document
+   */
+  async loadDocumentEditor(documentId: string): Promise<Result<DocumentEditor | undefined, DatabaseError>> {
+    try {
+      return await db.transaction(
+        "r",
+        [db.editorStates],
+        async (): Promise<Result<DocumentEditor | undefined, DatabaseError>> => {
+          const result = await editorService.loadDocumentEditor(documentId)
+          if (!result.success) {
+            return result
+          }
+          return {success: true, data: result.data}
+        },
+      )
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof DatabaseError
+            ? error
+            : new DatabaseError(
+                `Failed to load document editor: ${error instanceof Error ? error.message : "Unknown error"}`,
+              ),
+      }
+    }
+  },
+
+  /**
+   * Load version editor
+   */
+  async loadVersionEditor(versionId: string): Promise<Result<VersionEditor | undefined, DatabaseError>> {
+    try {
+      return await db.transaction(
+        "r",
+        [db.versionEditorStates],
+        async (): Promise<Result<VersionEditor | undefined, DatabaseError>> => {
+          const result = await editorService.loadVersionEditor(versionId)
+          if (!result.success) {
+            return result
+          }
+          return {success: true, data: result.data}
+        },
+      )
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof DatabaseError
+            ? error
+            : new DatabaseError(
+                `Failed to load version editor: ${error instanceof Error ? error.message : "Unknown error"}`,
               ),
       }
     }

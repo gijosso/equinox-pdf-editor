@@ -7,20 +7,58 @@ import "react-pdf/dist/Page/TextLayer.css"
 
 import {LazySearchHighlights} from "@/components/lazy"
 import {usePDFBlob} from "@/hooks/use-pdf-blob"
-import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {selectEditorState} from "@/lib/store/selectors/editor"
-import {setCurrentPage, setTotalPages} from "@/lib/store/slices/editor"
+import {useGetDocumentEditorQuery, useSaveDocumentEditorMutation} from "@/lib/store/api"
 
 import {AnnotationCreator} from "./annotations/annotation-creator"
 import {AnnotationOverlay} from "./annotations/annotation-overlay"
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
 
-export function PDFViewer() {
-  const dispatch = useAppDispatch()
-  const {documentId, currentPage, viewport} = useAppSelector(selectEditorState)
-  const {blob, blobUrl, loading, error} = usePDFBlob()
+interface PDFViewerProps {
+  documentId: string
+}
+
+export function PDFViewer({documentId}: PDFViewerProps) {
+  const [saveDocumentEditor] = useSaveDocumentEditorMutation()
+  const {data: editor} = useGetDocumentEditorQuery(documentId, {
+    skip: !documentId,
+  })
+
+  const currentPage = editor?.currentPage || 1
+  const totalPages = editor?.totalPages || 1
+  const viewport = editor?.viewport || {x: 0, y: 0, zoom: 1}
+  const {blob, blobUrl, loading, error} = usePDFBlob(documentId)
   const [pageDimensions, setPageDimensions] = React.useState<{width: number; height: number} | null>(null)
+
+  const handleSetCurrentPage = async (page: number) => {
+    if (!editor || !documentId) return
+
+    const updatedEditor = {
+      ...editor,
+      currentPage: page,
+    }
+
+    try {
+      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
+    } catch (error) {
+      console.error("Failed to set current page:", error)
+    }
+  }
+
+  const handleSetTotalPages = async (pages: number) => {
+    if (!editor || !documentId) return
+
+    const updatedEditor = {
+      ...editor,
+      totalPages: pages,
+    }
+
+    try {
+      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
+    } catch (error) {
+      console.error("Failed to set total pages:", error)
+    }
+  }
 
   if (loading) {
     return (
@@ -61,7 +99,7 @@ export function PDFViewer() {
           <div className="relative">
             <Document
               file={blobUrl}
-              onLoadSuccess={({numPages}) => dispatch(setTotalPages({documentId, totalPages: numPages}))}
+              onLoadSuccess={({numPages}) => handleSetTotalPages(numPages)}
               onLoadError={error => console.error("PDF load error:", error)}
               className="shadow-lg"
             >
@@ -69,6 +107,7 @@ export function PDFViewer() {
                 scale={viewport.zoom}
                 pageWidth={pageDimensions?.width || 0}
                 pageHeight={pageDimensions?.height || 0}
+                documentId={documentId}
               >
                 <div className="relative">
                   <Page
@@ -85,13 +124,14 @@ export function PDFViewer() {
                     }}
                   />
 
-                  <LazySearchHighlights scale={viewport.zoom} />
+                  <LazySearchHighlights scale={viewport.zoom} documentId={documentId} />
 
                   {pageDimensions && (
                     <AnnotationOverlay
                       scale={viewport.zoom}
                       pageWidth={pageDimensions.width}
                       pageHeight={pageDimensions.height}
+                      documentId={documentId}
                     />
                   )}
                 </div>

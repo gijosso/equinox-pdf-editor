@@ -5,13 +5,20 @@ import {Edit, History, Plus, RotateCcw, Trash2} from "lucide-react"
 
 import {Button} from "@/components/ui/button"
 import {ScrollArea} from "@/components/ui/scroll-area"
-import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {selectEditorState} from "@/lib/store/selectors"
-import {jumpToHistory} from "@/lib/store/slices"
+import {useGetDocumentEditorQuery, useSaveDocumentEditorMutation} from "@/lib/store/api"
 
-export function SidebarEditHistory() {
-  const dispatch = useAppDispatch()
-  const {documentId, history, historyIndex} = useAppSelector(selectEditorState)
+interface SidebarEditHistoryProps {
+  documentId: string
+}
+
+export function SidebarEditHistory({documentId}: SidebarEditHistoryProps) {
+  const [saveDocumentEditor] = useSaveDocumentEditorMutation()
+  const {data: editor} = useGetDocumentEditorQuery(documentId, {
+    skip: !documentId,
+  })
+
+  const history = editor?.history || []
+  const historyIndex = editor?.historyIndex || 0
 
   const getActionIcon = (action: string) => {
     switch (action) {
@@ -39,6 +46,21 @@ export function SidebarEditHistory() {
     }
   }
 
+  const handleJumpToHistory = async (index: number) => {
+    if (!editor || !documentId) return
+
+    const updatedEditor = {
+      ...editor,
+      historyIndex: index,
+    }
+
+    try {
+      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
+    } catch (error) {
+      console.error("Failed to jump to history:", error)
+    }
+  }
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center border-b border-border h-18 p-4">
@@ -53,7 +75,7 @@ export function SidebarEditHistory() {
           </div>
         ) : (
           <div className="space-y-1 p-4">
-            {history.map((entry, index) => {
+            {history.map((entry: any, index: number) => {
               const annotation = entry.state.annotations[entry.state.annotations.length - 1]
               const highlightedText = annotation?.type === "highlight" && annotation.text ? annotation.text : null
 
@@ -89,7 +111,7 @@ export function SidebarEditHistory() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => dispatch(jumpToHistory({documentId, index}))}
+                        onClick={() => handleJumpToHistory(index)}
                         className="h-7 gap-1 px-2"
                       >
                         <RotateCcw className="h-3 w-3" />

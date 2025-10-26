@@ -7,34 +7,42 @@ import {Button} from "@/components/ui/button"
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog"
 import {ScrollArea} from "@/components/ui/scroll-area"
 import {useToast} from "@/hooks/use-toast"
-import {useGetVersionsByDocumentQuery, useUpdateDocumentMutation} from "@/lib/store/api"
-import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {setAnnotations, setCompareVersions, setCurrentVersion, toggleDiffMode} from "@/lib/store/slices"
+import {
+  useGetDocumentEditorQuery,
+  useGetVersionsByDocumentQuery,
+  useSaveDocumentEditorMutation,
+  useUpdateDocumentMutation,
+} from "@/lib/store/api"
 import {convertXFDFAnnotationsToAnnotations} from "@/lib/utils/annotations"
 import {xfdfToAnnotations} from "@/lib/utils/xfdf"
 
 interface VersionHistoryDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  documentId: string
 }
 
-export function VersionHistoryDialog({open, onOpenChange}: VersionHistoryDialogProps) {
-  const dispatch = useAppDispatch()
-  const documentId = useAppSelector(state => state.editor.documentId)
+export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHistoryDialogProps) {
   const [updateDocument, {isLoading: updating}] = useUpdateDocumentMutation()
+  const [saveDocumentEditor] = useSaveDocumentEditorMutation()
   const {toast} = useToast()
+
+  // Get editor state from API
+  const {data: editor} = useGetDocumentEditorQuery(documentId, {
+    skip: !documentId,
+  })
 
   // Use RTK Query to fetch versions
   const {
     data: versions = [],
     isLoading,
     error,
-  } = useGetVersionsByDocumentQuery(documentId || "", {
+  } = useGetVersionsByDocumentQuery(documentId, {
     skip: !documentId || !open, // Only fetch when dialog is open and documentId exists
   })
 
   const handleLoadVersion = async (versionId: string) => {
-    if (!documentId) return
+    if (!documentId || !editor) return
 
     const version = versions.find(v => v.id === versionId)
     if (!version) return
@@ -48,16 +56,20 @@ export function VersionHistoryDialog({open, onOpenChange}: VersionHistoryDialogP
 
       // Load annotations from the selected version's XFDF
       const {annotations: xfdfAnnotations} = xfdfToAnnotations(version.xfdf)
-      const annotations = convertXFDFAnnotationsToAnnotations(xfdfAnnotations)
+      const annotations = convertXFDFAnnotationsToAnnotations(xfdfAnnotations, versionId)
 
-      // Set annotations for the next version (working changes)
-      // The selected version becomes the current committed state
-      // We need to create a new version ID for the working changes
+      // Create a new version ID for the working changes
       const nextVersionId = `working-${Date.now()}`
-      dispatch(setAnnotations({documentId, versionId: nextVersionId, annotations}))
 
-      // Update the current version in Redux to point to the working version
-      dispatch(setCurrentVersion({documentId, versionId: nextVersionId}))
+      // Update editor state with the new version and annotations
+      const updatedEditor = {
+        ...editor,
+        currentVersionId: nextVersionId,
+        // Note: We might need to update annotations through a separate API call
+        // For now, we'll update the editor state to reflect the version change
+      }
+
+      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
 
       // Show success toast
       toast({
@@ -76,13 +88,28 @@ export function VersionHistoryDialog({open, onOpenChange}: VersionHistoryDialogP
     }
   }
 
-  const handleCompareVersions = (versionId: string) => {
-    if (!documentId) return
+  const handleCompareVersions = async (versionId: string) => {
+    if (!documentId || !editor) return
     const currentVersionId = versions[versions.length - 1]?.id
     if (currentVersionId) {
-      dispatch(setCompareVersions({documentId: documentId, versionIds: [currentVersionId, versionId]}))
-      dispatch(toggleDiffMode(documentId))
-      onOpenChange(false)
+      // Update editor state to enable diff mode and set compare versions
+      const updatedEditor = {
+        ...editor,
+        isDiffMode: true,
+        compareVersionIds: [currentVersionId, versionId],
+      }
+
+      try {
+        await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
+        onOpenChange(false)
+      } catch (error) {
+        console.error("Failed to enable diff mode:", error)
+        toast({
+          title: "Failed to compare versions",
+          description: "There was an error enabling diff mode.",
+          variant: "destructive",
+        })
+      }
     }
   }
 

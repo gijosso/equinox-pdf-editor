@@ -4,9 +4,7 @@ import {Highlighter, MousePointer, Square, StickyNote, ZoomIn, ZoomOut} from "lu
 
 import {Button} from "@/components/ui/button"
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip"
-import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {selectEditorState} from "@/lib/store/selectors"
-import {setActiveTool, updateZoom} from "@/lib/store/slices"
+import {useGetDocumentEditorQuery, useSaveDocumentEditorMutation} from "@/lib/store/api"
 import type {EditorToolType} from "@/lib/types"
 
 import {ToolbarPage} from "./toolbar-page"
@@ -21,14 +19,74 @@ const EDITOR_TOOL_CONFIGS = {
   redaction: {type: "redaction", icon: Square, label: "Redaction"},
 } as const satisfies {[K in EditorToolType]: EditorToolConfig}
 
-export function Toolbar() {
-  const dispatch = useAppDispatch()
-  const {documentId, activeTool, viewport} = useAppSelector(selectEditorState)
+interface ToolbarProps {
+  documentId: string
+}
+
+export function Toolbar({documentId}: ToolbarProps) {
+  const [saveDocumentEditor] = useSaveDocumentEditorMutation()
+  const {data: editor} = useGetDocumentEditorQuery(documentId, {
+    skip: !documentId,
+  })
+
+  const activeTool = editor?.activeTool || {type: "select"}
+  const viewport = editor?.viewport || {x: 0, y: 0, zoom: 1}
+
+  const handleToolChange = async (toolType: EditorToolType) => {
+    if (!editor || !documentId) return
+
+    const updatedEditor = {
+      ...editor,
+      activeTool: {type: toolType},
+    }
+
+    try {
+      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
+    } catch (error) {
+      console.error("Failed to change tool:", error)
+    }
+  }
+
+  const handleZoomIn = async () => {
+    if (!editor || !documentId) return
+
+    const updatedEditor = {
+      ...editor,
+      viewport: {
+        ...viewport,
+        zoom: viewport.zoom + 0.1,
+      },
+    }
+
+    try {
+      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
+    } catch (error) {
+      console.error("Failed to zoom in:", error)
+    }
+  }
+
+  const handleZoomOut = async () => {
+    if (!editor || !documentId) return
+
+    const updatedEditor = {
+      ...editor,
+      viewport: {
+        ...viewport,
+        zoom: Math.max(0.1, viewport.zoom - 0.1),
+      },
+    }
+
+    try {
+      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
+    } catch (error) {
+      console.error("Failed to zoom out:", error)
+    }
+  }
 
   return (
     <TooltipProvider>
       <div className="flex items-center justify-between border-b border-border bg-card px-4 py-2" data-toolbar>
-        <ToolbarPage />
+        <ToolbarPage documentId={documentId} />
 
         <div className="flex items-center gap-1">
           {Object.values(EDITOR_TOOL_CONFIGS).map(tool => (
@@ -37,7 +95,7 @@ export function Toolbar() {
                 <Button
                   variant={activeTool.type === tool.type ? "default" : "ghost"}
                   size="sm"
-                  onClick={() => dispatch(setActiveTool({documentId, tool: {type: tool.type}}))}
+                  onClick={() => handleToolChange(tool.type)}
                 >
                   <tool.icon className="h-4 w-4" />
                 </Button>
@@ -50,25 +108,15 @@ export function Toolbar() {
         </div>
 
         <div className="w-64">
-          <ToolbarSearch />
+          <ToolbarSearch documentId={documentId} />
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => dispatch(updateZoom({documentId, zoom: viewport.zoom + 0.1}))}
-            disabled={viewport.zoom <= 0.5}
-          >
+          <Button variant="ghost" size="sm" onClick={handleZoomOut} disabled={viewport.zoom <= 0.1}>
             <ZoomOut className="h-4 w-4" />
           </Button>
           <span className="min-w-16 text-center text-sm text-foreground">{Math.round(viewport.zoom * 100)}%</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => dispatch(updateZoom({documentId, zoom: viewport.zoom - 0.1}))}
-            disabled={viewport.zoom >= 3}
-          >
+          <Button variant="ghost" size="sm" onClick={handleZoomIn} disabled={viewport.zoom >= 3}>
             <ZoomIn className="h-4 w-4" />
           </Button>
         </div>

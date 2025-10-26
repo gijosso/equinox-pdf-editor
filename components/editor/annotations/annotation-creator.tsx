@@ -2,9 +2,7 @@
 
 import React from "react"
 
-import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {selectEditorState} from "@/lib/store/selectors/editor"
-import {addAnnotation} from "@/lib/store/slices/editor"
+import {useAddAnnotationMutation, useGetDocumentEditorQuery} from "@/lib/store/api"
 import type {AnnotationType} from "@/lib/types"
 import {createAnnotation} from "@/lib/utils/annotations"
 
@@ -13,11 +11,15 @@ interface AnnotationCreatorProps {
   pageWidth: number
   pageHeight: number
   children: React.ReactNode
+  documentId: string
 }
 
-export function AnnotationCreator({scale, children}: AnnotationCreatorProps) {
-  const dispatch = useAppDispatch()
-  const {activeTool, currentPage, documentId, currentVersionId} = useAppSelector(selectEditorState)
+export function AnnotationCreator({scale, children, documentId}: AnnotationCreatorProps) {
+  const {data: editor} = useGetDocumentEditorQuery(documentId, {skip: !documentId})
+  const activeTool = editor?.activeTool || {type: "select"}
+  const currentPage = editor?.currentPage || 1
+  const currentVersionId = editor?.currentVersionId || null
+  const [addAnnotation] = useAddAnnotationMutation()
   const [isCreating, setIsCreating] = React.useState(false)
   const [startPos, setStartPos] = React.useState<{x: number; y: number} | null>(null)
   const [currentPos, setCurrentPos] = React.useState<{x: number; y: number} | null>(null)
@@ -61,7 +63,7 @@ export function AnnotationCreator({scale, children}: AnnotationCreatorProps) {
     setCurrentPos({x, y})
   }
 
-  const handleMouseUp = (event: React.MouseEvent) => {
+  const handleMouseUp = async (event: React.MouseEvent) => {
     if (!isCreating || !startPos || !currentPos) {
       setIsCreating(false)
       setStartPos(null)
@@ -84,8 +86,8 @@ export function AnnotationCreator({scale, children}: AnnotationCreatorProps) {
     const width = Math.abs(currentPos.x - startPos.x)
     const height = Math.abs(currentPos.y - startPos.y)
 
-    // Only create annotation if it has minimum size
-    if (width > 5 && height > 5) {
+    // Only create annotation if it has minimum size and we have a valid version
+    if (width > 5 && height > 5 && currentVersionId) {
       // Convert screen coordinates to PDF coordinates
       const pdfX = x / scale
       const pdfY = y / scale
@@ -93,6 +95,7 @@ export function AnnotationCreator({scale, children}: AnnotationCreatorProps) {
       const pdfHeight = height / scale
 
       const annotation = createAnnotation(activeTool.type as AnnotationType, {
+        versionId: currentVersionId,
         pageNumber: currentPage,
         x: pdfX,
         y: pdfY,
@@ -101,7 +104,11 @@ export function AnnotationCreator({scale, children}: AnnotationCreatorProps) {
         content: "",
       })
 
-      dispatch(addAnnotation({documentId: documentId || "", versionId: currentVersionId || "", annotation}))
+      try {
+        await addAnnotation(annotation).unwrap()
+      } catch (error) {
+        console.error("Failed to add annotation:", error)
+      }
     }
 
     setIsCreating(false)

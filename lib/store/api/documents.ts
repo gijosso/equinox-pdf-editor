@@ -1,8 +1,7 @@
-import {type Api, createApi, fetchBaseQuery} from "@reduxjs/toolkit/query/react"
+import {createApi, fetchBaseQuery} from "@reduxjs/toolkit/query/react"
 
 import {atomicService} from "@/lib/db/atomic"
 import {documentService} from "@/lib/db/documents"
-import {versionService} from "@/lib/db/versions"
 import type {PDFDocument, PDFVersion} from "@/lib/types"
 
 export const documentsApi = createApi({
@@ -84,22 +83,6 @@ export const documentsApi = createApi({
       },
       invalidatesTags: (result, error, documentId) => [{type: "Document", id: documentId}, "Version"],
     }),
-
-    getVersionsByDocument: builder.query<Omit<PDFVersion, "blob">[], string>({
-      queryFn: async documentId => {
-        const result = await versionService.getVersionsByDocument(documentId)
-        if (!result.success) {
-          return {error: {status: "CUSTOM_ERROR", error: result.error.message}}
-        }
-        // Strip blob from versions before caching
-        const versionsWithoutBlob = result.data.map(({blob, ...version}) => version)
-        return {data: versionsWithoutBlob}
-      },
-      providesTags: (result, error, documentId) => [
-        {type: "Version", id: `document-${documentId}`},
-        {type: "Document", id: documentId},
-      ],
-    }),
   }),
 })
 
@@ -110,5 +93,4 @@ export const {
   useUpdateDocumentMutation,
   useUpdateDocumentWithVersionMutation,
   useDeleteDocumentMutation,
-  useGetVersionsByDocumentQuery,
 } = documentsApi
