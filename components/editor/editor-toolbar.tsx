@@ -21,6 +21,8 @@ const EDITOR_TOOL_CONFIGS = {
   redaction: {type: "redaction", icon: Square, label: "Redaction"},
 } as const satisfies {[K in EditorToolType]: EditorToolConfig}
 
+const EDITOR_TOOL_CONFIGS_ARRAY = Object.values(EDITOR_TOOL_CONFIGS)
+
 export function EditorToolbar() {
   const dispatch = useAppDispatch()
   const {documentId, activeTool, viewport} = useAppSelector(selectEditorState)
@@ -31,7 +33,7 @@ export function EditorToolbar() {
         <ToolbarPage />
 
         <div className="flex items-center gap-1">
-          {Object.values(EDITOR_TOOL_CONFIGS).map(tool => (
+          {EDITOR_TOOL_CONFIGS_ARRAY.map(tool => (
             <Tooltip key={tool.type}>
               <TooltipTrigger asChild>
                 <Button
