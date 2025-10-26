@@ -79,7 +79,9 @@ export function Editor() {
             sidebarOpen ? "w-80" : "w-0"
           } overflow-hidden shrink-0`}
         >
-          <Sidebar />
+          <div className={`h-full w-80 transition-opacity duration-200 ${sidebarOpen ? "opacity-100" : "opacity-0"}`}>
+            <Sidebar />
+          </div>
         </div>
       </div>
     </div>
