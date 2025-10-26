@@ -4,7 +4,7 @@ import {FileText, Loader2} from "lucide-react"
 
 import {ErrorBoundaryWithSuspense} from "@/components/error-boundary"
 import {HomePageLoading} from "@/components/loading"
-import {useHomePageData} from "@/hooks/use-home-page-data"
+import {useGetAllDocumentsQuery} from "@/lib/store/api"
 
 import {DocumentList} from "./document-list"
 import {FileUpload} from "./file-upload"
@@ -36,9 +36,9 @@ export function HomePage() {
 }
 
 function HomePageContent() {
-  const {documents, error, loading} = useHomePageData()
+  const {data: documents = [], error, isLoading} = useGetAllDocumentsQuery()
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -50,7 +50,9 @@ function HomePageContent() {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <p className="text-red-600 mb-2">Error: {error}</p>
+          <p className="text-red-600 mb-2">
+            Error: {error ? (error as any)?.message || "Failed to load documents" : null}
+          </p>
           <p className="text-sm text-muted-foreground">Failed to load document</p>
         </div>
       </div>

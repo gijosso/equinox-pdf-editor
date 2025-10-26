@@ -7,9 +7,9 @@ import React from "react"
 import {Button} from "@/components/ui/button"
 import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog"
 import {ScrollArea} from "@/components/ui/scroll-area"
+import {useGetVersionsByDocumentQuery} from "@/lib/store/api"
 import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {selectVersionsByDocumentId} from "@/lib/store/selectors"
-import {loadVersions, setCompareVersions, toggleDiffMode} from "@/lib/store/slices"
+import {setCompareVersions, toggleDiffMode} from "@/lib/store/slices"
 
 interface VersionHistoryDialogProps {
   open: boolean
@@ -19,14 +19,15 @@ interface VersionHistoryDialogProps {
 export function VersionHistoryDialog({open, onOpenChange}: VersionHistoryDialogProps) {
   const dispatch = useAppDispatch()
   const documentId = useAppSelector(state => state.editor.documentId)
-  const versions = useAppSelector(selectVersionsByDocumentId(documentId || ""))
 
-  // Load versions when dialog opens
-  React.useEffect(() => {
-    if (open && documentId) {
-      dispatch(loadVersions(documentId))
-    }
-  }, [open, documentId, dispatch])
+  // Use RTK Query to fetch versions
+  const {
+    data: versions = [],
+    isLoading,
+    error,
+  } = useGetVersionsByDocumentQuery(documentId || "", {
+    skip: !documentId || !open, // Only fetch when dialog is open and documentId exists
+  })
 
   const handleLoadVersion = (versionId: string) => {
     if (!documentId) return
@@ -61,7 +62,15 @@ export function VersionHistoryDialog({open, onOpenChange}: VersionHistoryDialogP
         </DialogHeader>
         <ScrollArea className="max-h-96">
           <div className="space-y-4">
-            {versions.length === 0 ? (
+            {isLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-sm text-muted-foreground">Loading versions...</p>
+              </div>
+            ) : error ? (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-sm text-red-600">Failed to load versions</p>
+              </div>
+            ) : versions.length === 0 ? (
               <div className="flex items-center justify-center h-full">
                 <p className="text-sm text-muted-foreground">No versions found</p>
               </div>

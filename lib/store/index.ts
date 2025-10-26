@@ -1,21 +1,15 @@
 import {configureStore} from "@reduxjs/toolkit"
 
-import documentsReducer from "./slices/documents"
+import {documentsApi} from "./api"
 import editorReducer from "./slices/editor"
 
 export const makeStore = () => {
   return configureStore({
     reducer: {
-      documents: documentsReducer,
       editor: editorReducer,
+      [documentsApi.reducerPath]: documentsApi.reducer,
     },
-    middleware: getDefaultMiddleware =>
-      getDefaultMiddleware({
-        // Suppress blob checks (persisted through IndexedDB)
-        serializableCheck: {
-          ignoredActionPaths: ["payload.document.blob", "meta.arg.document.blob"],
-        },
-      }),
+    middleware: getDefaultMiddleware => getDefaultMiddleware().concat(documentsApi.middleware),
     devTools: process.env.NODE_ENV !== "production",
   })
 }

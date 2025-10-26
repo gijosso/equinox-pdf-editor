@@ -7,8 +7,9 @@ import {Button} from "@/components/ui/button"
 import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog"
 import {Label} from "@/components/ui/label"
 import {Textarea} from "@/components/ui/textarea"
+import {useAddVersionMutation} from "@/lib/store/api"
 import {useAppSelector} from "@/lib/store/hooks"
-import {selectEditorState, selectVersionsByDocumentId} from "@/lib/store/selectors"
+import {selectEditorState} from "@/lib/store/selectors"
 
 // import {createVersionWithXFDF} from "@/lib/utils/xfdf"
 
@@ -19,27 +20,28 @@ interface SaveVersionDialogProps {
 
 export function SaveVersionDialog({open, onOpenChange}: SaveVersionDialogProps) {
   const {documentId, annotations, currentPage} = useAppSelector(selectEditorState)
-  const versions = useAppSelector(selectVersionsByDocumentId(documentId || ""))
+  const [addVersion, {isLoading: saving}] = useAddVersionMutation()
   const [message, setMessage] = React.useState("")
-  const [saving, setSaving] = React.useState(false)
 
   const handleSave = async () => {
     if (!documentId || !message.trim()) return
 
-    setSaving(true)
-
     try {
-      const nextVersionNumber = versions.length + 1
-      // const {version} = createVersionWithXFDF(documentId, nextVersionNumber, message.trim(), annotations)
+      // Create version object (you'll need to implement the version creation logic)
+      const version = {
+        id: crypto.randomUUID(),
+        documentId,
+        versionNumber: 1, // You might want to calculate this based on existing versions
+        message: message.trim(),
+        createdAt: new Date().toISOString(),
+        xfdf: "", // You'll need to generate this from annotations
+      }
 
-      // await dispatch(addVersion(version)).unwrap()
-
+      await addVersion(version).unwrap()
       setMessage("")
       onOpenChange(false)
     } catch (error) {
       console.error("Failed to save version:", error)
-    } finally {
-      setSaving(false)
     }
   }
 

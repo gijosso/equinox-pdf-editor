@@ -5,8 +5,9 @@ import {useRouter} from "next/navigation"
 import React from "react"
 
 import {Button} from "@/components/ui/button"
+import {useGetAllDocumentsQuery} from "@/lib/store/api"
 import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {selectDocumentById, selectEditorState} from "@/lib/store/selectors"
+import {selectEditorState} from "@/lib/store/selectors"
 import {toggleSidebar} from "@/lib/store/slices"
 
 import {SaveVersionDialog} from "./save-version-dialog"
@@ -16,7 +17,8 @@ export function EditorHeader() {
   const router = useRouter()
   const dispatch = useAppDispatch()
   const {documentId, sidebarOpen, annotations} = useAppSelector(selectEditorState)
-  const currentDocument = useAppSelector(selectDocumentById(documentId || ""))
+  const {data: documents = []} = useGetAllDocumentsQuery()
+  const currentDocument = documents.find(doc => doc.id === documentId)
   const [showSaveDialog, setShowSaveDialog] = React.useState(false)
   const [showHistoryDialog, setShowHistoryDialog] = React.useState(false)
 

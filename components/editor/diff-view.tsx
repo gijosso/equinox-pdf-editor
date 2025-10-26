@@ -4,8 +4,9 @@ import {ArrowLeft, GitCompare} from "lucide-react"
 import React from "react"
 
 import {Button} from "@/components/ui/button"
+import {useGetVersionsByDocumentQuery} from "@/lib/store/api"
 import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {selectEditorState, selectVersionsByDocumentId} from "@/lib/store/selectors"
+import {selectEditorState} from "@/lib/store/selectors"
 import {setCompareVersions, toggleDiffMode} from "@/lib/store/slices"
 import type {AnnotationDiff} from "@/lib/types"
 import {loadAnnotationsFromVersion} from "@/lib/utils/xfdf"
@@ -13,7 +14,9 @@ import {loadAnnotationsFromVersion} from "@/lib/utils/xfdf"
 export function DiffView() {
   const dispatch = useAppDispatch()
   const {documentId, compareVersionIds} = useAppSelector(selectEditorState)
-  const versions = useAppSelector(selectVersionsByDocumentId(documentId || ""))
+  const {data: versions = []} = useGetVersionsByDocumentQuery(documentId || "", {
+    skip: !documentId,
+  })
   const [diffs, setDiffs] = React.useState<AnnotationDiff[]>([])
 
   React.useEffect(() => {

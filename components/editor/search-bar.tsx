@@ -64,7 +64,7 @@ export function SearchBar() {
             size="sm"
             onClick={goToPreviousResult}
             className="h-8 w-8 p-0"
-            disabled={(currentSearchIndex && currentSearchIndex <= 0) || isSearching}
+            disabled={isSearching || searchResults.length === 0 || currentSearchIndex <= 0}
           >
             <ChevronUp className="h-4 w-4" />
           </Button>

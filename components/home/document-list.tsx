@@ -9,21 +9,19 @@ import {Button} from "@/components/ui/button"
 import {Card} from "@/components/ui/card"
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu"
 import {useToast} from "@/hooks/use-toast"
-import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {selectAllDocuments} from "@/lib/store/selectors"
-import {deleteDocument} from "@/lib/store/slices"
+import {useDeleteDocumentMutation, useGetAllDocumentsQuery} from "@/lib/store/api"
 import {formatDate} from "@/lib/utils"
 
 export const DocumentList = () => {
   const router = useRouter()
-  const dispatch = useAppDispatch()
-  const documents = useAppSelector(selectAllDocuments)
+  const {data: documents = []} = useGetAllDocumentsQuery()
+  const [deleteDocument] = useDeleteDocumentMutation()
   const {toast} = useToast()
 
   const handleDelete = React.useCallback(
     async (id: string, name: string) => {
       try {
-        await dispatch(deleteDocument(id)).unwrap()
+        await deleteDocument(id).unwrap()
         toast({
           title: "Document deleted",
           description: `${name} has been deleted`,
@@ -37,7 +35,7 @@ export const DocumentList = () => {
         })
       }
     },
-    [dispatch, toast],
+    [deleteDocument, toast],
   )
 
   return (

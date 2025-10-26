@@ -1,3 +1,1 @@
-export * from "./documents"
-export * from "./versions"
 export * from "./editor"

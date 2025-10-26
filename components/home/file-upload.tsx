@@ -9,9 +9,8 @@ import {Button} from "@/components/ui/button"
 import {Draggable} from "@/components/ui/draggable"
 import {useToast} from "@/hooks/use-toast"
 import {documentService} from "@/lib/db/documents"
+import {useAddDocumentMutation, useGetAllDocumentsQuery} from "@/lib/store/api"
 import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {selectAllDocuments} from "@/lib/store/selectors"
-import {addDocumentWithVersion} from "@/lib/store/slices"
 import type {PDFDocument} from "@/lib/types"
 import {cn, computeFileHash, generateUniqueName, isValidFileSize, isValidPdfFile, uploadNewFile} from "@/lib/utils"
 
@@ -44,7 +43,8 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
   const [isDragging, setIsDragging] = React.useState(false)
   const [duplicateDialog, setDuplicateDialog] = React.useState<DuplicateDialogState>(initialDuplicateDialogState)
 
-  const documents = useAppSelector(selectAllDocuments)
+  const {data: documents = []} = useGetAllDocumentsQuery()
+  const [addDocument] = useAddDocumentMutation()
 
   const handleFile = async (file: File, forceName?: string) => {
     const isValidPDF = await isValidPdfFile(file)
@@ -92,7 +92,7 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
       }
 
       const {document, version} = await uploadNewFile(file, documents)
-      await dispatch(addDocumentWithVersion({document, version})).unwrap()
+      await addDocument({document, version}).unwrap()
 
       toast({
         title: "Upload successful",
