@@ -1,13 +1,9 @@
-/**
- * Standardized annotation creation utilities
- * Creates annotations with proper XFDF format and shapes
- */
 import type {Annotation, AnnotationType} from "@/lib/types"
 
 import type {XFDFAnnotation} from "./xfdf"
 
 export interface AnnotationCreationOptions {
-  versionId: string // Required: the version this annotation belongs to
+  versionId: string
   pageNumber: number
   x: number
   y: number
@@ -20,10 +16,6 @@ export interface AnnotationCreationOptions {
   quadPoints?: number[]
 }
 
-/**
- * Create a text highlight annotation
- * Highlights selected text with a colored background
- */
 export function createHighlightAnnotation(options: AnnotationCreationOptions): Annotation {
   const id = `highlight-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
   const now = new Date().toISOString()
@@ -56,10 +48,6 @@ export function createHighlightAnnotation(options: AnnotationCreationOptions): A
   }
 }
 
-/**
- * Create a text note annotation
- * Adds a sticky note with text content
- */
 export function createNoteAnnotation(options: AnnotationCreationOptions): Annotation {
   const id = `note-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
   const now = new Date().toISOString()
@@ -81,10 +69,6 @@ export function createNoteAnnotation(options: AnnotationCreationOptions): Annota
   }
 }
 
-/**
- * Create a redaction annotation
- * Blackens out sensitive content
- */
 export function createRedactionAnnotation(options: AnnotationCreationOptions): Annotation {
   const id = `redaction-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
   const now = new Date().toISOString()
@@ -106,9 +90,6 @@ export function createRedactionAnnotation(options: AnnotationCreationOptions): A
   }
 }
 
-/**
- * Create annotation based on type
- */
 export function createAnnotation(type: AnnotationType, options: AnnotationCreationOptions): Annotation {
   switch (type) {
     case "highlight":
@@ -122,9 +103,6 @@ export function createAnnotation(type: AnnotationType, options: AnnotationCreati
   }
 }
 
-/**
- * Validate annotation data
- */
 export function validateAnnotation(annotation: Partial<Annotation>): boolean {
   if (!annotation.id || !annotation.type || !annotation.pageNumber) {
     return false
@@ -145,15 +123,12 @@ export function validateAnnotation(annotation: Partial<Annotation>): boolean {
   return true
 }
 
-/**
- * Get default colors for annotation types
- */
 export function getDefaultAnnotationColor(type: AnnotationType): string {
   switch (type) {
     case "highlight":
       return "#ffeb3b" // Yellow
     case "note":
-      return "#FFCD45" // PDF standard sticky note yellow
+      return "#FFE066" // Modern vibrant sticky note color
     case "redaction":
       return "#000000" // Black
     default:
@@ -161,9 +136,6 @@ export function getDefaultAnnotationColor(type: AnnotationType): string {
   }
 }
 
-/**
- * Convert annotation to XFDF format
- */
 export function annotationToXFDF(annotation: Annotation): string {
   const xfdfAttributes = {
     id: annotation.id,
@@ -202,9 +174,6 @@ export function annotationToXFDF(annotation: Annotation): string {
   return `<annotation ${attributes} />`
 }
 
-/**
- * Parse XFDF annotation back to Annotation object
- */
 export function convertXFDFAnnotationsToAnnotations(
   xfdfAnnotations: XFDFAnnotation[],
   versionId: string,

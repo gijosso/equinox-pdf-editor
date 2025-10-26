@@ -38,13 +38,21 @@ export function AnnotationOverlay({scale, documentId}: AnnotationOverlayProps) {
 
   const handleUpdateAnnotation = React.useCallback(
     async (annotation: Annotation) => {
+      if (!currentVersionId) {
+        return
+      }
+
       try {
-        await updateAnnotation({id: annotation.id, updates: annotation}).unwrap()
+        await updateAnnotation({
+          id: annotation.id,
+          versionId: currentVersionId,
+          updates: annotation,
+        }).unwrap()
       } catch (error) {
         console.error("Failed to update annotation:", error)
       }
     },
-    [updateAnnotation],
+    [updateAnnotation, currentVersionId],
   )
 
   if (pageAnnotations.length === 0) {

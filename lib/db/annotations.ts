@@ -73,7 +73,12 @@ export const annotationService = {
         return {success: false, error: new AnnotationNotFoundError(id)}
       }
 
-      await db.annotations.update(id, updates)
+      const updateResult = await db.annotations.update(id, updates)
+
+      if (updateResult === 0) {
+        return {success: false, error: new AnnotationNotFoundError(id)}
+      }
+
       return {success: true, data: undefined}
     } catch (error) {
       return {
