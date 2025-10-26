@@ -2,7 +2,6 @@
 
 import {formatDistanceToNow} from "date-fns"
 import {Calendar, Clock, FileText} from "lucide-react"
-import React from "react"
 
 import {Button} from "@/components/ui/button"
 import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog"

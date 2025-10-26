@@ -113,11 +113,13 @@ export const editorSlice = createSlice({
       action: PayloadAction<{documentId: string; id: string; updates: Partial<Annotation>}>,
     ) => {
       const {documentId, id, updates} = action.payload
+
       if (state.byDocument[documentId]) {
         const annotationIndex = state.byDocument[documentId].annotations.findIndex(a => a.id === id)
         if (annotationIndex !== -1) {
+          const oldAnnotation = state.byDocument[documentId].annotations[annotationIndex]
           state.byDocument[documentId].annotations[annotationIndex] = {
-            ...state.byDocument[documentId].annotations[annotationIndex],
+            ...oldAnnotation,
             ...updates,
           }
           state.byDocument[documentId].hasUnsavedChanges = true

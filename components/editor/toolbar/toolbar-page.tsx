@@ -7,7 +7,7 @@ import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
 import {selectEditorState} from "@/lib/store/selectors"
 import {setCurrentPage} from "@/lib/store/slices/editor"
 
-export function PageBar() {
+export function ToolbarPage() {
   const dispatch = useAppDispatch()
   const {documentId, currentPage, totalPages} = useAppSelector(selectEditorState)
 

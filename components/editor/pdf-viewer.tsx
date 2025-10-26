@@ -1,5 +1,6 @@
 "use client"
 
+import React from "react"
 import {Document, Page, pdfjs} from "react-pdf"
 import "react-pdf/dist/Page/AnnotationLayer.css"
 import "react-pdf/dist/Page/TextLayer.css"
@@ -10,12 +11,16 @@ import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
 import {selectEditorState} from "@/lib/store/selectors/editor"
 import {setCurrentPage, setTotalPages} from "@/lib/store/slices/editor"
 
+import {AnnotationCreator} from "./annotations/annotation-creator"
+import {AnnotationOverlay} from "./annotations/annotation-overlay"
+
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
 
 export function PDFViewer() {
   const dispatch = useAppDispatch()
   const {documentId, currentPage, viewport} = useAppSelector(selectEditorState)
   const {blob, blobUrl, loading, error} = usePDFBlob()
+  const [pageDimensions, setPageDimensions] = React.useState<{width: number; height: number} | null>(null)
 
   if (loading) {
     return (
@@ -60,17 +65,37 @@ export function PDFViewer() {
               onLoadError={error => console.error("PDF load error:", error)}
               className="shadow-lg"
             >
-              <div className="relative">
-                <Page
-                  pageNumber={currentPage}
-                  renderTextLayer={true}
-                  renderAnnotationLayer={true}
-                  className="border border-border"
-                  scale={viewport.zoom}
-                />
+              <AnnotationCreator
+                scale={viewport.zoom}
+                pageWidth={pageDimensions?.width || 0}
+                pageHeight={pageDimensions?.height || 0}
+              >
+                <div className="relative">
+                  <Page
+                    pageNumber={currentPage}
+                    renderTextLayer={true}
+                    renderAnnotationLayer={true}
+                    className="border border-border"
+                    scale={viewport.zoom}
+                    onLoadSuccess={page => {
+                      setPageDimensions({
+                        width: page.width,
+                        height: page.height,
+                      })
+                    }}
+                  />
 
-                <LazySearchHighlights scale={viewport.zoom} />
-              </div>
+                  <LazySearchHighlights scale={viewport.zoom} />
+
+                  {pageDimensions && (
+                    <AnnotationOverlay
+                      scale={viewport.zoom}
+                      pageWidth={pageDimensions.width}
+                      pageHeight={pageDimensions.height}
+                    />
+                  )}
+                </div>
+              </AnnotationCreator>
             </Document>
           </div>
         </div>

@@ -28,14 +28,14 @@ export function HomePage() {
 
       <main className="container mx-auto px-4 py-8">
         <ErrorBoundaryWithSuspense suspenseFallback={<HomePageLoading />}>
-          <HomePageContent />
+          <Home />
         </ErrorBoundaryWithSuspense>
       </main>
     </div>
   )
 }
 
-function HomePageContent() {
+function Home() {
   const {data: documents = [], error, isLoading} = useGetAllDocumentsQuery()
 
   if (isLoading) {

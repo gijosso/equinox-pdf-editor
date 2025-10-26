@@ -9,7 +9,7 @@ import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
 import {selectEditorState} from "@/lib/store/selectors"
 import {jumpToHistory} from "@/lib/store/slices"
 
-export function EditHistory() {
+export function SidebarEditHistory() {
   const dispatch = useAppDispatch()
   const {documentId, history, historyIndex} = useAppSelector(selectEditorState)
 

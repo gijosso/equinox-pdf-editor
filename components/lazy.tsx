@@ -1,19 +1,22 @@
 import dynamic from "next/dynamic"
 
-export const LazyAnnotations = dynamic(() => import("./editor/annotations").then(mod => ({default: mod.Annotations})), {
-  loading: () => (
-    <div className="flex h-full items-center justify-center p-4">
-      <div className="text-center">
-        <div className="mb-2 h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto"></div>
-        <p className="text-sm text-muted-foreground">Loading annotations...</p>
+export const LazyAnnotations = dynamic(
+  () => import("./editor/sidebar/sidebar-annotations").then(mod => ({default: mod.SidebarAnnotations})),
+  {
+    loading: () => (
+      <div className="flex h-full items-center justify-center p-4">
+        <div className="text-center">
+          <div className="mb-2 h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto"></div>
+          <p className="text-sm text-muted-foreground">Loading annotations...</p>
+        </div>
       </div>
-    </div>
-  ),
-  ssr: false,
-})
+    ),
+    ssr: false,
+  },
+)
 
 export const LazyEditHistory = dynamic(
-  () => import("./editor/edit-history").then(mod => ({default: mod.EditHistory})),
+  () => import("./editor/sidebar/sidebar-edit-history").then(mod => ({default: mod.SidebarEditHistory})),
   {
     loading: () => (
       <div className="flex h-full items-center justify-center p-4">

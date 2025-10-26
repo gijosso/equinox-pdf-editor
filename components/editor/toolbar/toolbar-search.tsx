@@ -10,7 +10,7 @@ import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
 import {selectEditorState} from "@/lib/store/selectors"
 import {setSearchQuery} from "@/lib/store/slices/editor"
 
-export function SearchBar() {
+export function ToolbarSearch() {
   const dispatch = useAppDispatch()
   const {documentId, searchResults, currentSearchIndex} = useAppSelector(selectEditorState)
   const [localSearchQuery, setLocalSearchQuery] = useState("")

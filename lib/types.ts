@@ -38,20 +38,26 @@ export interface PDFVersion {
   textContent?: string
 }
 
-export type AnnotationType = "highlight" | "note" | "draw" | "erase"
+export type AnnotationType = "highlight" | "note" | "redaction"
 export interface Annotation {
   id: string
   type: AnnotationType
   pageNumber: number
   createdAt: string
+  updatedAt: string
   content: string
-  x?: number
-  y?: number
-  width?: number
-  height?: number
-  text?: string
-  color?: string
-  fontSize?: number
+  // Position and dimensions (in PDF coordinates)
+  x: number
+  y: number
+  width: number
+  height: number
+  // Annotation-specific properties
+  text?: string // For text annotations
+  color?: string // For highlight/redaction color
+  fontSize?: number // For text annotations
+  // XFDF-specific properties
+  xfdfType: "highlight" | "text" | "redaction" // Standard XFDF annotation types
+  quadPoints?: number[] // For highlight annotations (4 points defining the highlighted area)
 }
 
 export type AnnotationDiffType = "added" | "removed" | "modified"
@@ -68,7 +74,7 @@ export interface EditorViewport {
   zoom: number
 }
 
-export type EditorToolType = "select" | "highlight" | "note" | "draw" | "erase"
+export type EditorToolType = "select" | "highlight" | "note" | "redaction"
 export interface EditorTool {
   type: EditorToolType
   color?: string

@@ -38,6 +38,7 @@
     "react-dom": "19.2.0",
     "react-pdf": "^10.2.0",
     "react-redux": "latest",
+    "react-rnd": "^10.5.2",
     "redux": "latest",
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.5.5",

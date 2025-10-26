@@ -3,6 +3,24 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Disable text selection for annotation tools */
+.no-text-selection,
+.no-text-selection * {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+}
+
+/* Explicitly enable text selection for select tool */
+.allow-text-selection,
+.allow-text-selection * {
+  -webkit-user-select: auto !important;
+  -moz-user-select: auto !important;
+  -ms-user-select: auto !important;
+  user-select: auto !important;
+}
+
 :root {
   /* Dark professional theme for PDF tool */
   --background: oklch(0.12 0 0);

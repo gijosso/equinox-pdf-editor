@@ -9,8 +9,8 @@ import {selectEditorState} from "@/lib/store/selectors"
 import {setActiveTool, updateZoom} from "@/lib/store/slices"
 import type {EditorToolType} from "@/lib/types"
 
-import {ToolbarPage} from "./toolbar/toolbar-page"
-import {ToolbarSearch} from "./toolbar/toolbar-search"
+import {ToolbarPage} from "./toolbar-page"
+import {ToolbarSearch} from "./toolbar-search"
 
 type EditorToolConfig = {type: EditorToolType; icon: React.ElementType; label: string}
 
@@ -21,13 +21,13 @@ const EDITOR_TOOL_CONFIGS = {
   redaction: {type: "redaction", icon: Square, label: "Redaction"},
 } as const satisfies {[K in EditorToolType]: EditorToolConfig}
 
-export function EditorToolbar() {
+export function Toolbar() {
   const dispatch = useAppDispatch()
   const {documentId, activeTool, viewport} = useAppSelector(selectEditorState)
 
   return (
     <TooltipProvider>
-      <div className="flex items-center justify-between border-b border-border bg-card px-4 py-2">
+      <div className="flex items-center justify-between border-b border-border bg-card px-4 py-2" data-toolbar>
         <ToolbarPage />
 
         <div className="flex items-center gap-1">
