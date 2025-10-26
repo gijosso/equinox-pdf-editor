@@ -1,3 +1,5 @@
+import Dexie from "dexie"
+
 import type {PDFVersion} from "../types"
 import {db} from "./database"
 import {DatabaseError, type Result} from "./documents"
@@ -42,6 +44,25 @@ export const versionService = {
         success: false,
         error: new DatabaseError(
           `Failed to get versions by document: ${error instanceof Error ? error.message : "Unknown error"}`,
+        ),
+      }
+    }
+  },
+
+  async getNextVersionNumber(documentId: string): Promise<Result<number, DatabaseError>> {
+    try {
+      const maxVersion = await db.versions
+        .where("[documentId+versionNumber]")
+        .between([documentId, Dexie.minKey], [documentId, Dexie.maxKey])
+        .reverse()
+        .first()
+
+      return {success: true, data: maxVersion ? maxVersion.versionNumber + 1 : 1}
+    } catch (error) {
+      return {
+        success: false,
+        error: new DatabaseError(
+          `Failed to get next version number: ${error instanceof Error ? error.message : "Unknown error"}`,
         ),
       }
     }

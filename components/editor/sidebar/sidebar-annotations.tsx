@@ -6,7 +6,7 @@ import React from "react"
 import {Button} from "@/components/ui/button"
 import {ScrollArea} from "@/components/ui/scroll-area"
 import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {selectEditorState} from "@/lib/store/selectors"
+import {selectAnnotations, selectEditorState} from "@/lib/store/selectors"
 import {deleteAnnotation, setCurrentPage} from "@/lib/store/slices"
 import type {Annotation, AnnotationType} from "@/lib/types"
 import {formatDate} from "@/lib/utils"
@@ -21,71 +21,81 @@ const ANNOTATIONS_CONFIGS = {
 
 const ANNOTATION_CONFIGS_ARRAY = Object.values(ANNOTATIONS_CONFIGS)
 
-const AnnotationItem = React.memo(({documentId, annotation}: {documentId: string; annotation: Annotation}) => {
-  const dispatch = useAppDispatch()
+const AnnotationItem = React.memo(
+  ({documentId, versionId, annotation}: {documentId: string; versionId: string; annotation: Annotation}) => {
+    const dispatch = useAppDispatch()
 
-  return (
-    <div className="rounded-lg border border-border bg-background p-3 h-24">
-      <div className="flex items-center justify-between gap-2 h-full">
-        <div className="flex items-center gap-2 flex-1 min-w-0 max-w-full h-full">
-          {ANNOTATIONS_CONFIGS[annotation.type].icon}
-          <div className="flex-1 min-w-0 max-w-full h-full flex flex-col justify-between">
-            <div>
-              <button
-                onClick={() => dispatch(setCurrentPage({documentId, page: annotation.pageNumber || 1}))}
-                className="text-sm font-medium capitalize text-foreground"
-              >
-                {ANNOTATIONS_CONFIGS[annotation.type].label}
-              </button>
-              <p className="text-xs text-muted-foreground">Page {annotation.pageNumber || 1}</p>
-            </div>
-            <div className="text-sm text-muted-foreground">
-              <div className="block overflow-hidden text-ellipsis whitespace-nowrap italic max-w-48">
-                {annotation.content}
+    // Safety check for annotation type
+    const annotationConfig = ANNOTATIONS_CONFIGS[annotation.type as AnnotationType]
+    if (!annotationConfig) {
+      console.warn(`Unknown annotation type: ${annotation.type}`, annotation)
+      return null
+    }
+
+    return (
+      <div className="rounded-lg border border-border bg-background p-3 h-24">
+        <div className="flex items-center justify-between gap-2 h-full">
+          <div className="flex items-center gap-2 flex-1 min-w-0 max-w-full h-full">
+            {annotationConfig.icon}
+            <div className="flex-1 min-w-0 max-w-full h-full flex flex-col justify-between">
+              <div>
+                <button
+                  onClick={() => dispatch(setCurrentPage({documentId, page: annotation.pageNumber || 1}))}
+                  className="text-sm font-medium capitalize text-foreground"
+                >
+                  {annotationConfig.label}
+                </button>
+                <p className="text-xs text-muted-foreground">Page {annotation.pageNumber || 1}</p>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                <div className="block overflow-hidden text-ellipsis whitespace-nowrap italic max-w-48">
+                  {annotation.content}
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {annotation.updatedAt !== annotation.createdAt ? (
+                  <div>
+                    Updated:{" "}
+                    {formatDate(
+                      annotation.updatedAt,
+                      new Date(annotation.updatedAt).toDateString() === new Date().toDateString()
+                        ? {hour: "2-digit", minute: "2-digit"}
+                        : {weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"},
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    Created:{" "}
+                    {formatDate(
+                      annotation.createdAt,
+                      new Date(annotation.createdAt).toDateString() === new Date().toDateString()
+                        ? {hour: "2-digit", minute: "2-digit"}
+                        : {weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"},
+                    )}
+                  </div>
+                )}
               </div>
             </div>
-            <div className="text-xs text-muted-foreground">
-              {annotation.updatedAt !== annotation.createdAt ? (
-                <div>
-                  Updated:{" "}
-                  {formatDate(
-                    annotation.updatedAt,
-                    new Date(annotation.updatedAt).toDateString() === new Date().toDateString()
-                      ? {hour: "2-digit", minute: "2-digit"}
-                      : {weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"},
-                  )}
-                </div>
-              ) : (
-                <div>
-                  Created:{" "}
-                  {formatDate(
-                    annotation.createdAt,
-                    new Date(annotation.createdAt).toDateString() === new Date().toDateString()
-                      ? {hour: "2-digit", minute: "2-digit"}
-                      : {weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"},
-                  )}
-                </div>
-              )}
-            </div>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 shrink-0"
+            onClick={() => dispatch(deleteAnnotation({documentId, versionId, id: annotation.id}))}
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 shrink-0"
-          onClick={() => dispatch(deleteAnnotation({documentId, id: annotation.id}))}
-        >
-          <Trash2 className="h-3 w-3" />
-        </Button>
       </div>
-    </div>
-  )
-})
+    )
+  },
+)
 
 AnnotationItem.displayName = "AnnotationItem"
 
 export function SidebarAnnotations() {
-  const {documentId, annotations} = useAppSelector(selectEditorState)
+  const annotations = useAppSelector(selectAnnotations)
+  const {documentId, currentVersionId} = useAppSelector(selectEditorState)
   const [viewMode, setViewMode] = React.useState<"all" | "grouped">("all")
   const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(new Set())
 
@@ -150,7 +160,12 @@ export function SidebarAnnotations() {
         ) : viewMode === "all" ? (
           <div className="space-y-2 p-4">
             {annotations.map(annotation => (
-              <AnnotationItem key={annotation.id} documentId={documentId} annotation={annotation} />
+              <AnnotationItem
+                key={annotation.id}
+                documentId={documentId}
+                versionId={currentVersionId || ""}
+                annotation={annotation}
+              />
             ))}
           </div>
         ) : (
@@ -183,7 +198,12 @@ export function SidebarAnnotations() {
                   {!isCollapsed && (
                     <div className="space-y-2 p-4">
                       {typeAnnotations.map(annotation => (
-                        <AnnotationItem key={annotation.id} documentId={documentId || ""} annotation={annotation} />
+                        <AnnotationItem
+                          key={annotation.id}
+                          documentId={documentId || ""}
+                          versionId={currentVersionId || ""}
+                          annotation={annotation}
+                        />
                       ))}
                     </div>
                   )}

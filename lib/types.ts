@@ -9,10 +9,6 @@ export interface PDFDocument {
   thumbnail: string // Base64 encoded thumbnail
 }
 
-export interface PDFDocumentWithBlob extends PDFDocument {
-  blob: Blob
-}
-
 // Normalized state structure
 export interface NormalizedDocumentsState {
   documents: {
@@ -36,6 +32,7 @@ export interface PDFVersion {
   createdAt: string
   xfdf: string // XFDF string instead of JS objects
   textContent?: string
+  blob: Blob // PDF blob with annotations applied
 }
 
 export type AnnotationType = "highlight" | "note" | "redaction"
@@ -83,6 +80,7 @@ export interface EditorTool {
 
 export interface DocumentEditorState {
   documentId: string
+  currentVersionId: string | null // Track current version
   isEditing: boolean
   selectedAnnotations: string[]
   viewport: EditorViewport
@@ -94,7 +92,6 @@ export interface DocumentEditorState {
   // PDF-specific state
   currentPage: number
   totalPages: number
-  annotations: Annotation[]
 
   // Search state
   searchQuery: string
@@ -110,9 +107,15 @@ export interface DocumentEditorState {
   compareVersionIds: string[]
 }
 
+export interface VersionEditorState {
+  versionId: string
+  annotations: Annotation[]
+}
+
 export interface EditorState {
   documentId: string | null
   byDocument: Record<string, DocumentEditorState>
+  byVersion: Record<string, VersionEditorState> // Store annotations by version
   loading: boolean
   error: string | null
 }

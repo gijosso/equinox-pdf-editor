@@ -3,7 +3,7 @@
 import React from "react"
 
 import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {selectEditorState} from "@/lib/store/selectors/editor"
+import {selectAnnotations, selectEditorState} from "@/lib/store/selectors/editor"
 import {updateAnnotation} from "@/lib/store/slices/editor"
 import type {Annotation} from "@/lib/types"
 
@@ -19,7 +19,8 @@ interface AnnotationOverlayProps {
 
 export function AnnotationOverlay({scale}: AnnotationOverlayProps) {
   const dispatch = useAppDispatch()
-  const {annotations, currentPage, documentId, activeTool} = useAppSelector(selectEditorState)
+  const annotations = useAppSelector(selectAnnotations)
+  const {currentPage, documentId, activeTool, currentVersionId} = useAppSelector(selectEditorState)
 
   // Filter annotations for current page
   const pageAnnotations = React.useMemo(
@@ -32,9 +33,11 @@ export function AnnotationOverlay({scale}: AnnotationOverlayProps) {
 
   const handleUpdateAnnotation = React.useCallback(
     (annotation: Annotation) => {
-      dispatch(updateAnnotation({documentId: documentId || "", id: annotation.id, updates: annotation}))
+      if (documentId && currentVersionId) {
+        dispatch(updateAnnotation({documentId, versionId: currentVersionId, id: annotation.id, updates: annotation}))
+      }
     },
-    [dispatch, documentId],
+    [dispatch, documentId, currentVersionId],
   )
 
   if (pageAnnotations.length === 0) {

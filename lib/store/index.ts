@@ -1,19 +1,18 @@
-import {configureStore} from "@reduxjs/toolkit"
+import {type Store, configureStore} from "@reduxjs/toolkit"
 
 import {documentsApi} from "./api"
+import {documentNamesCacheMiddleware} from "./middleware/document-names-cache"
 import editorReducer from "./slices/editor"
 
-export const makeStore = () => {
-  return configureStore({
-    reducer: {
-      editor: editorReducer,
-      [documentsApi.reducerPath]: documentsApi.reducer,
-    },
-    middleware: getDefaultMiddleware => getDefaultMiddleware().concat(documentsApi.middleware),
-    devTools: process.env.NODE_ENV !== "production",
-  })
-}
+export const store: Store = configureStore({
+  reducer: {
+    editor: editorReducer,
+    [documentsApi.reducerPath]: documentsApi.reducer,
+  },
+  middleware: getDefaultMiddleware =>
+    getDefaultMiddleware().concat(documentsApi.middleware, documentNamesCacheMiddleware),
+  devTools: process.env.NODE_ENV !== "production",
+})
 
-export type AppStore = ReturnType<typeof makeStore>
-export type RootState = ReturnType<AppStore["getState"]>
-export type AppDispatch = AppStore["dispatch"]
+export type RootState = ReturnType<typeof store.getState>
+export type AppDispatch = typeof store.dispatch

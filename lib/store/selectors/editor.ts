@@ -13,6 +13,13 @@ const editorSelectors = {
   editorState: createSelector([selectBasicEditorState], editorState =>
     editorState.documentId ? editorState.byDocument[editorState.documentId] : defaultDocumentEditorState(""),
   ),
+  annotations: createSelector([selectBasicEditorState], editorState => {
+    if (!editorState.documentId) return []
+    const documentState = editorState.byDocument[editorState.documentId]
+    if (!documentState?.currentVersionId) return []
+    const versionState = editorState.byVersion[documentState.currentVersionId]
+    return versionState?.annotations || []
+  }),
   searchResults: createSelector([selectBasicEditorState], editorState =>
     editorState.documentId ? editorState.byDocument[editorState.documentId]?.searchResults || [] : [],
   ),
@@ -28,6 +35,7 @@ export const {
   loading: selectEditorLoading,
   error: selectEditorError,
   editorState: selectEditorState,
+  annotations: selectAnnotations,
   searchResults: selectSearchResults,
   currentSearchIndex: selectCurrentSearchIndex,
   currentPage: selectCurrentPage,

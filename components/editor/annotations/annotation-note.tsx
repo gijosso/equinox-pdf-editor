@@ -18,24 +18,19 @@ interface AnnotationNoteProps {
 
 export function AnnotationNote({annotation, x, y, width, height, scale, onUpdate}: AnnotationNoteProps) {
   const [isEditing, setIsEditing] = React.useState(false)
-  const [editText, setEditText] = React.useState(annotation.text || annotation.content || "")
+  const [editContent, setEditContent] = React.useState(annotation.content || "")
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
   const color = annotation.color || "#FFCD45" // Default PDF sticky note color
 
   const handleDoubleClick = () => {
     setIsEditing(true)
-    setEditText(annotation.text || annotation.content || "")
-  }
-
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setEditText(e.target.value)
+    setEditContent(annotation.content || "")
   }
 
   const handleSave = () => {
     const updatedAnnotation = {
       ...annotation,
-      text: editText,
-      content: editText,
+      content: editContent,
       updatedAt: new Date().toISOString(),
     }
     onUpdate?.(updatedAnnotation)
@@ -44,7 +39,7 @@ export function AnnotationNote({annotation, x, y, width, height, scale, onUpdate
 
   const handleCancel = () => {
     setIsEditing(false)
-    setEditText(annotation.text || annotation.content || "")
+    setEditContent(annotation.content || "")
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -57,50 +52,30 @@ export function AnnotationNote({annotation, x, y, width, height, scale, onUpdate
     }
   }
 
-  // Handle clicks outside the textarea to save
+  // Handle clicks outside to save
   React.useEffect(() => {
     if (!isEditing) return
 
-    const handleMouseDown = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement
 
-      // Don't save if clicking on the textarea itself or its container
-      if (textareaRef.current?.contains(target)) {
-        return
-      }
-
-      // Don't save if clicking on resize handles or drag areas
+      // Don't save if clicking on annotation elements
       if (
+        target.closest("[data-annotation]") ||
         target.closest("[data-rnd-drag-handle]") ||
-        target.closest("[data-rnd-resize-handle]") ||
-        target.closest("[data-annotation]")
+        target.closest("[data-rnd-resize-handle]")
       ) {
         return
       }
 
-      // Don't save if clicking on toolbar or other UI elements
-      if (
-        target.closest("[data-toolbar]") ||
-        target.closest("[data-sidebar]") ||
-        target.closest("button") ||
-        target.closest("input") ||
-        target.closest("textarea")
-      ) {
-        return
-      }
-
-      // Save when clicking on PDF or other areas
       handleSave()
     }
 
-    document.addEventListener("mousedown", handleMouseDown)
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [isEditing, editContent, annotation, onUpdate])
 
-    return () => {
-      document.removeEventListener("mousedown", handleMouseDown)
-    }
-  }, [isEditing, editText, annotation, onUpdate])
-
-  // Focus textarea when entering edit mode
+  // Focus textarea when editing
   React.useEffect(() => {
     if (isEditing && textareaRef.current) {
       textareaRef.current.focus()
@@ -111,7 +86,7 @@ export function AnnotationNote({annotation, x, y, width, height, scale, onUpdate
   return (
     <BaseAnnotation annotation={annotation} x={x} y={y} width={width} height={height} scale={scale} onUpdate={onUpdate}>
       <div
-        className="w-full h-full relative"
+        className="w-full h-full relative cursor-pointer"
         style={{
           backgroundColor: color,
           borderRadius: "2px",
@@ -119,26 +94,27 @@ export function AnnotationNote({annotation, x, y, width, height, scale, onUpdate
         }}
         onDoubleClick={handleDoubleClick}
       >
-        {!isEditing && (annotation.text || annotation.content) && (
-          <div className="absolute top-4 left-1 right-1 bottom-1 text-xs text-gray-800 overflow-hidden whitespace-pre-wrap">
-            {annotation.text || annotation.content}
+        {/* Display content */}
+        {!isEditing && (
+          <div className="absolute top-2 left-2 right-2 bottom-2 text-xs text-gray-800 overflow-hidden whitespace-pre-wrap">
+            {annotation.content || "Double-click to add note..."}
           </div>
         )}
 
+        {/* Edit content */}
         {isEditing && (
-          <div className="absolute top-4 left-1 right-1 bottom-1 bg-transparent z-10">
-            <textarea
-              ref={textareaRef}
-              value={editText}
-              onChange={handleTextChange}
-              onKeyDown={handleKeyDown}
-              className="w-full h-full resize-none border-none outline-none bg-transparent text-xs text-gray-800 p-0 rounded"
-              placeholder="Enter note text..."
-              autoFocus
-            />
-          </div>
+          <textarea
+            ref={textareaRef}
+            value={editContent}
+            onChange={e => setEditContent(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="absolute top-2 left-2 right-2 bottom-2 w-auto h-auto resize-none border-none outline-none bg-transparent text-xs text-gray-800 p-0"
+            placeholder="Enter note text..."
+            autoFocus
+          />
         )}
 
+        {/* Note tail */}
         <div
           className="absolute bottom-0 right-0 w-0 h-0"
           style={{

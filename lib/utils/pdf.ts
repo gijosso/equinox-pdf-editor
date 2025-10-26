@@ -1,4 +1,4 @@
-import {PDFDocument} from "pdf-lib"
+import {PDFDocument, rgb} from "pdf-lib"
 
 export async function generatePDFThumbnail(file: File): Promise<string> {
   try {
@@ -77,9 +77,9 @@ export async function extractPDFAnnotations(file: File): Promise<any[]> {
 /**
  * Create a new PDF with annotations using pdf-lib
  */
-export async function createPDFWithAnnotations(originalPdf: File, annotations: any[]): Promise<Uint8Array> {
+export async function createPDFWithAnnotations(originalBlob: Blob, annotations: any[]): Promise<Blob> {
   try {
-    const arrayBuffer = await originalPdf.arrayBuffer()
+    const arrayBuffer = await originalBlob.arrayBuffer()
     const pdfDoc = await PDFDocument.load(arrayBuffer)
 
     // Add annotations to the PDF
@@ -87,23 +87,77 @@ export async function createPDFWithAnnotations(originalPdf: File, annotations: a
 
     annotations.forEach(annotation => {
       const page = pages[annotation.pageNumber - 1]
-      if (page) {
-        // Add annotation to the page
-        // This is a simplified version - you'd need to implement
-        // the specific annotation types you want to support
-        page.drawRectangle({
-          x: annotation.x,
-          y: annotation.y,
-          width: annotation.width,
-          height: annotation.height,
-          borderColor: annotation.color || "#ffeb3b",
-          borderWidth: 2,
-        })
+      if (!page) return
+
+      const {width: pageWidth, height: pageHeight} = page.getSize()
+
+      // Convert PDF coordinates to page coordinates
+      const x = annotation.x
+      const y = pageHeight - annotation.y - annotation.height // PDF coordinates are bottom-up
+      const width = annotation.width
+      const height = annotation.height
+
+      switch (annotation.type) {
+        case "highlight":
+          // Draw highlight rectangle
+          page.drawRectangle({
+            x,
+            y,
+            width,
+            height,
+            color: annotation.color
+              ? rgb(
+                  parseInt(annotation.color.slice(1, 3), 16) / 255,
+                  parseInt(annotation.color.slice(3, 5), 16) / 255,
+                  parseInt(annotation.color.slice(5, 7), 16) / 255,
+                )
+              : rgb(1, 1, 0), // Default yellow
+            opacity: 0.3,
+          })
+          break
+
+        case "redaction":
+          // Draw redaction rectangle (black)
+          page.drawRectangle({
+            x,
+            y,
+            width,
+            height,
+            color: rgb(0, 0, 0),
+          })
+          break
+
+        case "note":
+          // Draw note icon/rectangle
+          page.drawRectangle({
+            x,
+            y,
+            width,
+            height,
+            borderColor: rgb(0, 0, 0),
+            borderWidth: 1,
+            color: rgb(1, 1, 0.8), // Light yellow background
+          })
+          // Add note text if available
+          if (annotation.content) {
+            try {
+              page.drawText(annotation.content, {
+                x: x + 2,
+                y: y + 2,
+                size: annotation.fontSize || 10,
+                color: rgb(0, 0, 0),
+              })
+            } catch (textError) {
+              console.warn("Could not draw note text:", textError)
+            }
+          }
+          break
       }
     })
 
-    // Return the modified PDF as bytes
-    return await pdfDoc.save()
+    // Return the modified PDF as blob
+    const pdfBytes = await pdfDoc.save()
+    return new Blob([pdfBytes], {type: "application/pdf"})
   } catch (error) {
     console.error("Error creating PDF with annotations:", error)
     throw error

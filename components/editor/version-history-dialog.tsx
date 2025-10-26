@@ -4,11 +4,14 @@ import {formatDistanceToNow} from "date-fns"
 import {Calendar, Clock, FileText} from "lucide-react"
 
 import {Button} from "@/components/ui/button"
-import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog"
+import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog"
 import {ScrollArea} from "@/components/ui/scroll-area"
-import {useGetVersionsByDocumentQuery} from "@/lib/store/api"
+import {useToast} from "@/hooks/use-toast"
+import {useGetVersionsByDocumentQuery, useUpdateDocumentMutation} from "@/lib/store/api"
 import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {setCompareVersions, toggleDiffMode} from "@/lib/store/slices"
+import {setAnnotations, setCompareVersions, setCurrentVersion, toggleDiffMode} from "@/lib/store/slices"
+import {convertXFDFAnnotationsToAnnotations} from "@/lib/utils/annotations"
+import {xfdfToAnnotations} from "@/lib/utils/xfdf"
 
 interface VersionHistoryDialogProps {
   open: boolean
@@ -18,6 +21,8 @@ interface VersionHistoryDialogProps {
 export function VersionHistoryDialog({open, onOpenChange}: VersionHistoryDialogProps) {
   const dispatch = useAppDispatch()
   const documentId = useAppSelector(state => state.editor.documentId)
+  const [updateDocument, {isLoading: updating}] = useUpdateDocumentMutation()
+  const {toast} = useToast()
 
   // Use RTK Query to fetch versions
   const {
@@ -28,14 +33,46 @@ export function VersionHistoryDialog({open, onOpenChange}: VersionHistoryDialogP
     skip: !documentId || !open, // Only fetch when dialog is open and documentId exists
   })
 
-  const handleLoadVersion = (versionId: string) => {
+  const handleLoadVersion = async (versionId: string) => {
     if (!documentId) return
+
     const version = versions.find(v => v.id === versionId)
-    if (version) {
-      // Load annotations from XFDF string
-      // const annotations = loadAnnotationsFromVersion(version.xfdf)
-      // dispatch(setAnnotations({documentId: documentId, annotations}))
+    if (!version) return
+
+    try {
+      // Update document to point to the selected version
+      await updateDocument({
+        documentId,
+        updates: {currentVersionId: versionId},
+      }).unwrap()
+
+      // Load annotations from the selected version's XFDF
+      const {annotations: xfdfAnnotations} = xfdfToAnnotations(version.xfdf)
+      const annotations = convertXFDFAnnotationsToAnnotations(xfdfAnnotations)
+
+      // Set annotations for the next version (working changes)
+      // The selected version becomes the current committed state
+      // We need to create a new version ID for the working changes
+      const nextVersionId = `working-${Date.now()}`
+      dispatch(setAnnotations({documentId, versionId: nextVersionId, annotations}))
+
+      // Update the current version in Redux to point to the working version
+      dispatch(setCurrentVersion({documentId, versionId: nextVersionId}))
+
+      // Show success toast
+      toast({
+        title: "Version loaded",
+        description: `Version ${version.versionNumber} has been loaded successfully.`,
+      })
+
       onOpenChange(false)
+    } catch (error) {
+      console.error("Failed to load version:", error)
+      toast({
+        title: "Failed to load version",
+        description: "There was an error loading the selected version.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -58,6 +95,9 @@ export function VersionHistoryDialog({open, onOpenChange}: VersionHistoryDialogP
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Version History</DialogTitle>
+          <DialogDescription>
+            View and manage document versions. Load a previous version or compare versions to see changes.
+          </DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-96">
           <div className="space-y-4">
@@ -102,8 +142,13 @@ export function VersionHistoryDialog({open, onOpenChange}: VersionHistoryDialogP
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleLoadVersion(version.id)}>
-                          Load
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleLoadVersion(version.id)}
+                          disabled={updating}
+                        >
+                          {updating ? "Loading..." : "Load"}
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => handleCompareVersions(version.id)}>
                           Compare

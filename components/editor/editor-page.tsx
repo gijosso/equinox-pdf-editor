@@ -3,10 +3,10 @@
 import {Loader2} from "lucide-react"
 import React from "react"
 
-import {useGetDocumentWithVersionsQuery} from "@/lib/store/api"
+import {useGetDocumentQuery} from "@/lib/store/api"
 import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
 import {selectEditorState} from "@/lib/store/selectors"
-import {openDocument} from "@/lib/store/slices/editor"
+import {openDocument, setCurrentVersion} from "@/lib/store/slices/editor"
 
 import {ErrorBoundaryWithSuspense} from "../error-boundary"
 import {EditorLoading} from "../loading"
@@ -21,11 +21,15 @@ interface EditorPageProps {
 
 export function EditorPage({documentId}: EditorPageProps) {
   const dispatch = useAppDispatch()
-  const {isLoading, error} = useGetDocumentWithVersionsQuery(documentId)
+  const {data: documentMetadata, isLoading, error} = useGetDocumentQuery(documentId, {skip: !documentId})
 
   React.useEffect(() => {
     dispatch(openDocument(documentId))
-  }, [dispatch, documentId])
+    // Set current version when document is loaded
+    if (documentMetadata?.currentVersionId) {
+      dispatch(setCurrentVersion({documentId, versionId: documentMetadata.currentVersionId}))
+    }
+  }, [dispatch, documentId, documentMetadata?.currentVersionId])
 
   if (isLoading) {
     return (

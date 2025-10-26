@@ -61,19 +61,29 @@ function Home() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold text-foreground">Your Documents</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Manage and edit your PDF documents</p>
+      {documents.length === 0 ? (
+        <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
+          <div className="w-full">
+            <FileUpload variant="dropzone" />
+          </div>
         </div>
-        <div className="h-10 w-24">
-          <FileUpload variant={documents.length === 0 ? "dropzone" : "button"} />
-        </div>
-      </div>
+      ) : (
+        <>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold text-foreground">Your Documents</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Manage and edit your PDF documents</p>
+            </div>
+            <div className="h-10 w-24">
+              <FileUpload variant="button" />
+            </div>
+          </div>
 
-      <div className="min-h-[400px]">
-        <DocumentList />
-      </div>
+          <div className="min-h-[400px]">
+            <DocumentList />
+          </div>
+        </>
+      )}
     </div>
   )
 }

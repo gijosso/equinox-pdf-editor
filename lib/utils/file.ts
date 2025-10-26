@@ -1,4 +1,5 @@
-import {PDFDocumentWithBlob, PDFVersion} from "../types"
+import {documentNamesCache} from "../services/document-names-cache"
+import {PDFDocument, PDFVersion} from "../types"
 import {generatePDFThumbnail} from "./pdf"
 import {fileToXFDF} from "./xfdf"
 
@@ -8,23 +9,6 @@ export async function computeFileHash(file: File | Blob): Promise<string> {
   const hashArray = Array.from(new Uint8Array(hashBuffer))
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("")
   return hashHex
-}
-
-export function generateUniqueName(baseName: string, existingNames: string[]): string {
-  if (!existingNames.includes(baseName)) {
-    return baseName
-  }
-
-  const nameWithoutExt = baseName.replace(/\.pdf$/i, "")
-  let counter = 1
-  let newName = `${nameWithoutExt} (${counter}).pdf`
-
-  while (existingNames.includes(newName)) {
-    counter++
-    newName = `${nameWithoutExt} (${counter}).pdf`
-  }
-
-  return newName
 }
 
 export const generateDocumentId = () => {
@@ -77,7 +61,9 @@ export const isValidPdfFile = async (file: File | Blob): Promise<boolean> => {
 }
 
 // Optimized unique name generation using Set for O(1) lookups
-function generateUniqueNameOptimized(baseName: string, existingNames: Set<string>): string {
+export function generateUniqueName(baseName: string): string {
+  const existingNames = documentNamesCache.getCache()
+
   if (!existingNames.has(baseName)) {
     return baseName
   }
@@ -94,40 +80,19 @@ function generateUniqueNameOptimized(baseName: string, existingNames: Set<string
   return newName
 }
 
-const documentNamesCache = new Set<string>()
-let cacheInitialized = false
-
-// Clear cache when documents change
-export function clearDocumentNamesCache() {
-  documentNamesCache.clear()
-  cacheInitialized = false
-}
-
-// Update cache when documents are added/removed
-export function updateDocumentNamesCache(documentNames: string[]) {
-  documentNamesCache.clear()
-  documentNames.forEach(name => documentNamesCache.add(name))
-  cacheInitialized = true
-}
-
-export const uploadNewFile = async (file: File, documents: Array<{name: string}>) => {
-  if (!cacheInitialized) {
-    documents.forEach(doc => documentNamesCache.add(doc.name))
-    cacheInitialized = true
-  }
+export const uploadNewFile = async (file: File) => {
+  const documentName = generateUniqueName(file.name)
 
   const fileHash = await computeFileHash(file)
   const blob = new Blob([await file.arrayBuffer()], {type: "application/pdf"})
   const thumbnail = await generatePDFThumbnail(file)
-  const documentName = generateUniqueNameOptimized(file.name, documentNamesCache)
-  documentNamesCache.add(documentName)
   const xfdf = await fileToXFDF(file)
 
   const now = new Date()
   const documentId = generateDocumentId()
   const versionId = generateVersionId()
 
-  const document: PDFDocumentWithBlob = {
+  const document: PDFDocument = {
     id: documentId,
     name: documentName,
     createdAt: now.toISOString(),
@@ -135,7 +100,6 @@ export const uploadNewFile = async (file: File, documents: Array<{name: string}>
     currentVersionId: versionId,
     fileHash,
     thumbnail,
-    blob,
   }
 
   const version: PDFVersion = {
@@ -145,6 +109,7 @@ export const uploadNewFile = async (file: File, documents: Array<{name: string}>
     message: "Initial upload",
     createdAt: now.toISOString(),
     xfdf,
+    blob, // Store blob in version, not document
   }
 
   return {document, version}

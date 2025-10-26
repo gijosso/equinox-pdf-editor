@@ -9,10 +9,9 @@ import {Button} from "@/components/ui/button"
 import {Draggable} from "@/components/ui/draggable"
 import {useToast} from "@/hooks/use-toast"
 import {documentService} from "@/lib/db/documents"
-import {useAddDocumentMutation, useGetAllDocumentsQuery} from "@/lib/store/api"
-import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
+import {useAddDocumentMutation} from "@/lib/store/api"
 import type {PDFDocument} from "@/lib/types"
-import {cn, computeFileHash, generateUniqueName, isValidFileSize, isValidPdfFile, uploadNewFile} from "@/lib/utils"
+import {cn, computeFileHash, isValidFileSize, isValidPdfFile, uploadNewFile} from "@/lib/utils"
 
 interface FileUploadProps {
   variant?: "button" | "dropzone"
@@ -21,7 +20,6 @@ interface FileUploadProps {
 type DuplicateDialogState = {
   open: boolean
   existingDoc: PDFDocument | null
-  name: string
   file: File | null
   fileHash: string
 }
@@ -29,74 +27,69 @@ type DuplicateDialogState = {
 const initialDuplicateDialogState: DuplicateDialogState = {
   open: false,
   existingDoc: null,
-  name: "",
   file: null,
   fileHash: "",
 }
 
 export function FileUpload({variant = "button"}: FileUploadProps) {
   const router = useRouter()
-  const dispatch = useAppDispatch()
   const {toast} = useToast()
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = React.useState(false)
   const [isDragging, setIsDragging] = React.useState(false)
   const [duplicateDialog, setDuplicateDialog] = React.useState<DuplicateDialogState>(initialDuplicateDialogState)
-
-  const {data: documents = []} = useGetAllDocumentsQuery()
   const [addDocument] = useAddDocumentMutation()
 
-  const handleFile = async (file: File, forceName?: string) => {
+  const validateAndCheckDuplicate = async (file: File) => {
     const isValidPDF = await isValidPdfFile(file)
     if (!isValidPDF) {
       toast({
         title: "Invalid PDF file",
-        description: "Error while uploading the PDF file",
+        description: "Error while uploading the PDF file.",
         variant: "destructive",
       })
-      return
+      return {valid: false}
     }
 
     if (!isValidFileSize(file)) {
       toast({
         title: "File too large",
-        description: "Please upload a PDF smaller than 50MB",
+        description: "Please upload a PDF smaller than 50MB.",
         variant: "destructive",
       })
-      return
+      return {valid: false}
     }
 
+    const fileHash = await computeFileHash(file)
+    const existingDocResult = await documentService.getDocumentByHash(fileHash)
+
+    if (!existingDocResult.success) {
+      toast({
+        title: "Document error",
+        description: "An error occurred while checking for existing documents",
+        variant: "destructive",
+      })
+      return {valid: false}
+    }
+
+    const existingDoc = existingDocResult.data
+    if (existingDoc) {
+      return {valid: true, isDuplicate: true, existingDoc, fileHash}
+    }
+
+    return {valid: true, isDuplicate: false}
+  }
+
+  const uploadFile = async (file: File) => {
     setUploading(true)
 
     try {
-      const fileHash = await computeFileHash(file)
-      const existingDocResult = await documentService.getDocumentByHash(fileHash)
-
-      if (!existingDocResult.success) {
-        toast({
-          title: "Document error",
-          description: "An error occurred while checking for existing documents",
-          variant: "destructive",
-        })
-        return
-      }
-
-      const existingDoc = existingDocResult.data
-      if (existingDoc && !forceName) {
-        const existingNames = documents.map(d => d.name)
-        const name = generateUniqueName(file.name, existingNames)
-
-        setDuplicateDialog({open: true, existingDoc, name, file, fileHash})
-        setUploading(false)
-        return
-      }
-
-      const {document, version} = await uploadNewFile(file, documents)
+      const {document, version} = await uploadNewFile(file)
       await addDocument({document, version}).unwrap()
 
       toast({
         title: "Upload successful",
-        description: `${document.name} has been uploaded`,
+        description: `${document.name} has been uploaded successfully.`,
       })
 
       if (fileInputRef.current) {
@@ -114,6 +107,26 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
     } finally {
       setUploading(false)
     }
+  }
+
+  const handleFile = async (file: File) => {
+    const validation = await validateAndCheckDuplicate(file)
+
+    if (!validation.valid) {
+      return
+    }
+
+    if (validation.isDuplicate) {
+      setDuplicateDialog({
+        open: true,
+        existingDoc: validation.existingDoc!,
+        file,
+        fileHash: validation.fileHash!,
+      })
+      return
+    }
+
+    await uploadFile(file)
   }
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -134,7 +147,7 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
 
   const handleDuplicateConfirm = async () => {
     if (duplicateDialog.file) {
-      await handleFile(duplicateDialog.file, duplicateDialog.name)
+      await uploadFile(duplicateDialog.file)
     }
 
     setDuplicateDialog(initialDuplicateDialogState)
@@ -193,7 +206,6 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
           open={duplicateDialog.open}
           onOpenChange={open => !open && handleDuplicateCancel()}
           existingDocumentName={duplicateDialog.existingDoc?.name || ""}
-          newDocumentName={duplicateDialog.name}
           onConfirm={handleDuplicateConfirm}
           onCancel={handleDuplicateCancel}
         />
@@ -238,7 +250,6 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
         open={duplicateDialog.open}
         onOpenChange={open => !open && handleDuplicateCancel()}
         existingDocumentName={duplicateDialog.existingDoc?.name || ""}
-        newDocumentName={duplicateDialog.name}
         onConfirm={handleDuplicateConfirm}
         onCancel={handleDuplicateCancel}
       />

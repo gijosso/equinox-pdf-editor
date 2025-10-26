@@ -4,6 +4,7 @@ import type {Annotation, DocumentEditorState, EditorState, EditorTool, SearchRes
 
 const initialState: EditorState = {
   byDocument: {},
+  byVersion: {},
   documentId: null,
   loading: false,
   error: null,
@@ -11,6 +12,7 @@ const initialState: EditorState = {
 
 export const defaultDocumentEditorState = (documentId: string): DocumentEditorState => ({
   documentId,
+  currentVersionId: null,
   isEditing: false,
   selectedAnnotations: [],
   viewport: {x: 0, y: 0, zoom: 1},
@@ -21,7 +23,6 @@ export const defaultDocumentEditorState = (documentId: string): DocumentEditorSt
   // PDF-specific state
   currentPage: 1,
   totalPages: 0,
-  annotations: [],
 
   // Search state
   searchQuery: "",
@@ -52,6 +53,13 @@ export const editorSlice = createSlice({
 
       // Set as editing
       state.byDocument[documentId].isEditing = true
+    },
+
+    setCurrentVersion: (state, action: PayloadAction<{documentId: string; versionId: string}>) => {
+      const {documentId, versionId} = action.payload
+      if (state.byDocument[documentId]) {
+        state.byDocument[documentId].currentVersionId = versionId
+      }
     },
 
     closeDocument: (state, action: PayloadAction<{documentId: string}>) => {
@@ -100,25 +108,29 @@ export const editorSlice = createSlice({
       }
     },
 
-    addAnnotation: (state, action: PayloadAction<{documentId: string; annotation: Annotation}>) => {
-      const {documentId, annotation} = action.payload
+    addAnnotation: (state, action: PayloadAction<{documentId: string; versionId: string; annotation: Annotation}>) => {
+      const {documentId, versionId, annotation} = action.payload
       if (state.byDocument[documentId]) {
-        state.byDocument[documentId].annotations.push(annotation)
+        // Initialize version state if it doesn't exist
+        if (!state.byVersion[versionId]) {
+          state.byVersion[versionId] = {versionId, annotations: []}
+        }
+        state.byVersion[versionId].annotations.push(annotation)
         state.byDocument[documentId].hasUnsavedChanges = true
       }
     },
 
     updateAnnotation: (
       state,
-      action: PayloadAction<{documentId: string; id: string; updates: Partial<Annotation>}>,
+      action: PayloadAction<{documentId: string; versionId: string; id: string; updates: Partial<Annotation>}>,
     ) => {
-      const {documentId, id, updates} = action.payload
+      const {documentId, versionId, id, updates} = action.payload
 
-      if (state.byDocument[documentId]) {
-        const annotationIndex = state.byDocument[documentId].annotations.findIndex(a => a.id === id)
+      if (state.byDocument[documentId] && state.byVersion[versionId]) {
+        const annotationIndex = state.byVersion[versionId].annotations.findIndex(a => a.id === id)
         if (annotationIndex !== -1) {
-          const oldAnnotation = state.byDocument[documentId].annotations[annotationIndex]
-          state.byDocument[documentId].annotations[annotationIndex] = {
+          const oldAnnotation = state.byVersion[versionId].annotations[annotationIndex]
+          state.byVersion[versionId].annotations[annotationIndex] = {
             ...oldAnnotation,
             ...updates,
           }
@@ -127,18 +139,25 @@ export const editorSlice = createSlice({
       }
     },
 
-    deleteAnnotation: (state, action: PayloadAction<{documentId: string; id: string}>) => {
-      const {documentId, id} = action.payload
-      if (state.byDocument[documentId]) {
-        state.byDocument[documentId].annotations = state.byDocument[documentId].annotations.filter(a => a.id !== id)
+    deleteAnnotation: (state, action: PayloadAction<{documentId: string; versionId: string; id: string}>) => {
+      const {documentId, versionId, id} = action.payload
+      if (state.byDocument[documentId] && state.byVersion[versionId]) {
+        state.byVersion[versionId].annotations = state.byVersion[versionId].annotations.filter(a => a.id !== id)
         state.byDocument[documentId].hasUnsavedChanges = true
       }
     },
 
-    setAnnotations: (state, action: PayloadAction<{documentId: string; annotations: Annotation[]}>) => {
-      const {documentId, annotations} = action.payload
+    setAnnotations: (
+      state,
+      action: PayloadAction<{documentId: string; versionId: string; annotations: Annotation[]}>,
+    ) => {
+      const {documentId, versionId, annotations} = action.payload
       if (state.byDocument[documentId]) {
-        state.byDocument[documentId].annotations = annotations
+        // Initialize version state if it doesn't exist
+        if (!state.byVersion[versionId]) {
+          state.byVersion[versionId] = {versionId, annotations: []}
+        }
+        state.byVersion[versionId].annotations = annotations
       }
     },
 
@@ -212,6 +231,7 @@ export const editorSlice = createSlice({
 export const {
   openDocument,
   closeDocument,
+  setCurrentVersion,
   updateZoom,
   setActiveTool,
   toggleSidebar,

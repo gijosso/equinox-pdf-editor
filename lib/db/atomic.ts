@@ -1,4 +1,4 @@
-import type {PDFDocument, PDFDocumentWithBlob, PDFVersion} from "../types"
+import type {PDFDocument, PDFVersion} from "../types"
 import {db} from "./database"
 import {DatabaseError, DocumentNotFoundError, type Result} from "./documents"
 import {documentService} from "./documents"
@@ -6,7 +6,7 @@ import {versionService} from "./versions"
 
 export const atomicService = {
   async addDocumentWithVersion(
-    document: PDFDocumentWithBlob,
+    document: PDFDocument,
     version: PDFVersion,
   ): Promise<Result<{documentId: string; versionId: string}, DatabaseError>> {
     try {
@@ -43,14 +43,18 @@ export const atomicService = {
   ): Promise<Result<{documentId: string; versionId: string}, DatabaseError>> {
     try {
       return await db.transaction("rw", [db.documents, db.versions], async () => {
-        const documentResult = await documentService.updateDocument(documentId, documentUpdates)
-        if (!documentResult.success) {
-          throw documentResult.error
-        }
-
         const versionResult = await versionService.addVersion(version)
         if (!versionResult.success) {
           throw versionResult.error
+        }
+
+        // Update document to point to the new version
+        const documentResult = await documentService.updateDocument(documentId, {
+          ...documentUpdates,
+          currentVersionId: version.id,
+        })
+        if (!documentResult.success) {
+          throw documentResult.error
         }
 
         return {success: true, data: {documentId, versionId: versionResult.data}}
@@ -104,25 +108,35 @@ export const atomicService = {
     }
   },
 
-  async loadDocumentWithVersions(
+  async getDocumentWithNextVersionNumber(
     documentId: string,
-  ): Promise<Result<{document: PDFDocumentWithBlob; versions: PDFVersion[]}, DatabaseError>> {
+  ): Promise<Result<{document: PDFDocument; nextVersionNumber: number}, DatabaseError>> {
     try {
       return await db.transaction("r", [db.documents, db.versions], async () => {
-        const documentResult = await documentService.getDocumentWithBlob(documentId)
+        const [documentResult, nextVersionResult] = await Promise.all([
+          documentService.getDocument(documentId),
+          versionService.getNextVersionNumber(documentId),
+        ])
+
         if (!documentResult.success) {
           throw documentResult.error
         }
+
         if (!documentResult.data) {
           throw new DocumentNotFoundError(documentId)
         }
 
-        const versionsResult = await versionService.getVersionsByDocument(documentId)
-        if (!versionsResult.success) {
-          throw versionsResult.error
+        if (!nextVersionResult.success) {
+          throw nextVersionResult.error
         }
 
-        return {success: true, data: {document: documentResult.data, versions: versionsResult.data}}
+        return {
+          success: true,
+          data: {
+            document: documentResult.data,
+            nextVersionNumber: nextVersionResult.data,
+          },
+        }
       })
     } catch (error) {
       return {
@@ -131,7 +145,52 @@ export const atomicService = {
           error instanceof DatabaseError
             ? error
             : new DatabaseError(
-                `Failed to load document with versions: ${error instanceof Error ? error.message : "Unknown error"}`,
+                `Failed to get document with next version number: ${error instanceof Error ? error.message : "Unknown error"}`,
+              ),
+      }
+    }
+  },
+
+  async getCurrentVersionBlob(
+    documentId: string,
+    currentVersionId: string,
+  ): Promise<Result<PDFVersion, DatabaseError>> {
+    try {
+      return await db.transaction("r", [db.documents, db.versions], async () => {
+        // Verify document still exists and has the same currentVersionId
+        const documentResult = await documentService.getDocument(documentId)
+        if (!documentResult.success || !documentResult.data) {
+          throw new DocumentNotFoundError(documentId)
+        }
+
+        if (documentResult.data.currentVersionId !== currentVersionId) {
+          throw new DatabaseError("Document current version has changed")
+        }
+
+        // Get the version blob
+        const versionResult = await versionService.getVersion(currentVersionId)
+        if (!versionResult.success) {
+          throw versionResult.error
+        }
+
+        if (!versionResult.data) {
+          throw new DatabaseError("Current version not found")
+        }
+
+        if (!versionResult.data.blob) {
+          throw new DatabaseError("No blob found in current version")
+        }
+
+        return {success: true, data: versionResult.data}
+      })
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof DatabaseError
+            ? error
+            : new DatabaseError(
+                `Failed to get current version blob: ${error instanceof Error ? error.message : "Unknown error"}`,
               ),
       }
     }

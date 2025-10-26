@@ -15,7 +15,6 @@ interface DuplicateDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   existingDocumentName: string
-  newDocumentName: string
   onConfirm: () => void
   onCancel: () => void
 }
@@ -24,7 +23,6 @@ export const DuplicateDialog = ({
   open,
   onOpenChange,
   existingDocumentName,
-  newDocumentName,
   onConfirm,
   onCancel,
 }: DuplicateDialogProps) => (
@@ -37,10 +35,6 @@ export const DuplicateDialog = ({
           <br />
           <span className="font-medium text-foreground">{existingDocumentName}</span>
           <br />
-          <br />
-          <span className="mt-4">Do you want to create a new document with the name:</span>
-          <br />
-          <span className="font-medium text-foreground">{newDocumentName}</span>
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>

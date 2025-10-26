@@ -4,44 +4,54 @@ import {Save} from "lucide-react"
 import React from "react"
 
 import {Button} from "@/components/ui/button"
-import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog"
+import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog"
 import {Label} from "@/components/ui/label"
 import {Textarea} from "@/components/ui/textarea"
-import {useAddVersionMutation} from "@/lib/store/api"
+import {useToast} from "@/hooks/use-toast"
+import {useUpdateDocumentWithVersionMutation} from "@/lib/store/api"
 import {useAppSelector} from "@/lib/store/hooks"
-import {selectEditorState} from "@/lib/store/selectors"
-
-// import {createVersionWithXFDF} from "@/lib/utils/xfdf"
+import {selectAnnotations, selectEditorState} from "@/lib/store/selectors"
+import {saveVersion} from "@/lib/utils/version"
 
 interface SaveVersionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onVersionSaved?: () => void
 }
 
-export function SaveVersionDialog({open, onOpenChange}: SaveVersionDialogProps) {
-  const {documentId, annotations, currentPage} = useAppSelector(selectEditorState)
-  const [addVersion, {isLoading: saving}] = useAddVersionMutation()
+export function SaveVersionDialog({open, onOpenChange, onVersionSaved}: SaveVersionDialogProps) {
+  const annotations = useAppSelector(selectAnnotations)
+  const {documentId, currentPage} = useAppSelector(selectEditorState)
+  const [updateDocumentWithVersion, {isLoading: saving}] = useUpdateDocumentWithVersionMutation()
   const [message, setMessage] = React.useState("")
+  const {toast} = useToast()
 
   const handleSave = async () => {
     if (!documentId || !message.trim()) return
 
-    try {
-      // Create version object (you'll need to implement the version creation logic)
-      const version = {
-        id: crypto.randomUUID(),
-        documentId,
-        versionNumber: 1, // You might want to calculate this based on existing versions
-        message: message.trim(),
-        createdAt: new Date().toISOString(),
-        xfdf: "", // You'll need to generate this from annotations
-      }
+    const result = await saveVersion({
+      documentId,
+      message: message.trim(),
+      annotations: annotations || [],
+      updateDocumentWithVersion,
+    })
 
-      await addVersion(version).unwrap()
+    if (result.success) {
+      // Show success toast
+      toast({
+        title: "Version saved",
+        description: `Version ${result.versionNumber} has been saved successfully.`,
+      })
+
       setMessage("")
       onOpenChange(false)
-    } catch (error) {
-      console.error("Failed to save version:", error)
+      onVersionSaved?.() // Refresh PDF blob after saving
+    } else {
+      toast({
+        title: "Failed to save version",
+        description: result.error || "There was an error saving the version. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -50,6 +60,9 @@ export function SaveVersionDialog({open, onOpenChange}: SaveVersionDialogProps) 
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Save Version</DialogTitle>
+          <DialogDescription>
+            Create a new version with your current annotations. This will commit your changes to a new version.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">

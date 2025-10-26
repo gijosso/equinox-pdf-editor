@@ -4,6 +4,8 @@
  */
 import type {Annotation, AnnotationType} from "@/lib/types"
 
+import type {XFDFAnnotation} from "./xfdf"
+
 export interface AnnotationCreationOptions {
   pageNumber: number
   x: number
@@ -70,7 +72,6 @@ export function createNoteAnnotation(options: AnnotationCreationOptions): Annota
     width: options.width || 20, // Default note size
     height: options.height || 20,
     content: "", // Always start with empty content
-    text: "", // Always start with empty text
     fontSize: options.fontSize || 12,
     createdAt: now,
     updatedAt: now,
@@ -200,6 +201,44 @@ export function annotationToXFDF(annotation: Annotation): string {
 /**
  * Parse XFDF annotation back to Annotation object
  */
+export function convertXFDFAnnotationsToAnnotations(xfdfAnnotations: XFDFAnnotation[]): Annotation[] {
+  return xfdfAnnotations.map(xfdfAnnotation => {
+    // Map XFDF type to our annotation type
+    let annotationType: AnnotationType
+    switch (xfdfAnnotation.type) {
+      case "highlight":
+        annotationType = "highlight"
+        break
+      case "text":
+        annotationType = "note"
+        break
+      case "redaction":
+        annotationType = "redaction"
+        break
+      default:
+        console.warn(`Unknown XFDF annotation type: ${xfdfAnnotation.type}`)
+        annotationType = "note" // Default fallback
+    }
+
+    return {
+      id: xfdfAnnotation.id,
+      type: annotationType,
+      pageNumber: xfdfAnnotation.pageNumber,
+      x: xfdfAnnotation.x,
+      y: xfdfAnnotation.y,
+      width: xfdfAnnotation.width,
+      height: xfdfAnnotation.height,
+      content: xfdfAnnotation.content || "",
+      color: xfdfAnnotation.color,
+      fontSize: xfdfAnnotation.fontSize,
+      xfdfType: xfdfAnnotation.type,
+      quadPoints: xfdfAnnotation.quadPoints,
+      createdAt: xfdfAnnotation.createdAt,
+      updatedAt: xfdfAnnotation.updatedAt,
+    }
+  })
+}
+
 export function parseXFDFAnnotation(xfdfElement: Element): Annotation | null {
   try {
     const id = xfdfElement.getAttribute("id")

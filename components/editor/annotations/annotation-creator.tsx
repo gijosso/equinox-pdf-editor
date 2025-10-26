@@ -17,7 +17,7 @@ interface AnnotationCreatorProps {
 
 export function AnnotationCreator({scale, children}: AnnotationCreatorProps) {
   const dispatch = useAppDispatch()
-  const {activeTool, currentPage, documentId} = useAppSelector(selectEditorState)
+  const {activeTool, currentPage, documentId, currentVersionId} = useAppSelector(selectEditorState)
   const [isCreating, setIsCreating] = React.useState(false)
   const [startPos, setStartPos] = React.useState<{x: number; y: number} | null>(null)
   const [currentPos, setCurrentPos] = React.useState<{x: number; y: number} | null>(null)
@@ -101,7 +101,7 @@ export function AnnotationCreator({scale, children}: AnnotationCreatorProps) {
         content: "",
       })
 
-      dispatch(addAnnotation({documentId: documentId || "", annotation}))
+      dispatch(addAnnotation({documentId: documentId || "", versionId: currentVersionId || "", annotation}))
     }
 
     setIsCreating(false)
