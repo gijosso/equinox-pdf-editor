@@ -1,9 +1,11 @@
 import {createAsyncThunk, createSlice} from "@reduxjs/toolkit"
 
+import {atomicService} from "@/lib/db/atomic"
 import {documentService} from "@/lib/db/documents"
 import type {NormalizedDocumentsState, PDFDocument, PDFDocumentWithBlob, PDFVersion} from "@/lib/types"
 
 import {addDocumentWithVersion, deleteDocumentWithVersions, updateDocumentWithVersion} from "./atomic"
+import {loadVersions} from "./versions"
 
 const initialState: NormalizedDocumentsState = {
   documents: {
@@ -118,6 +120,18 @@ export const updateDocument = createAsyncThunk(
   },
 )
 
+export const loadDocumentWithVersions = createAsyncThunk(
+  "documents/loadDocumentWithVersions",
+  async (documentId: string, {rejectWithValue}) => {
+    const result = await atomicService.loadDocumentWithVersions(documentId)
+    if (!result.success) {
+      return rejectWithValue(result.error.message)
+    }
+
+    return {documentId, document: result.data.document, versions: result.data.versions}
+  },
+)
+
 export const documentsSlice = createSlice({
   name: "documents",
   initialState,
@@ -170,6 +184,40 @@ export const documentsSlice = createSlice({
         const documentId = action.payload
         removeDocumentFromState(state, documentId)
         removeVersionFromState(state, documentId)
+      })
+      // Handle version loading
+      .addCase(loadVersions.fulfilled, (state, action) => {
+        const {documentId, versions} = action.payload
+        // Clear existing versions for this document
+        const existingVersionIds = state.versions.byDocument[documentId] || []
+        existingVersionIds.forEach(versionId => {
+          delete state.versions.entities[versionId]
+          const index = state.versions.ids.indexOf(versionId)
+          if (index > -1) {
+            state.versions.ids.splice(index, 1)
+          }
+        })
+        // Add new versions
+        versions.forEach(version => addVersionToState(state, version))
+      })
+      // Handle atomic document with versions loading
+      .addCase(loadDocumentWithVersions.fulfilled, (state, action) => {
+        const {documentId, document, versions} = action.payload
+        // Remove blob from document before storing in Redux
+        const {blob, ...documentWithoutBlob} = document
+        addDocumentToState(state, documentWithoutBlob)
+
+        // Clear existing versions for this document
+        const existingVersionIds = state.versions.byDocument[documentId] || []
+        existingVersionIds.forEach(versionId => {
+          delete state.versions.entities[versionId]
+          const index = state.versions.ids.indexOf(versionId)
+          if (index > -1) {
+            state.versions.ids.splice(index, 1)
+          }
+        })
+        // Add new versions
+        versions.forEach(version => addVersionToState(state, version))
       })
   },
 })

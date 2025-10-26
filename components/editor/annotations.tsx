@@ -1,24 +1,47 @@
 "use client"
 
-import {ChevronDown, ChevronRight, Highlighter, Layers, List, Square, StickyNote, Trash2, Type} from "lucide-react"
+import {ChevronDown, ChevronRight, Highlighter, Layers, List, Pencil, Square, StickyNote, Trash2} from "lucide-react"
 import React from "react"
 
 import {Button} from "@/components/ui/button"
 import {ScrollArea} from "@/components/ui/scroll-area"
 import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {selectActiveDocumentAnnotations, selectActiveDocumentCurrentPage} from "@/lib/store/selectors"
+import {selectEditorState} from "@/lib/store/selectors"
 import {deleteAnnotation, setCurrentPage} from "@/lib/store/slices"
-import type {Annotation} from "@/lib/types"
+import type {Annotation, AnnotationType} from "@/lib/types"
+
+type AnnotationToolConfig = {type: AnnotationType; icon: React.ReactNode; label: string}
+
+const ANNOTATIONS_CONFIGS = {
+  highlight: {type: "highlight", icon: <Highlighter className="h-4 w-4" />, label: "Highlight"},
+  note: {type: "note", icon: <StickyNote className="h-4 w-4" />, label: "Sticky Note"},
+  draw: {type: "draw", icon: <Square className="h-4 w-4" />, label: "Draw"},
+  erase: {type: "erase", icon: <Pencil className="h-4 w-4" />, label: "Erase"},
+} as const satisfies {[K in AnnotationType]: AnnotationToolConfig}
 
 export function Annotations() {
-  const dispatch = useAppDispatch()
-  const activeDocumentId = useAppSelector(state => state.editor.activeDocumentId)
-  const annotations = useAppSelector(selectActiveDocumentAnnotations)
-  const currentPage = useAppSelector(selectActiveDocumentCurrentPage)
+  const {documentId, annotations} = useAppSelector(selectEditorState)
   const [viewMode, setViewMode] = React.useState<"all" | "grouped">("all")
   const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(new Set())
 
-  const toggleGroup = (type: string) => {
+  const groupedAnnotations = React.useMemo(() => {
+    const groups: Record<AnnotationType, Annotation[]> = {
+      highlight: [],
+      note: [],
+      draw: [],
+      erase: [],
+    } satisfies {[K in AnnotationType]: Annotation[]}
+
+    for (const annotation of annotations || []) {
+      if (annotation.type in groups) {
+        groups[annotation.type as keyof typeof groups].push(annotation)
+      }
+    }
+
+    return groups
+  }, [annotations])
+
+  const toggleGroup = (type: AnnotationType) => {
     setCollapsedGroups(prev => {
       const next = new Set(prev)
       if (next.has(type)) {
@@ -29,83 +52,6 @@ export function Annotations() {
       return next
     })
   }
-
-  const getAnnotationIcon = (type: string) => {
-    switch (type) {
-      case "highlight":
-        return <Highlighter className="h-4 w-4" />
-      case "note":
-        return <StickyNote className="h-4 w-4" />
-      case "draw":
-        return <Square className="h-4 w-4" />
-      case "erase":
-        return <Square className="h-4 w-4" />
-      default:
-        return null
-    }
-  }
-
-  const handleGoToAnnotation = (pageNumber: number) => {
-    if (!activeDocumentId) return
-    dispatch(setCurrentPage({documentId: activeDocumentId, page: pageNumber}))
-  }
-
-  const handleDelete = (id: string) => {
-    if (!activeDocumentId) return
-    dispatch(deleteAnnotation({documentId: activeDocumentId, id}))
-  }
-
-  const groupedAnnotations = {
-    highlight: annotations.filter(a => a.type === "highlight"),
-    note: annotations.filter(a => a.type === "note"),
-    draw: annotations.filter(a => a.type === "draw"),
-    erase: annotations.filter(a => a.type === "erase"),
-  }
-
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case "highlight":
-        return "Highlights"
-      case "note":
-        return "Notes"
-      case "draw":
-        return "Drawings"
-      case "erase":
-        return "Erased Areas"
-      default:
-        return type
-    }
-  }
-
-  const AnnotationItem = ({annotation}: {annotation: Annotation}) => (
-    <div key={annotation.id} className="rounded-lg border border-border bg-background p-3">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          {getAnnotationIcon(annotation.type)}
-          <div className="flex-1">
-            <button
-              onClick={() => handleGoToAnnotation(annotation.pageNumber || 1)}
-              className="text-sm font-medium capitalize text-foreground hover:text-primary"
-            >
-              {annotation.type.replace("-", " ")}
-            </button>
-            <p className="text-xs text-muted-foreground">Page {annotation.pageNumber || 1}</p>
-            {annotation.type === "highlight" && "text" in annotation && annotation.text ? (
-              <p className="mt-1 text-xs italic text-muted-foreground line-clamp-2">"{String(annotation.text)}"</p>
-            ) : null}
-          </div>
-        </div>
-        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDelete(annotation.id)}>
-          <Trash2 className="h-3 w-3" />
-        </Button>
-      </div>
-      {"content" in annotation && annotation.content && (
-        <p className="mt-2 text-sm text-muted-foreground">{annotation.content}</p>
-      )}
-    </div>
-  )
-
-  if (!activeDocumentId) return null
 
   return (
     <div className="flex h-full flex-col">
@@ -140,21 +86,24 @@ export function Annotations() {
         ) : viewMode === "all" ? (
           <div className="space-y-2 p-4">
             {annotations.map(annotation => (
-              <AnnotationItem key={annotation.id} annotation={annotation} />
+              <AnnotationItem key={annotation.id} documentId={documentId} annotation={annotation} />
             ))}
           </div>
         ) : (
           <div>
-            {(Object.keys(groupedAnnotations) as Array<keyof typeof groupedAnnotations>).map(type => {
-              const typeAnnotations = groupedAnnotations[type]
-              if (typeAnnotations.length === 0) return null
+            {Object.values(ANNOTATIONS_CONFIGS).map(annotation => {
+              const typeAnnotations = groupedAnnotations[annotation.type]
 
-              const isCollapsed = collapsedGroups.has(type)
+              if (typeAnnotations.length === 0) {
+                return null
+              }
+
+              const isCollapsed = collapsedGroups.has(annotation.type)
 
               return (
-                <div key={type}>
+                <div key={annotation.type}>
                   <button
-                    onClick={() => toggleGroup(type)}
+                    onClick={() => toggleGroup(annotation.type)}
                     className="flex w-full items-center gap-2 border-b border-border py-2 px-4 hover:opacity-70 transition-opacity bg-background"
                   >
                     {isCollapsed ? (
@@ -162,15 +111,15 @@ export function Annotations() {
                     ) : (
                       <ChevronDown className="h-4 w-4 text-muted-foreground" />
                     )}
-                    {getAnnotationIcon(type)}
+                    {annotation.icon}
                     <h3 className="text-sm font-semibold text-foreground">
-                      {getTypeLabel(type)} ({typeAnnotations.length})
+                      {annotation.label} ({typeAnnotations.length})
                     </h3>
                   </button>
                   {!isCollapsed && (
                     <div className="space-y-2 p-4">
                       {typeAnnotations.map(annotation => (
-                        <AnnotationItem key={annotation.id} annotation={annotation} />
+                        <AnnotationItem key={annotation.id} documentId={documentId || ""} annotation={annotation} />
                       ))}
                     </div>
                   )}
@@ -180,6 +129,41 @@ export function Annotations() {
           </div>
         )}
       </ScrollArea>
+    </div>
+  )
+}
+
+const AnnotationItem = ({documentId, annotation}: {documentId: string; annotation: Annotation}) => {
+  const dispatch = useAppDispatch()
+
+  return (
+    <div className="rounded-lg border border-border bg-background p-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          {ANNOTATIONS_CONFIGS[annotation.type].icon}
+          <div className="flex-1">
+            <button
+              onClick={() => dispatch(setCurrentPage({documentId, page: annotation.pageNumber || 1}))}
+              className="text-sm font-medium capitalize text-foreground hover:text-primary"
+            >
+              {ANNOTATIONS_CONFIGS[annotation.type].label}
+            </button>
+            <p className="text-xs text-muted-foreground">Page {annotation.pageNumber || 1}</p>
+            {annotation.type === "highlight" && "text" in annotation && annotation.text ? (
+              <p className="mt-1 text-xs italic text-muted-foreground line-clamp-2">"{String(annotation.text)}"</p>
+            ) : null}
+          </div>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          onClick={() => dispatch(deleteAnnotation({documentId, id: annotation.id}))}
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
+      </div>
+      <p className="mt-2 text-sm text-muted-foreground">{annotation.content}</p>
     </div>
   )
 }

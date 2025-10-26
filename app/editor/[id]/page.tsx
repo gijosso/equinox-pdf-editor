@@ -1,6 +1,6 @@
-import {EditorClient} from "@/components/editor/editor-client"
+import {EditorPage as EditorPageComponent} from "@/components/editor/editor-page"
 import {ErrorBoundaryWithSuspense} from "@/components/error-boundary"
-import {EditorLoading} from "@/components/loading-fallback"
+import {EditorLoading} from "@/components/loading"
 
 interface EditorPageProps {
   params: Promise<{id: string}>
@@ -11,7 +11,7 @@ export default async function EditorPage({params}: EditorPageProps) {
 
   return (
     <ErrorBoundaryWithSuspense suspenseFallback={<EditorLoading />}>
-      <EditorClient documentId={id} />
+      <EditorPageComponent documentId={id} />
     </ErrorBoundaryWithSuspense>
   )
 }

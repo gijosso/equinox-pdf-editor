@@ -38,9 +38,10 @@ export interface PDFVersion {
   textContent?: string
 }
 
+export type AnnotationType = "highlight" | "note" | "draw" | "erase"
 export interface Annotation {
   id: string
-  type: string
+  type: AnnotationType
   pageNumber: number
   createdAt: string
   content: string
@@ -53,9 +54,69 @@ export interface Annotation {
   fontSize?: number
 }
 
+export type AnnotationDiffType = "added" | "removed" | "modified"
 export interface AnnotationDiff {
   id: string
-  type: "added" | "removed" | "modified"
+  type: AnnotationDiffType
   annotation: Annotation
   oldAnnotation?: Annotation
+}
+
+export interface EditorViewport {
+  x: number
+  y: number
+  zoom: number
+}
+
+export type EditorToolType = "select" | "highlight" | "note" | "draw" | "erase"
+export interface EditorTool {
+  type: EditorToolType
+  color?: string
+  size?: number
+}
+
+export interface DocumentEditorState {
+  documentId: string
+  isEditing: boolean
+  selectedAnnotations: string[]
+  viewport: EditorViewport
+  activeTool: EditorTool
+  sidebarOpen: boolean
+  lastSaved?: string
+  hasUnsavedChanges: boolean
+
+  // PDF-specific state
+  currentPage: number
+  totalPages: number
+  annotations: Annotation[]
+
+  // Search state
+  searchQuery: string
+  searchResults: SearchResult[]
+  currentSearchIndex: number
+
+  // History state
+  history: any[]
+  historyIndex: number
+
+  // Diff mode state
+  isDiffMode: boolean
+  compareVersionIds: string[]
+}
+
+export interface EditorState {
+  documentId: string | null
+  byDocument: Record<string, DocumentEditorState>
+  loading: boolean
+  error: string | null
+}
+
+export interface SearchResult {
+  pageNumber: number
+  x: number
+  y: number
+  width: number
+  height: number
+  text: string
+  index: number
 }

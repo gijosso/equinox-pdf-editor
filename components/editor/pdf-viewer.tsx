@@ -4,29 +4,18 @@ import {Document, Page, pdfjs} from "react-pdf"
 import "react-pdf/dist/Page/AnnotationLayer.css"
 import "react-pdf/dist/Page/TextLayer.css"
 
+import {LazySearchHighlights} from "@/components/lazy"
 import {usePDFBlob} from "@/hooks/use-pdf-blob"
 import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {selectActiveDocumentCurrentPage, selectActiveDocumentViewport} from "@/lib/store/selectors/editor"
-import {setTotalPages} from "@/lib/store/slices/editor"
-
-import {SearchHighlightOverlay} from "./search-highlights"
+import {selectEditorState} from "@/lib/store/selectors/editor"
+import {setCurrentPage, setTotalPages} from "@/lib/store/slices/editor"
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
 
-interface PDFViewerProps {
-  documentId: string
-}
-
-export function PDFViewer({documentId}: PDFViewerProps) {
-  const {blob, blobUrl, loading, error} = usePDFBlob(documentId)
+export function PDFViewer() {
   const dispatch = useAppDispatch()
-
-  const currentPage = useAppSelector(selectActiveDocumentCurrentPage)
-  const viewport = useAppSelector(selectActiveDocumentViewport)
-
-  const onDocumentLoadSuccess = ({numPages}: {numPages: number}) => {
-    dispatch(setTotalPages({documentId, totalPages: numPages}))
-  }
+  const {documentId, currentPage, viewport} = useAppSelector(selectEditorState)
+  const {blob, blobUrl, loading, error} = usePDFBlob()
 
   if (loading) {
     return (
@@ -67,7 +56,7 @@ export function PDFViewer({documentId}: PDFViewerProps) {
           <div className="relative">
             <Document
               file={blobUrl}
-              onLoadSuccess={onDocumentLoadSuccess}
+              onLoadSuccess={({numPages}) => dispatch(setTotalPages({documentId, totalPages: numPages}))}
               onLoadError={error => console.error("PDF load error:", error)}
               className="shadow-lg"
             >
@@ -80,7 +69,7 @@ export function PDFViewer({documentId}: PDFViewerProps) {
                   scale={viewport.zoom}
                 />
 
-                <SearchHighlightOverlay scale={viewport.zoom} />
+                <LazySearchHighlights scale={viewport.zoom} />
               </div>
             </Document>
           </div>

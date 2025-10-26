@@ -103,4 +103,37 @@ export const atomicService = {
       }
     }
   },
+
+  async loadDocumentWithVersions(
+    documentId: string,
+  ): Promise<Result<{document: PDFDocumentWithBlob; versions: PDFVersion[]}, DatabaseError>> {
+    try {
+      return await db.transaction("r", [db.documents, db.versions], async () => {
+        const documentResult = await documentService.getDocumentWithBlob(documentId)
+        if (!documentResult.success) {
+          throw documentResult.error
+        }
+        if (!documentResult.data) {
+          throw new DocumentNotFoundError(documentId)
+        }
+
+        const versionsResult = await versionService.getVersionsByDocument(documentId)
+        if (!versionsResult.success) {
+          throw versionsResult.error
+        }
+
+        return {success: true, data: {document: documentResult.data, versions: versionsResult.data}}
+      })
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof DatabaseError
+            ? error
+            : new DatabaseError(
+                `Failed to load document with versions: ${error instanceof Error ? error.message : "Unknown error"}`,
+              ),
+      }
+    }
+  },
 }

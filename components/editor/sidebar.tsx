@@ -1,9 +1,7 @@
 "use client"
 
+import {LazyAnnotations, LazyEditHistory} from "@/components/lazy"
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs"
-
-import {Annotations} from "./annotations"
-import {EditHistory} from "./edit-history"
 
 export function Sidebar() {
   return (
@@ -20,11 +18,11 @@ export function Sidebar() {
       </div>
 
       <TabsContent value="annotations" className="mt-0 flex-1 overflow-hidden">
-        <Annotations />
+        <LazyAnnotations />
       </TabsContent>
 
       <TabsContent value="history" className="mt-0 flex-1 overflow-hidden">
-        <EditHistory />
+        <LazyEditHistory />
       </TabsContent>
     </Tabs>
   )

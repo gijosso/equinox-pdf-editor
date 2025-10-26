@@ -4,7 +4,7 @@ import {Loader2, Upload} from "lucide-react"
 import {useRouter} from "next/navigation"
 import React from "react"
 
-import {DuplicateDialog} from "@/components/duplicate-dialog"
+import {DuplicateDialog} from "@/components/home/duplicate-dialog"
 import {Button} from "@/components/ui/button"
 import {Draggable} from "@/components/ui/draggable"
 import {useToast} from "@/hooks/use-toast"

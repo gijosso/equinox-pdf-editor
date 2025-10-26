@@ -5,25 +5,19 @@ import React from "react"
 
 import {Button} from "@/components/ui/button"
 import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {
-  selectActiveDocumentCompareVersionIds,
-  selectActiveDocumentIsDiffMode,
-  selectVersionsByDocumentId,
-} from "@/lib/store/selectors"
+import {selectEditorState, selectVersionsByDocumentId} from "@/lib/store/selectors"
 import {setCompareVersions, toggleDiffMode} from "@/lib/store/slices"
 import type {AnnotationDiff} from "@/lib/types"
 import {loadAnnotationsFromVersion} from "@/lib/utils/xfdf"
 
 export function DiffView() {
   const dispatch = useAppDispatch()
-  const activeDocumentId = useAppSelector(state => state.editor.activeDocumentId)
-  const compareVersionIds = useAppSelector(selectActiveDocumentCompareVersionIds)
-  const isDiffMode = useAppSelector(selectActiveDocumentIsDiffMode)
-  const versions = useAppSelector(selectVersionsByDocumentId(activeDocumentId || ""))
+  const {documentId, compareVersionIds} = useAppSelector(selectEditorState)
+  const versions = useAppSelector(selectVersionsByDocumentId(documentId || ""))
   const [diffs, setDiffs] = React.useState<AnnotationDiff[]>([])
 
   React.useEffect(() => {
-    if (!activeDocumentId || !compareVersionIds[0] || !compareVersionIds[1]) return
+    if (!documentId || !compareVersionIds[0] || !compareVersionIds[1]) return
 
     const version1 = versions.find(v => v.id === compareVersionIds[0])
     const version2 = versions.find(v => v.id === compareVersionIds[1])
@@ -68,21 +62,17 @@ export function DiffView() {
     })
 
     setDiffs(calculatedDiffs)
-  }, [compareVersionIds, activeDocumentId, versions])
+  }, [compareVersionIds, documentId, versions])
 
-  const getVersionNumber = (versionId: string | null) => {
-    if (!versionId) return "?"
+  const getVersionNumber = (versionId: string) => {
     const version = versions.find(v => v.id === versionId)
-    return version?.versionNumber?.toString() || "?"
+    return version?.versionNumber.toString()
   }
 
   const handleExitDiff = () => {
-    if (!activeDocumentId) return
-    dispatch(toggleDiffMode(activeDocumentId))
-    dispatch(setCompareVersions({documentId: activeDocumentId, versionIds: []}))
+    dispatch(toggleDiffMode(documentId))
+    dispatch(setCompareVersions({documentId, versionIds: []}))
   }
-
-  if (!activeDocumentId || !isDiffMode) return null
 
   return (
     <div className="flex h-full flex-col">

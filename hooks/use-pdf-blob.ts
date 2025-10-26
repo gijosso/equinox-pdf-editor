@@ -3,6 +3,8 @@
 import React from "react"
 
 import {documentService} from "@/lib/db/documents"
+import {useAppSelector} from "@/lib/store/hooks"
+import {selectEditorState} from "@/lib/store/selectors"
 
 interface UsePDFBlobResult {
   blob: Blob | null
@@ -11,7 +13,8 @@ interface UsePDFBlobResult {
   error: string | null
 }
 
-export function usePDFBlob(documentId: string | null): UsePDFBlobResult {
+export function usePDFBlob(): UsePDFBlobResult {
+  const {documentId} = useAppSelector(selectEditorState)
   const [blob, setBlob] = React.useState<Blob | null>(null)
   const [blobUrl, setBlobUrl] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(false)

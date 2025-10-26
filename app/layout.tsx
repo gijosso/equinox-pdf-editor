@@ -4,7 +4,7 @@ import {Geist, Geist_Mono} from "next/font/google"
 import type React from "react"
 
 import {ErrorBoundaryWithSuspense} from "@/components/error-boundary"
-import LoadingFallback from "@/components/loading-fallback"
+import LoadingFallback from "@/components/loading"
 import {ThemeProvider} from "@/components/theme-provider"
 import {Toaster} from "@/components/ui/toaster"
 import StoreProvider from "@/lib/providers/store-provider"

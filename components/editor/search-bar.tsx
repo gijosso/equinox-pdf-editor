@@ -7,46 +7,26 @@ import {Button} from "@/components/ui/button"
 import {Input} from "@/components/ui/input"
 import {usePDFSearch} from "@/hooks/use-pdf-search"
 import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
+import {selectEditorState} from "@/lib/store/selectors"
 import {setSearchQuery} from "@/lib/store/slices/editor"
 
 export function SearchBar() {
   const dispatch = useAppDispatch()
-  const activeDocumentId = useAppSelector(state => state.editor.activeDocumentId)
+  const {documentId, searchResults, currentSearchIndex} = useAppSelector(selectEditorState)
   const [localSearchQuery, setLocalSearchQuery] = useState("")
 
-  const {searchResults, currentSearchIndex, isSearching, clearSearch, goToNextResult, goToPreviousResult} =
-    usePDFSearch(activeDocumentId)
-
-  const handleNext = () => {
-    goToNextResult()
-  }
-
-  const handlePrev = () => {
-    goToPreviousResult()
-  }
+  const {isSearching, clearSearch, goToNextResult, goToPreviousResult} = usePDFSearch()
 
   const handleClear = () => {
     setLocalSearchQuery("")
     clearSearch()
-    dispatch(setSearchQuery({documentId: activeDocumentId!, query: ""}))
+    dispatch(setSearchQuery({documentId, query: ""}))
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setLocalSearchQuery(value)
-    dispatch(setSearchQuery({documentId: activeDocumentId!, query: value}))
-  }
-
-  if (!activeDocumentId) {
-    return null
-  }
-
-  if (isSearching) {
-    return (
-      <div className="flex items-center gap-2 border-border pr-4">
-        <span className="text-sm text-muted-foreground">Loading PDF...</span>
-      </div>
-    )
+    dispatch(setSearchQuery({documentId, query: value}))
   }
 
   return (
@@ -74,23 +54,31 @@ export function SearchBar() {
         )}
       </div>
 
-      {searchResults.length > 0 && (
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground w-12 text-center">
+          {currentSearchIndex ? currentSearchIndex + 1 : 0} of {searchResults.length ?? 0}
+        </span>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground w-12 text-center">
-            {currentSearchIndex + 1} of {searchResults.length}
-          </span>
-          <div>
-            <Button variant="ghost" size="sm" onClick={handlePrev} className="h-8 w-8 p-0" disabled={isSearching}>
-              <ChevronUp className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleNext} className="h-8 w-8 p-0" disabled={isSearching}>
-              <ChevronDown className="h-4 w-4" />
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={goToPreviousResult}
+            className="h-8 w-8 p-0"
+            disabled={(currentSearchIndex && currentSearchIndex <= 0) || isSearching}
+          >
+            <ChevronUp className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={goToNextResult}
+            className="h-8 w-8 p-0"
+            disabled={isSearching || searchResults.length === 0}
+          >
+            <ChevronDown className="h-4 w-4" />
+          </Button>
         </div>
-      )}
-
-      {isSearching && <span className="text-sm text-muted-foreground">Searching...</span>}
+      </div>
     </div>
   )
 }

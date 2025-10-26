@@ -15,10 +15,6 @@ const PDFViewerInternal = dynamic(() => import("./pdf-viewer").then(mod => ({def
   ),
 })
 
-interface PDFViewerProps {
-  documentId: string
-}
-
-export function PDFViewer({documentId}: PDFViewerProps) {
-  return <PDFViewerInternal documentId={documentId} />
+export function PDFViewer() {
+  return <PDFViewerInternal />
 }

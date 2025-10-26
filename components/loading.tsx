@@ -33,7 +33,6 @@ export function LoadingFallback({
   )
 }
 
-// Specific loading components for different parts of the app
 export function DocumentListLoading() {
   return <LoadingFallback message="Loading documents..." description="Fetching your PDF documents" />
 }
@@ -44,6 +43,10 @@ export function EditorLoading() {
 
 export function FileUploadLoading() {
   return <LoadingFallback message="Preparing upload..." description="Setting up file upload functionality" />
+}
+
+export function HomePageLoading() {
+  return <LoadingFallback message="Loading homepage..." description="Preparing your document library" />
 }
 
 export default LoadingFallback

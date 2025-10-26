@@ -18,38 +18,38 @@ interface VersionHistoryDialogProps {
 
 export function VersionHistoryDialog({open, onOpenChange}: VersionHistoryDialogProps) {
   const dispatch = useAppDispatch()
-  const activeDocumentId = useAppSelector(state => state.editor.activeDocumentId)
-  const versions = useAppSelector(selectVersionsByDocumentId(activeDocumentId || ""))
+  const documentId = useAppSelector(state => state.editor.documentId)
+  const versions = useAppSelector(selectVersionsByDocumentId(documentId || ""))
 
   // Load versions when dialog opens
   React.useEffect(() => {
-    if (open && activeDocumentId) {
-      dispatch(loadVersions(activeDocumentId))
+    if (open && documentId) {
+      dispatch(loadVersions(documentId))
     }
-  }, [open, activeDocumentId, dispatch])
+  }, [open, documentId, dispatch])
 
   const handleLoadVersion = (versionId: string) => {
-    if (!activeDocumentId) return
+    if (!documentId) return
     const version = versions.find(v => v.id === versionId)
     if (version) {
       // Load annotations from XFDF string
       // const annotations = loadAnnotationsFromVersion(version.xfdf)
-      // dispatch(setAnnotations({documentId: activeDocumentId, annotations}))
+      // dispatch(setAnnotations({documentId: documentId, annotations}))
       onOpenChange(false)
     }
   }
 
   const handleCompareVersions = (versionId: string) => {
-    if (!activeDocumentId) return
+    if (!documentId) return
     const currentVersionId = versions[versions.length - 1]?.id
     if (currentVersionId) {
-      dispatch(setCompareVersions({documentId: activeDocumentId, versionIds: [currentVersionId, versionId]}))
-      dispatch(toggleDiffMode(activeDocumentId))
+      dispatch(setCompareVersions({documentId: documentId, versionIds: [currentVersionId, versionId]}))
+      dispatch(toggleDiffMode(documentId))
       onOpenChange(false)
     }
   }
 
-  if (!activeDocumentId) {
+  if (!documentId) {
     return null
   }
 

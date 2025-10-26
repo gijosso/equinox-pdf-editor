@@ -1,19 +1,17 @@
 "use client"
 
 import {formatDistanceToNow} from "date-fns"
-import {Edit, History, Navigation, Plus, RotateCcw, Trash2, ZoomIn, ZoomOut} from "lucide-react"
+import {Edit, History, Plus, RotateCcw, Trash2} from "lucide-react"
 
 import {Button} from "@/components/ui/button"
 import {ScrollArea} from "@/components/ui/scroll-area"
 import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {selectActiveDocumentHistory, selectActiveDocumentHistoryIndex} from "@/lib/store/selectors"
+import {selectEditorState} from "@/lib/store/selectors"
 import {jumpToHistory} from "@/lib/store/slices"
 
 export function EditHistory() {
   const dispatch = useAppDispatch()
-  const activeDocumentId = useAppSelector(state => state.editor.activeDocumentId)
-  const history = useAppSelector(selectActiveDocumentHistory)
-  const historyIndex = useAppSelector(selectActiveDocumentHistoryIndex)
+  const {documentId, history, historyIndex} = useAppSelector(selectEditorState)
 
   const getActionIcon = (action: string) => {
     switch (action) {
@@ -23,10 +21,6 @@ export function EditHistory() {
         return <Edit className="h-4 w-4" />
       case "delete-annotation":
         return <Trash2 className="h-4 w-4" />
-      case "navigate":
-        return <Navigation className="h-4 w-4" />
-      case "zoom":
-        return action.includes("in") ? <ZoomIn className="h-4 w-4" /> : <ZoomOut className="h-4 w-4" />
       default:
         return <History className="h-4 w-4" />
     }
@@ -36,24 +30,13 @@ export function EditHistory() {
     switch (action) {
       case "add-annotation":
         return "text-green-500"
-      case "delete-annotation":
-        return "text-red-500"
       case "update-annotation":
         return "text-blue-500"
+      case "delete-annotation":
+        return "text-red-500"
       default:
         return "text-muted-foreground"
     }
-  }
-
-  const handleRestoreToHistory = (index: number) => {
-    if (!activeDocumentId) {
-      return
-    }
-    dispatch(jumpToHistory({documentId: activeDocumentId, index}))
-  }
-
-  if (!activeDocumentId) {
-    return null
   }
 
   return (
@@ -106,7 +89,7 @@ export function EditHistory() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleRestoreToHistory(index)}
+                        onClick={() => dispatch(jumpToHistory({documentId, index}))}
                         className="h-7 gap-1 px-2"
                       >
                         <RotateCcw className="h-3 w-3" />

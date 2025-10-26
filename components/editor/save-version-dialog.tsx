@@ -7,13 +7,8 @@ import {Button} from "@/components/ui/button"
 import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog"
 import {Label} from "@/components/ui/label"
 import {Textarea} from "@/components/ui/textarea"
-import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {
-  selectActiveDocumentAnnotations,
-  selectActiveDocumentCurrentPage,
-  selectVersionsByDocumentId,
-} from "@/lib/store/selectors"
-import {addVersion} from "@/lib/store/slices"
+import {useAppSelector} from "@/lib/store/hooks"
+import {selectEditorState, selectVersionsByDocumentId} from "@/lib/store/selectors"
 
 // import {createVersionWithXFDF} from "@/lib/utils/xfdf"
 
@@ -23,22 +18,19 @@ interface SaveVersionDialogProps {
 }
 
 export function SaveVersionDialog({open, onOpenChange}: SaveVersionDialogProps) {
-  const dispatch = useAppDispatch()
-  const activeDocumentId = useAppSelector(state => state.editor.activeDocumentId)
-  const annotations = useAppSelector(selectActiveDocumentAnnotations)
-  const currentPage = useAppSelector(selectActiveDocumentCurrentPage)
-  const versions = useAppSelector(selectVersionsByDocumentId(activeDocumentId || ""))
+  const {documentId, annotations, currentPage} = useAppSelector(selectEditorState)
+  const versions = useAppSelector(selectVersionsByDocumentId(documentId || ""))
   const [message, setMessage] = React.useState("")
   const [saving, setSaving] = React.useState(false)
 
   const handleSave = async () => {
-    if (!activeDocumentId || !message.trim()) return
+    if (!documentId || !message.trim()) return
 
     setSaving(true)
 
     try {
       const nextVersionNumber = versions.length + 1
-      // const {version} = createVersionWithXFDF(activeDocumentId, nextVersionNumber, message.trim(), annotations)
+      // const {version} = createVersionWithXFDF(documentId, nextVersionNumber, message.trim(), annotations)
 
       // await dispatch(addVersion(version)).unwrap()
 
@@ -49,10 +41,6 @@ export function SaveVersionDialog({open, onOpenChange}: SaveVersionDialogProps) 
     } finally {
       setSaving(false)
     }
-  }
-
-  if (!activeDocumentId) {
-    return null
   }
 
   return (

@@ -1,6 +1,6 @@
 "use client"
 
-import {FileText, Loader2, MoreVertical, Trash2} from "lucide-react"
+import {FileText, MoreVertical, Trash2} from "lucide-react"
 import Image from "next/image"
 import {useRouter} from "next/navigation"
 import React from "react"
@@ -9,19 +9,15 @@ import {Button} from "@/components/ui/button"
 import {Card} from "@/components/ui/card"
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu"
 import {useToast} from "@/hooks/use-toast"
-import {useAppDispatch} from "@/lib/store/hooks"
+import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
+import {selectAllDocuments} from "@/lib/store/selectors"
 import {deleteDocument} from "@/lib/store/slices"
-import type {PDFDocument} from "@/lib/types"
 import {formatDate} from "@/lib/utils"
 
-interface DocumentListProps {
-  documents: PDFDocument[]
-  loading: boolean
-}
-
-export const DocumentList = React.memo<DocumentListProps>(({documents, loading}) => {
+export const DocumentList = () => {
   const router = useRouter()
   const dispatch = useAppDispatch()
+  const documents = useAppSelector(selectAllDocuments)
   const {toast} = useToast()
 
   const handleDelete = React.useCallback(
@@ -43,14 +39,6 @@ export const DocumentList = React.memo<DocumentListProps>(({documents, loading})
     },
     [dispatch, toast],
   )
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    )
-  }
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -101,4 +89,4 @@ export const DocumentList = React.memo<DocumentListProps>(({documents, loading})
       ))}
     </div>
   )
-})
+}

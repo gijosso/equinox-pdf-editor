@@ -2,21 +2,14 @@
 
 import React from "react"
 
-import {type SearchResult, pdfSearchService} from "@/lib/services/pdf-search"
+import {pdfSearchService} from "@/lib/services/pdf-search"
 import {useAppDispatch, useAppSelector} from "@/lib/store/hooks"
-import {
-  selectActiveDocumentCurrentSearchIndex,
-  selectActiveDocumentSearchQuery,
-  selectActiveDocumentSearchResults,
-} from "@/lib/store/selectors/editor"
+import {selectEditorState} from "@/lib/store/selectors/editor"
 import {nextSearchResult, prevSearchResult, setCurrentPage, setSearchResults} from "@/lib/store/slices/editor"
 
 import {usePDFBlob} from "./use-pdf-blob"
 
 interface UsePDFSearchResult {
-  searchQuery: string
-  searchResults: SearchResult[]
-  currentSearchIndex: number
   isSearching: boolean
   searchInDocument: (query: string) => Promise<void>
   clearSearch: () => void
@@ -24,12 +17,12 @@ interface UsePDFSearchResult {
   goToPreviousResult: () => void
 }
 
-export function usePDFSearch(documentId: string | null, debounceTime: number = 300): UsePDFSearchResult {
+export function usePDFSearch(debounceTime: number = 300): UsePDFSearchResult {
   const dispatch = useAppDispatch()
-  const {blob, loading: pdfLoading} = usePDFBlob(documentId)
-  const searchQuery = useAppSelector(selectActiveDocumentSearchQuery)
-  const searchResults = useAppSelector(selectActiveDocumentSearchResults)
-  const currentSearchIndex = useAppSelector(selectActiveDocumentCurrentSearchIndex)
+  const {documentId, searchQuery, searchResults, currentSearchIndex} = useAppSelector(selectEditorState)
+  const hasHadSearchQuery = React.useRef(false)
+
+  const {blob, loading: pdfLoading} = usePDFBlob()
 
   const searchInDocument = React.useCallback(
     async (query: string) => {
@@ -53,7 +46,10 @@ export function usePDFSearch(documentId: string | null, debounceTime: number = 3
   )
 
   const clearSearch = React.useCallback(() => {
-    if (!documentId) return
+    if (!documentId) {
+      return
+    }
+
     dispatch(setSearchResults({documentId, results: []}))
   }, [documentId, dispatch])
 
@@ -82,25 +78,19 @@ export function usePDFSearch(documentId: string | null, debounceTime: number = 3
 
   // Debounce search
   React.useEffect(() => {
-    if (searchQuery.trim() && blob && !pdfLoading) {
+    if (searchQuery && blob && !pdfLoading) {
+      hasHadSearchQuery.current = true
       const timeoutId = setTimeout(() => {
-        searchInDocument(searchQuery)
+        searchInDocument(searchQuery.trim())
       }, debounceTime)
 
       return () => clearTimeout(timeoutId)
-    } else if (!searchQuery.trim()) {
-      clearSearch()
+    } else if (!searchQuery && documentId && hasHadSearchQuery.current) {
+      // Only clear search results if we've had a search query before (not on mount)
+      dispatch(setSearchResults({documentId, results: []}))
+      hasHadSearchQuery.current = false
     }
-  }, [searchQuery, debounceTime, blob, pdfLoading, searchInDocument, clearSearch])
+  }, [searchQuery, documentId, debounceTime, blob, pdfLoading, searchInDocument, dispatch])
 
-  return {
-    searchQuery,
-    searchResults,
-    currentSearchIndex,
-    isSearching: pdfLoading,
-    searchInDocument,
-    clearSearch,
-    goToNextResult,
-    goToPreviousResult,
-  }
+  return {isSearching: pdfLoading, searchInDocument, clearSearch, goToNextResult, goToPreviousResult}
 }

@@ -1,16 +1,7 @@
-export interface SearchResult {
-  pageNumber: number
-  text: string
-  x: number
-  y: number
-  width: number
-  height: number
-  index: number
-}
+import type {SearchResult} from "@/lib/types"
 
 export class PDFSearchService {
   private static instance: PDFSearchService
-  private searchCache = new Map<string, SearchResult[]>()
 
   static getInstance(): PDFSearchService {
     if (!PDFSearchService.instance) {
@@ -30,11 +21,6 @@ export class PDFSearchService {
   ): Promise<SearchResult[]> {
     if (!query.trim()) {
       return []
-    }
-
-    const cacheKey = `${pdfBlob.size}-${query}-${JSON.stringify(options)}`
-    if (this.searchCache.has(cacheKey)) {
-      return this.searchCache.get(cacheKey)!
     }
 
     try {
@@ -70,12 +56,10 @@ export class PDFSearchService {
         searchResults.push(...pageResults)
       }
 
-      // Cache the results
       // Assign index based on sorted order
       searchResults.forEach((r, i) => {
         r.index = i
       })
-      this.searchCache.set(cacheKey, searchResults)
 
       return searchResults
     } catch (error) {
@@ -136,17 +120,6 @@ export class PDFSearchService {
     })
 
     return results
-  }
-
-  clearCache(): void {
-    this.searchCache.clear()
-  }
-
-  getCacheStats(): {size: number; keys: string[]} {
-    return {
-      size: this.searchCache.size,
-      keys: Array.from(this.searchCache.keys()),
-    }
   }
 }
 
