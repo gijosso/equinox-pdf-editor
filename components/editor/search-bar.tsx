@@ -56,7 +56,7 @@ export function SearchBar() {
 
       <div className="flex items-center gap-2">
         <span className="text-sm text-muted-foreground w-12 text-center">
-          {currentSearchIndex ? currentSearchIndex + 1 : 0} of {searchResults.length ?? 0}
+          {searchResults.length ? currentSearchIndex + 1 : 0} of {searchResults.length ?? 0}
         </span>
         <div className="flex items-center gap-2">
           <Button
