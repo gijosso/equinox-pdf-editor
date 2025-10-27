@@ -4,6 +4,7 @@ import React from "react"
 
 import {useGetAnnotationsByVersionQuery, useGetDocumentEditorQuery, useUpdateAnnotationMutation} from "@/lib/store/api"
 import type {Annotation} from "@/lib/types"
+import {isAnnotationLocked} from "@/lib/utils/annotations"
 
 import {AnnotationHighlight} from "./annotation-highlight"
 import {AnnotationNote} from "./annotation-note"
@@ -42,6 +43,12 @@ export function AnnotationOverlay({scale, documentId}: AnnotationOverlayProps) {
         return
       }
 
+      // Don't allow updating committed annotations
+      if (isAnnotationLocked(annotation)) {
+        console.warn("Cannot update committed annotation:", annotation.id)
+        return
+      }
+
       try {
         await updateAnnotation({
           id: annotation.id,
@@ -60,7 +67,7 @@ export function AnnotationOverlay({scale, documentId}: AnnotationOverlayProps) {
   }
 
   return (
-    <div className={`absolute inset-0 z-10 ${isSelectToolActive ? "pointer-events-none" : ""}`}>
+    <div className="absolute inset-0 z-10">
       {pageAnnotations.map(annotation => {
         // Convert PDF coordinates to screen coordinates
         const screenX = annotation.x * scale
@@ -68,6 +75,7 @@ export function AnnotationOverlay({scale, documentId}: AnnotationOverlayProps) {
         const screenWidth = annotation.width * scale
         const screenHeight = annotation.height * scale
 
+        const isLocked = isAnnotationLocked(annotation)
         const annotationProps = {
           annotation,
           x: screenX,
@@ -76,6 +84,7 @@ export function AnnotationOverlay({scale, documentId}: AnnotationOverlayProps) {
           height: screenHeight,
           scale,
           onUpdate: handleUpdateAnnotation,
+          locked: isLocked,
         }
 
         switch (annotation.type) {

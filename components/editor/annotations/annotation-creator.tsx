@@ -10,11 +10,11 @@ interface AnnotationCreatorProps {
   scale: number
   pageWidth: number
   pageHeight: number
-  children: React.ReactNode
   documentId: string
+  children?: React.ReactNode
 }
 
-export function AnnotationCreator({scale, children, documentId}: AnnotationCreatorProps) {
+export function AnnotationCreator({scale, documentId, children}: AnnotationCreatorProps) {
   const {data: editor} = useGetDocumentEditorQuery(documentId, {skip: !documentId})
   const activeTool = editor?.activeTool || {type: "select"}
   const currentPage = editor?.currentPage || 1
@@ -156,7 +156,6 @@ export function AnnotationCreator({scale, children, documentId}: AnnotationCreat
       }}
     >
       {children}
-
       {previewRect && (
         <div
           className="absolute border-2 border-dashed pointer-events-none"

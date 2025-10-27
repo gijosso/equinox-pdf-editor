@@ -12,7 +12,6 @@ export interface NormalizedState {
   error: string | null
 }
 
-// Normalized document metadata (without blob)
 export interface PDFDocument {
   id: string
   name: string
@@ -23,15 +22,17 @@ export interface PDFDocument {
   thumbnail: string // Base64 encoded thumbnail
 }
 
+export interface PDFDocumentWithBlob extends PDFDocument {
+  blob: Blob
+}
+
 export interface PDFVersion {
   id: string
   documentId: string
   versionNumber: number
   message: string
   createdAt: string
-  xfdf: string // XFDF string instead of JS objects
   textContent?: string
-  blob: Blob // PDF blob with annotations applied
 }
 
 export type AnnotationType = "highlight" | "note" | "redaction"
@@ -43,18 +44,15 @@ export interface Annotation {
   createdAt: string
   updatedAt: string
   content: string
-  // Position and dimensions (in PDF coordinates)
   x: number
   y: number
   width: number
   height: number
-  // Annotation-specific properties
-  text?: string // For text annotations
-  color?: string // For highlight/redaction color
-  fontSize?: number // For text annotations
-  // XFDF-specific properties
-  xfdfType: "highlight" | "text" | "redaction" // Standard XFDF annotation types
-  quadPoints?: number[] // For highlight annotations (4 points defining the highlighted area)
+  text?: string
+  color?: string
+  fontSize?: number
+  originalId?: string // ID of the original annotation for diff comparison across versions
+  committedVersionId?: string // Version number this annotation was committed from (for display)
 }
 
 export type AnnotationDiffType = "added" | "removed" | "modified"
@@ -160,4 +158,33 @@ export interface SearchResult {
   height: number
   text: string
   index: number
+}
+
+export interface TextSpan {
+  text: string
+  pageNumber: number
+  x: number
+  y: number
+  width: number
+  height: number
+  index: number
+}
+
+export interface TextDiff {
+  type: "equal" | "delete" | "insert"
+  text: string
+  spans?: TextSpan[]
+}
+
+export interface TextDiffResult {
+  diffs: TextDiff[]
+  totalChanges: number
+  addedText: string
+  removedText: string
+}
+
+export interface VersionDiffResult {
+  textDiff: TextDiffResult
+  annotationDiff: AnnotationDiff[]
+  hasChanges: boolean
 }

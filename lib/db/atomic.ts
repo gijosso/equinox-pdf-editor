@@ -153,10 +153,7 @@ export const atomicService = {
     }
   },
 
-  async getCurrentVersionBlob(
-    documentId: string,
-    currentVersionId: string,
-  ): Promise<Result<PDFVersion, DatabaseError>> {
+  async getCurrentVersionBlob(documentId: string, currentVersionId: string): Promise<Result<Blob, DatabaseError>> {
     try {
       return await db.transaction("r", [db.documents, db.versions], async () => {
         // Verify document still exists and has the same currentVersionId
@@ -169,21 +166,17 @@ export const atomicService = {
           throw new DatabaseError("Document current version has changed")
         }
 
-        // Get the version blob
-        const versionResult = await versionService.getVersion(currentVersionId)
-        if (!versionResult.success) {
-          throw versionResult.error
+        // Get the document blob separately
+        const blobResult = await documentService.getDocumentBlob(documentId)
+        if (!blobResult.success) {
+          throw new DatabaseError("Failed to get document blob")
         }
 
-        if (!versionResult.data) {
-          throw new DatabaseError("Current version not found")
+        if (!blobResult.data) {
+          throw new DatabaseError("No blob found in document")
         }
 
-        if (!versionResult.data.blob) {
-          throw new DatabaseError("No blob found in current version")
-        }
-
-        return {success: true, data: versionResult.data}
+        return {success: true, data: blobResult.data}
       })
     } catch (error) {
       return {

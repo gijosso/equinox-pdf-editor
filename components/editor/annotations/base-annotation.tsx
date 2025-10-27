@@ -14,10 +14,26 @@ interface BaseAnnotationProps {
   scale: number
   children: React.ReactNode
   onUpdate?: (annotation: Annotation) => void
+  locked?: boolean
 }
 
-export function BaseAnnotation({annotation, x, y, width, height, scale, children, onUpdate}: BaseAnnotationProps) {
+export function BaseAnnotation({
+  annotation,
+  x,
+  y,
+  width,
+  height,
+  scale,
+  children,
+  onUpdate,
+  locked = false,
+}: BaseAnnotationProps) {
   const handleDragStop = (e: any, d: any) => {
+    // Don't allow dragging locked annotations
+    if (locked) {
+      return
+    }
+
     // Convert screen coordinates to PDF coordinates
     const pdfX = d.x / scale
     const pdfY = d.y / scale
@@ -33,6 +49,11 @@ export function BaseAnnotation({annotation, x, y, width, height, scale, children
   }
 
   const handleResizeStop: RndResizeCallback = (_e, _direction, ref, _delta, position) => {
+    // Don't allow resizing locked annotations
+    if (locked) {
+      return
+    }
+
     // Convert screen coordinates to PDF coordinates
     const pdfX = position.x / scale
     const pdfY = position.y / scale
@@ -60,18 +81,27 @@ export function BaseAnnotation({annotation, x, y, width, height, scale, children
       minWidth={10}
       minHeight={10}
       bounds="parent"
-      enableResizing={{
-        top: true,
-        right: true,
-        bottom: true,
-        left: true,
-        topRight: true,
-        bottomRight: true,
-        bottomLeft: true,
-        topLeft: true,
-      }}
-      disableDragging={false}
-      className="group hover:cursor-grab active:cursor-grabbing z-20"
+      disableDragging={locked} // Disable dragging for locked annotations
+      enableResizing={
+        locked
+          ? false
+          : {
+              // Disable resizing for locked annotations
+              top: true,
+              right: true,
+              bottom: true,
+              left: true,
+              topRight: true,
+              bottomRight: true,
+              bottomLeft: true,
+              topLeft: true,
+            }
+      }
+      className={
+        locked
+          ? "opacity-50 cursor-not-allowed pointer-events-none"
+          : "group hover:cursor-grab active:cursor-grabbing z-20"
+      } // Visual indication for locked annotations
       style={{
         zIndex: 20,
       }}

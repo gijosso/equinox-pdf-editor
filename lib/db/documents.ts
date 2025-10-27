@@ -39,11 +39,37 @@ export const documentService = {
         return {success: true, data: undefined}
       }
       // Return metadata only (without blob)
-      return {success: true, data: document}
+      const metadataOnly = {
+        id: document.id,
+        name: document.name,
+        createdAt: document.createdAt,
+        updatedAt: document.updatedAt,
+        currentVersionId: document.currentVersionId,
+        fileHash: document.fileHash,
+        thumbnail: document.thumbnail,
+      }
+      return {success: true, data: metadataOnly}
     } catch (error) {
       return {
         success: false,
         error: new DatabaseError(`Failed to get document: ${error instanceof Error ? error.message : "Unknown error"}`),
+      }
+    }
+  },
+
+  async getDocumentBlob(id: string): Promise<Result<Blob | undefined, DatabaseError>> {
+    try {
+      const document = await db.documents.get(id)
+      if (!document) {
+        return {success: true, data: undefined}
+      }
+      return {success: true, data: (document as any).blob}
+    } catch (error) {
+      return {
+        success: false,
+        error: new DatabaseError(
+          `Failed to get document blob: ${error instanceof Error ? error.message : "Unknown error"}`,
+        ),
       }
     }
   },
@@ -119,8 +145,8 @@ export const documentService = {
         return {success: true, data: undefined}
       }
 
-      // Return metadata only
-      const metadata: PDFDocument = {
+      // Return metadata only (without blob)
+      const metadataOnly = {
         id: document.id,
         name: document.name,
         createdAt: document.createdAt,
@@ -129,7 +155,7 @@ export const documentService = {
         fileHash: document.fileHash,
         thumbnail: document.thumbnail,
       }
-      return {success: true, data: metadata}
+      return {success: true, data: metadataOnly}
     } catch (error) {
       return {
         success: false,

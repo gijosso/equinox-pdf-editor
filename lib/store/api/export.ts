@@ -2,6 +2,7 @@ import {createApi, fetchBaseQuery} from "@reduxjs/toolkit/query/react"
 import {PDFDocument} from "pdf-lib"
 
 import {db} from "@/lib/db/database"
+import {documentService} from "@/lib/db/documents"
 import {addOriginalPages, createChangeLogPage, createPlaceholderPage, generateExportFilename} from "@/lib/utils/export"
 
 export interface ExportPDFRequest {
@@ -56,20 +57,23 @@ export const exportApi = createApi({
             versions: versionAnnotations,
           })
 
-          // Add original pages
-          if (currentVersion.blob) {
+          // Add original pages from document blob
+          const blobResult = await documentService.getDocumentBlob(documentId)
+          if (blobResult.success && blobResult.data) {
             try {
-              const originalPdfBytes = await currentVersion.blob.arrayBuffer()
+              const originalPdfBytes = await blobResult.data.arrayBuffer()
               await addOriginalPages(pdfDoc, originalPdfBytes)
             } catch (error) {
               console.error("Error loading original PDF:", error)
               await createPlaceholderPage(pdfDoc)
             }
+          } else {
+            await createPlaceholderPage(pdfDoc)
           }
 
           // Generate PDF bytes
           const pdfBytes = await pdfDoc.save()
-          const blob = new Blob([pdfBytes], {type: "application/pdf"})
+          const blob = new Blob([pdfBytes.buffer as ArrayBuffer], {type: "application/pdf"})
 
           // Generate filename
           const filename = generateExportFilename(document.name)

@@ -1,7 +1,6 @@
 import {documentNamesCache} from "../services/document-names-cache"
-import {PDFDocument, PDFVersion} from "../types"
+import {PDFDocumentWithBlob, PDFVersion} from "../types"
 import {generatePDFThumbnail} from "./pdf"
-import {fileToXFDF} from "./xfdf"
 
 export async function computeFileHash(file: File | Blob): Promise<string> {
   const arrayBuffer = await file.arrayBuffer()
@@ -80,19 +79,18 @@ export function generateUniqueName(baseName: string): string {
   return newName
 }
 
-export const uploadNewFile = async (file: File) => {
+export const uploadNewFile = async (file: File): Promise<{document: PDFDocumentWithBlob; version: PDFVersion}> => {
   const documentName = generateUniqueName(file.name)
 
   const fileHash = await computeFileHash(file)
   const blob = new Blob([await file.arrayBuffer()], {type: "application/pdf"})
   const thumbnail = await generatePDFThumbnail(file)
-  const xfdf = await fileToXFDF(file)
 
   const now = new Date()
   const documentId = generateDocumentId()
   const versionId = generateVersionId()
 
-  const document: PDFDocument = {
+  const document: PDFDocumentWithBlob = {
     id: documentId,
     name: documentName,
     createdAt: now.toISOString(),
@@ -100,6 +98,7 @@ export const uploadNewFile = async (file: File) => {
     currentVersionId: versionId,
     fileHash,
     thumbnail,
+    blob, // Add the PDF blob to the document
   }
 
   const version: PDFVersion = {
@@ -108,8 +107,6 @@ export const uploadNewFile = async (file: File) => {
     versionNumber: 1,
     message: "Initial upload",
     createdAt: now.toISOString(),
-    xfdf,
-    blob, // Store blob in version, not document
   }
 
   return {document, version}

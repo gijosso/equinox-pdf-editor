@@ -12,9 +12,10 @@ export class Database extends Dexie {
   constructor() {
     super("PDFEditorDB")
     this.version(1).stores({
-      documents: "id, name, createdAt, updatedAt, currentVersionId, fileHash, [name+updatedAt]",
-      versions: "id, documentId, versionNumber, createdAt, blob, [documentId+createdAt], [documentId+versionNumber]",
-      annotations: "id, versionId, pageNumber, type, createdAt, updatedAt, [versionId+pageNumber], [versionId+type]",
+      documents: "id, name, createdAt, updatedAt, currentVersionId, fileHash, blob, [name+updatedAt]",
+      versions: "id, documentId, versionNumber, createdAt, [documentId+createdAt], [documentId+versionNumber]",
+      annotations:
+        "id, versionId, pageNumber, type, createdAt, updatedAt, originalId, committedVersionId, [versionId+pageNumber], [versionId+type]",
       editorStates: "id, documentId, currentVersionId, createdAt, updatedAt, [documentId+updatedAt]",
       versionEditorStates: "id, versionId, createdAt, updatedAt, [versionId+updatedAt]",
     })

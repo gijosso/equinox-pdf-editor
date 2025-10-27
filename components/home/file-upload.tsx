@@ -85,6 +85,7 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
 
     try {
       const {document, version} = await uploadNewFile(file)
+
       await addDocument({document, version}).unwrap()
 
       toast({
@@ -99,11 +100,21 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
       router.push(`/editor/${document.id}`)
     } catch (error) {
       console.error("Upload error:", error)
-      toast({
-        title: "Upload failed",
-        description: "There was an error uploading your file",
-        variant: "destructive",
-      })
+
+      // Check if it's a database error
+      if (error instanceof Error && error.message.includes("database")) {
+        toast({
+          title: "Database Error",
+          description: "There was a database error. Please refresh the page and try again.",
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Upload failed",
+          description: "There was an error uploading your file",
+          variant: "destructive",
+        })
+      }
     } finally {
       setUploading(false)
     }

@@ -8,12 +8,8 @@ import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} fro
 import {Label} from "@/components/ui/label"
 import {Textarea} from "@/components/ui/textarea"
 import {useToast} from "@/hooks/use-toast"
-import {
-  useGetAnnotationsByVersionQuery,
-  useGetDocumentEditorQuery,
-  useUpdateDocumentWithVersionMutation,
-} from "@/lib/store/api"
-import {saveVersion} from "@/lib/utils/version"
+import {useGetAnnotationsByVersionQuery, useGetDocumentEditorQuery} from "@/lib/store/api"
+import {versionManager} from "@/lib/utils/version-manager"
 
 interface SaveVersionDialogProps {
   open: boolean
@@ -30,8 +26,8 @@ export function SaveVersionDialog({open, onOpenChange, onVersionSaved, documentI
     skip: !currentVersionId,
   })
 
-  const [updateDocumentWithVersion, {isLoading: saving}] = useUpdateDocumentWithVersionMutation()
   const [message, setMessage] = React.useState("")
+  const [isLoading, setIsLoading] = React.useState(false)
   const {toast} = useToast()
 
   const handleSave = async () => {
@@ -39,42 +35,53 @@ export function SaveVersionDialog({open, onOpenChange, onVersionSaved, documentI
       return
     }
 
-    const result = await saveVersion({
-      documentId,
-      message: message.trim(),
-      annotations: annotations || [],
-      updateDocumentWithVersion,
-    })
-
-    if (result.success) {
-      // Show success toast
-      toast({
-        title: "Version saved",
-        description: `Version ${result.versionNumber} has been saved successfully.`,
+    setIsLoading(true)
+    try {
+      const result = await versionManager.commitVersion({
+        documentId,
+        message: message.trim(),
+        annotations: annotations || [],
       })
 
-      setMessage("")
-      onOpenChange(false)
-      onVersionSaved?.() // Refresh PDF blob after saving
-    } else {
+      if (result.success) {
+        // Show success toast
+        toast({
+          title: "Version saved",
+          description: `Version ${result.versionNumber} has been saved successfully.`,
+        })
+
+        setMessage("")
+        onOpenChange(false)
+        onVersionSaved?.() // Refresh PDF blob after saving
+      } else {
+        toast({
+          title: "Failed to save version",
+          description: result.error || "There was an error saving the version. Please try again.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
       toast({
         title: "Failed to save version",
-        description: result.error || "There was an error saving the version. Please try again.",
+        description: "There was an error saving the version. Please try again.",
         variant: "destructive",
       })
+    } finally {
+      setIsLoading(false)
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Save Version</DialogTitle>
           <DialogDescription>
-            Create a new version with your current annotations. This will commit your changes to a new version.
+            Create a new version with your current annotations. Committed annotations will be locked and cannot be
+            modified.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="message">Version Message</Label>
             <Textarea
@@ -90,7 +97,8 @@ export function SaveVersionDialog({open, onOpenChange, onVersionSaved, documentI
             <div className="text-sm text-muted-foreground">
               <p>This version will include:</p>
               <ul className="mt-1 list-disc list-inside">
-                <li>{annotations.length} annotations</li>
+                <li>{annotations.length} annotations (will be locked)</li>
+                <li>Original PDF content (preserved)</li>
               </ul>
             </div>
           </div>
@@ -99,9 +107,9 @@ export function SaveVersionDialog({open, onOpenChange, onVersionSaved, documentI
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={!message.trim() || saving} className="gap-2">
+            <Button onClick={handleSave} disabled={!message.trim() || isLoading} className="gap-2">
               <Save className="h-4 w-4" />
-              {saving ? "Saving..." : "Save Version"}
+              {isLoading ? "Saving..." : "Save Version"}
             </Button>
           </div>
         </div>

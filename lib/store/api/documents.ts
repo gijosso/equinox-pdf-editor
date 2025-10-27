@@ -7,7 +7,7 @@ import type {PDFDocument, PDFVersion} from "@/lib/types"
 export const documentsApi = createApi({
   reducerPath: "documentsApi",
   baseQuery: fetchBaseQuery({baseUrl: "/api/"}), // Not used since we're using local DB
-  tagTypes: ["Document", "Version"],
+  tagTypes: ["Document", "Version", "Annotation"],
   keepUnusedDataFor: 60, // Keep unused data for 60 seconds
   endpoints: builder => ({
     getAllDocuments: builder.query<PDFDocument[], void>({
@@ -59,7 +59,24 @@ export const documentsApi = createApi({
         }
         return {data: result.data}
       },
-      invalidatesTags: (result, error, {documentId}) => [{type: "Document", id: documentId}, "Version"],
+      invalidatesTags: (result, error, {documentId}) => {
+        console.log("Invalidating cache for document:", documentId, "result:", result)
+        return [
+          {type: "Document", id: documentId},
+          {type: "Version", id: `document-${documentId}`},
+          ...(result?.versionId ? [{type: "Annotation" as const, id: `version-${result.versionId}`}] : []),
+        ]
+      },
+      // Force refetch of version queries after successful mutation
+      async onQueryStarted({documentId}, {dispatch, queryFulfilled}) {
+        try {
+          await queryFulfilled
+          // Manually invalidate version queries
+          dispatch(documentsApi.util.invalidateTags([{type: "Version", id: `document-${documentId}`}]))
+        } catch (error) {
+          console.error("Failed to invalidate cache after version save:", error)
+        }
+      },
     }),
 
     updateDocument: builder.mutation<string, {documentId: string; updates: Partial<PDFDocument>}>({

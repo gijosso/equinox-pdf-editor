@@ -9,15 +9,14 @@ export const versionsApi = createApi({
   tagTypes: ["Version", "Document"],
   keepUnusedDataFor: 60, // Keep unused data for 60 seconds
   endpoints: builder => ({
-    getVersionsByDocument: builder.query<Omit<PDFVersion, "blob">[], string>({
+    getVersionsByDocument: builder.query<PDFVersion[], string>({
       queryFn: async documentId => {
         const result = await versionService.getVersionsByDocument(documentId)
         if (!result.success) {
           return {error: {status: "CUSTOM_ERROR", error: result.error.message}}
         }
-        // Strip blob from versions before caching
-        const versionsWithoutBlob = result.data.map(({blob, ...version}) => version)
-        return {data: versionsWithoutBlob}
+        // Versions no longer have blobs - they're stored at document level
+        return {data: result.data}
       },
       providesTags: (result, error, documentId) => [
         {type: "Version", id: `document-${documentId}`},

@@ -14,15 +14,28 @@ interface AnnotationNoteProps {
   height: number
   scale: number
   onUpdate?: (annotation: Annotation) => void
+  locked?: boolean
 }
 
-export function AnnotationNote({annotation, x, y, width, height, scale, onUpdate}: AnnotationNoteProps) {
+export function AnnotationNote({
+  annotation,
+  x,
+  y,
+  width,
+  height,
+  scale,
+  onUpdate,
+  locked = false,
+}: AnnotationNoteProps) {
   const [isEditing, setIsEditing] = React.useState(false)
   const [editContent, setEditContent] = React.useState(annotation.content || "")
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
   const color = annotation.color || "#FFCD45" // Default PDF sticky note color
 
   const handleDoubleClick = () => {
+    // Don't allow editing locked annotations
+    if (locked) return
+
     setIsEditing(true)
     setEditContent(annotation.content || "")
   }
@@ -86,7 +99,16 @@ export function AnnotationNote({annotation, x, y, width, height, scale, onUpdate
   }, [isEditing])
 
   return (
-    <BaseAnnotation annotation={annotation} x={x} y={y} width={width} height={height} scale={scale} onUpdate={onUpdate}>
+    <BaseAnnotation
+      annotation={annotation}
+      x={x}
+      y={y}
+      width={width}
+      height={height}
+      scale={scale}
+      onUpdate={onUpdate}
+      locked={locked}
+    >
       <div
         className="w-full h-full relative cursor-pointer"
         style={{

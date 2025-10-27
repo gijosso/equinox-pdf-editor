@@ -1,7 +1,5 @@
 "use client"
 
-import React from "react"
-
 import type {Annotation} from "@/lib/types"
 
 import {BaseAnnotation} from "./base-annotation"
@@ -14,13 +12,32 @@ interface AnnotationRedactionProps {
   height: number
   scale: number
   onUpdate?: (annotation: Annotation) => void
+  locked?: boolean
 }
 
-export function AnnotationRedaction({annotation, x, y, width, height, scale, onUpdate}: AnnotationRedactionProps) {
+export function AnnotationRedaction({
+  annotation,
+  x,
+  y,
+  width,
+  height,
+  scale,
+  onUpdate,
+  locked = false,
+}: AnnotationRedactionProps) {
   const color = annotation.color || "#000000"
 
   return (
-    <BaseAnnotation annotation={annotation} x={x} y={y} width={width} height={height} scale={scale} onUpdate={onUpdate}>
+    <BaseAnnotation
+      annotation={annotation}
+      x={x}
+      y={y}
+      width={width}
+      height={height}
+      scale={scale}
+      onUpdate={onUpdate}
+      locked={locked}
+    >
       <div
         className="w-full h-full hover:opacity-80 transition-opacity"
         style={{

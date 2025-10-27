@@ -37,7 +37,7 @@ export const versionService = {
 
   async getVersionsByDocument(documentId: string): Promise<Result<PDFVersion[], DatabaseError>> {
     try {
-      const versions = await db.versions.where("documentId").equals(documentId).toArray()
+      const versions = await db.versions.where("documentId").equals(documentId).sortBy("createdAt")
       return {success: true, data: versions}
     } catch (error) {
       return {

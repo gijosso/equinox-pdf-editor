@@ -1,6 +1,6 @@
-import type {Annotation, AnnotationType} from "@/lib/types"
+import type {Annotation, AnnotationType, PDFVersion} from "@/lib/types"
 
-import type {XFDFAnnotation} from "./xfdf"
+import {generateAnnotationId} from "./id"
 
 export interface AnnotationCreationOptions {
   versionId: string
@@ -13,18 +13,16 @@ export interface AnnotationCreationOptions {
   text?: string
   color?: string
   fontSize?: number
-  quadPoints?: number[]
 }
 
 export function createHighlightAnnotation(options: AnnotationCreationOptions): Annotation {
-  const id = `highlight-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+  const id = generateAnnotationId()
   const now = new Date().toISOString()
 
   return {
     id,
     versionId: options.versionId,
     type: "highlight",
-    xfdfType: "highlight",
     pageNumber: options.pageNumber,
     x: options.x,
     y: options.y,
@@ -33,30 +31,20 @@ export function createHighlightAnnotation(options: AnnotationCreationOptions): A
     content: options.content || "",
     text: options.text || "",
     color: options.color || "#ffeb3b", // Default yellow highlight
-    quadPoints: options.quadPoints || [
-      options.x,
-      options.y + options.height, // Bottom-left
-      options.x + options.width,
-      options.y + options.height, // Bottom-right
-      options.x,
-      options.y, // Top-left
-      options.x + options.width,
-      options.y, // Top-right
-    ],
     createdAt: now,
     updatedAt: now,
+    committedVersionId: undefined, // New annotations don't have a committed version yet
   }
 }
 
 export function createNoteAnnotation(options: AnnotationCreationOptions): Annotation {
-  const id = `note-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+  const id = generateAnnotationId()
   const now = new Date().toISOString()
 
   return {
     id,
     versionId: options.versionId,
     type: "note",
-    xfdfType: "text",
     pageNumber: options.pageNumber,
     x: options.x,
     y: options.y,
@@ -66,18 +54,18 @@ export function createNoteAnnotation(options: AnnotationCreationOptions): Annota
     fontSize: options.fontSize || 12,
     createdAt: now,
     updatedAt: now,
+    committedVersionId: undefined, // New annotations don't have a committed version yet
   }
 }
 
 export function createRedactionAnnotation(options: AnnotationCreationOptions): Annotation {
-  const id = `redaction-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+  const id = generateAnnotationId()
   const now = new Date().toISOString()
 
   return {
     id,
     versionId: options.versionId,
     type: "redaction",
-    xfdfType: "redaction",
     pageNumber: options.pageNumber,
     x: options.x,
     y: options.y,
@@ -87,6 +75,7 @@ export function createRedactionAnnotation(options: AnnotationCreationOptions): A
     color: options.color || "#000000", // Default black redaction
     createdAt: now,
     updatedAt: now,
+    committedVersionId: undefined, // New annotations don't have a committed version yet
   }
 }
 
@@ -136,144 +125,12 @@ export function getDefaultAnnotationColor(type: AnnotationType): string {
   }
 }
 
-export function annotationToXFDF(annotation: Annotation): string {
-  const xfdfAttributes = {
-    id: annotation.id,
-    type: annotation.xfdfType,
-    pageNumber: annotation.pageNumber.toString(),
-    x: annotation.x.toString(),
-    y: annotation.y.toString(),
-    width: annotation.width.toString(),
-    height: annotation.height.toString(),
-    content: annotation.content || "",
-    createdAt: annotation.createdAt,
+export function isAnnotationLocked(annotation: Annotation): boolean {
+  console.log("annotation", annotation)
+
+  if (!annotation.committedVersionId) {
+    return false
   }
 
-  // Add type-specific attributes
-  if (annotation.color) {
-    ;(xfdfAttributes as any).color = annotation.color
-  }
-
-  if (annotation.text) {
-    ;(xfdfAttributes as any).text = annotation.text
-  }
-
-  if (annotation.fontSize) {
-    ;(xfdfAttributes as any).fontSize = annotation.fontSize.toString()
-  }
-
-  if (annotation.quadPoints && annotation.quadPoints.length === 8) {
-    ;(xfdfAttributes as any).quadPoints = annotation.quadPoints.join(",")
-  }
-
-  // Create XFDF annotation element
-  const attributes = Object.entries(xfdfAttributes)
-    .map(([key, value]) => `${key}="${value}"`)
-    .join(" ")
-
-  return `<annotation ${attributes} />`
-}
-
-export function convertXFDFAnnotationsToAnnotations(
-  xfdfAnnotations: XFDFAnnotation[],
-  versionId: string,
-): Annotation[] {
-  return xfdfAnnotations.map(xfdfAnnotation => {
-    // Map XFDF type to our annotation type
-    let annotationType: AnnotationType
-    switch (xfdfAnnotation.type) {
-      case "highlight":
-        annotationType = "highlight"
-        break
-      case "text":
-        annotationType = "note"
-        break
-      case "redaction":
-        annotationType = "redaction"
-        break
-      default:
-        console.warn(`Unknown XFDF annotation type: ${xfdfAnnotation.type}`)
-        annotationType = "note" // Default fallback
-    }
-
-    return {
-      id: xfdfAnnotation.id,
-      versionId: versionId,
-      type: annotationType,
-      pageNumber: xfdfAnnotation.pageNumber,
-      x: xfdfAnnotation.x,
-      y: xfdfAnnotation.y,
-      width: xfdfAnnotation.width,
-      height: xfdfAnnotation.height,
-      content: xfdfAnnotation.content || "",
-      color: xfdfAnnotation.color,
-      fontSize: xfdfAnnotation.fontSize,
-      xfdfType: xfdfAnnotation.type,
-      quadPoints: xfdfAnnotation.quadPoints,
-      createdAt: xfdfAnnotation.createdAt,
-      updatedAt: xfdfAnnotation.updatedAt,
-    }
-  })
-}
-
-export function parseXFDFAnnotation(xfdfElement: Element, versionId: string): Annotation | null {
-  try {
-    const id = xfdfElement.getAttribute("id")
-    const xfdfType = xfdfElement.getAttribute("type") as "highlight" | "text" | "redaction"
-    const pageNumber = parseInt(xfdfElement.getAttribute("pageNumber") || "1")
-    const x = parseFloat(xfdfElement.getAttribute("x") || "0")
-    const y = parseFloat(xfdfElement.getAttribute("y") || "0")
-    const width = parseFloat(xfdfElement.getAttribute("width") || "0")
-    const height = parseFloat(xfdfElement.getAttribute("height") || "0")
-    const content = xfdfElement.getAttribute("content") || ""
-    const text = xfdfElement.getAttribute("text") || ""
-    const color = xfdfElement.getAttribute("color") || ""
-    const fontSize = parseInt(xfdfElement.getAttribute("fontSize") || "12")
-    const createdAt = xfdfElement.getAttribute("createdAt") || new Date().toISOString()
-
-    const quadPointsStr = xfdfElement.getAttribute("quadPoints")
-    const quadPoints = quadPointsStr ? quadPointsStr.split(",").map(Number) : undefined
-
-    if (!id || !xfdfType || !pageNumber) {
-      return null
-    }
-
-    // Map XFDF type to our annotation type
-    let annotationType: AnnotationType
-    switch (xfdfType) {
-      case "highlight":
-        annotationType = "highlight"
-        break
-      case "text":
-        annotationType = "note"
-        break
-      case "redaction":
-        annotationType = "redaction"
-        break
-      default:
-        return null
-    }
-
-    return {
-      id,
-      versionId: versionId,
-      type: annotationType,
-      xfdfType,
-      pageNumber,
-      x,
-      y,
-      width,
-      height,
-      content,
-      text,
-      color,
-      fontSize,
-      quadPoints,
-      createdAt,
-      updatedAt: createdAt, // Use createdAt as updatedAt for imported annotations
-    }
-  } catch (error) {
-    console.error("Error parsing XFDF annotation:", error)
-    return null
-  }
+  return annotation.committedVersionId !== annotation.versionId
 }

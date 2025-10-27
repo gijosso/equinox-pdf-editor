@@ -1,112 +1,153 @@
 "use client"
 
 import React from "react"
-import {Document, Page, pdfjs} from "react-pdf"
+import {Document, Page} from "react-pdf"
 import "react-pdf/dist/Page/AnnotationLayer.css"
 import "react-pdf/dist/Page/TextLayer.css"
 
 import {LazySearchHighlights} from "@/components/lazy"
 import {usePDFBlob} from "@/hooks/use-pdf-blob"
-import {useGetDocumentEditorQuery, useSaveDocumentEditorMutation} from "@/lib/store/api"
+import {setupPDFWorker} from "@/lib/pdf-worker-setup"
+import {useGetDocumentEditorQuery, useGetVersionsByDocumentQuery, useSaveDocumentEditorMutation} from "@/lib/store/api"
+import type {TextDiff} from "@/lib/types"
 
 import {AnnotationCreator} from "./annotations/annotation-creator"
 import {AnnotationOverlay} from "./annotations/annotation-overlay"
-
-pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
+import {DiffLegend, DiffOverlay} from "./diff-overlay"
 
 interface PDFViewerProps {
   documentId: string
 }
 
 export function PDFViewer({documentId}: PDFViewerProps) {
+  // Ensure PDF.js worker is set up
+  React.useEffect(() => {
+    setupPDFWorker()
+  }, [])
+
   const [saveDocumentEditor] = useSaveDocumentEditorMutation()
-  const {data: editor} = useGetDocumentEditorQuery(documentId, {
-    skip: !documentId,
-  })
+  const {data: editor} = useGetDocumentEditorQuery(documentId, {skip: !documentId})
 
   const currentPage = editor?.currentPage || 1
   const totalPages = editor?.totalPages || 1
   const viewport = editor?.viewport || {x: 0, y: 0, zoom: 1}
+  const isDiffMode = editor?.isDiffMode || false
+  const compareVersionIds = editor?.compareVersionIds || []
   const {blob, blobUrl, loading, error} = usePDFBlob(documentId)
   const [pageDimensions, setPageDimensions] = React.useState<{width: number; height: number} | null>(null)
+  const [textDiffs, setTextDiffs] = React.useState<TextDiff[]>([])
 
-  const handleSetCurrentPage = async (page: number) => {
-    if (!editor || !documentId) {
+  // Get versions for diff comparison
+  const {data: versions = []} = useGetVersionsByDocumentQuery(documentId, {
+    skip: !documentId || !isDiffMode,
+  })
+
+  // Calculate text diffs when in diff mode
+  React.useEffect(() => {
+    if (!isDiffMode || !compareVersionIds[0] || !compareVersionIds[1]) {
+      setTextDiffs([])
       return
     }
 
-    const updatedEditor = {
-      ...editor,
-      currentPage: page,
-    }
+    const version1 = versions.find(v => v.id === compareVersionIds[0])
+    const version2 = versions.find(v => v.id === compareVersionIds[1])
 
-    try {
-      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
-    } catch (error) {
-      console.error("Failed to set current page:", error)
-    }
-  }
-
-  const handleSetTotalPages = async (pages: number) => {
-    if (!editor || !documentId) {
+    if (!version1 || !version2) {
+      setTextDiffs([])
       return
     }
 
-    const updatedEditor = {
-      ...editor,
-      totalPages: pages,
-    }
+    // Since we're using annotation-only commits, PDF content is preserved
+    // No text diffs needed as the original PDF content remains unchanged
+    setTextDiffs([])
+  }, [isDiffMode, compareVersionIds[0], compareVersionIds[1]])
 
-    try {
-      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
-    } catch (error) {
-      console.error("Failed to set total pages:", error)
-    }
-  }
+  const onDocumentLoadSuccess = React.useCallback(
+    ({numPages}: {numPages: number}) => {
+      if (editor) {
+        saveDocumentEditor({
+          documentId,
+          editor: {
+            ...editor,
+            totalPages: numPages,
+            currentPage: 1,
+            viewport: {x: 0, y: 0, zoom: 1},
+            isDiffMode: false,
+            compareVersionIds: [],
+          },
+        })
+      }
+    },
+    [documentId, saveDocumentEditor, editor],
+  )
+
+  const onPageLoadSuccess = React.useCallback((page: any) => {
+    setPageDimensions({
+      width: page.width,
+      height: page.height,
+    })
+  }, [])
+
+  const handlePageChange = React.useCallback(
+    (pageNumber: number) => {
+      if (editor) {
+        saveDocumentEditor({
+          documentId,
+          editor: {
+            ...editor,
+            currentPage: pageNumber,
+          },
+        })
+      }
+    },
+    [documentId, saveDocumentEditor, editor],
+  )
+
+  const handleViewportChange = React.useCallback(
+    (newViewport: {x: number; y: number; zoom: number}) => {
+      if (editor) {
+        saveDocumentEditor({
+          documentId,
+          editor: {
+            ...editor,
+            viewport: newViewport,
+          },
+        })
+      }
+    },
+    [documentId, saveDocumentEditor, editor],
+  )
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-center">
-          <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-          <p className="text-muted-foreground">Loading PDF...</p>
-        </div>
+      <div className="flex h-96 items-center justify-center">
+        <div className="text-muted-foreground">Loading PDF...</div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600 mb-2">Error: {error}</p>
-          <p className="text-sm text-muted-foreground">Failed to load PDF document</p>
-        </div>
+      <div className="flex h-96 items-center justify-center">
+        <div className="text-destructive">Error loading PDF: {error}</div>
       </div>
     )
   }
 
-  if (!blob || !blobUrl) {
+  if (!blobUrl) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground">No PDF loaded</p>
-        </div>
+      <div className="flex h-96 items-center justify-center">
+        <div className="text-muted-foreground">No PDF available</div>
       </div>
     )
   }
 
   return (
-    <div className="h-full w-full flex flex-col">
+    <div className="relative h-full w-full flex flex-col overflow-hidden">
       <div className="flex-1 overflow-auto">
         <div className="flex justify-center items-center relative min-h-full w-full min-w-0">
           <div className="relative">
-            <Document
-              file={blobUrl}
-              onLoadSuccess={({numPages}) => handleSetTotalPages(numPages)}
-              onLoadError={error => console.error("PDF load error:", error)}
-              className="shadow-lg"
-            >
+            <Document file={blobUrl} onLoadSuccess={onDocumentLoadSuccess} className="h-full w-full">
               <AnnotationCreator
                 scale={viewport.zoom}
                 pageWidth={pageDimensions?.width || 0}
@@ -120,12 +161,7 @@ export function PDFViewer({documentId}: PDFViewerProps) {
                     renderAnnotationLayer={true}
                     className="border border-border"
                     scale={viewport.zoom}
-                    onLoadSuccess={page => {
-                      setPageDimensions({
-                        width: page.width,
-                        height: page.height,
-                      })
-                    }}
+                    onLoadSuccess={onPageLoadSuccess}
                   />
 
                   <LazySearchHighlights scale={viewport.zoom} documentId={documentId} />
@@ -136,6 +172,16 @@ export function PDFViewer({documentId}: PDFViewerProps) {
                       pageWidth={pageDimensions.width}
                       pageHeight={pageDimensions.height}
                       documentId={documentId}
+                    />
+                  )}
+
+                  {isDiffMode && compareVersionIds.length === 2 && (
+                    <DiffOverlay
+                      pageNumber={currentPage}
+                      textDiffs={textDiffs}
+                      scale={viewport.zoom}
+                      viewportWidth={pageDimensions?.width || 0}
+                      viewportHeight={pageDimensions?.height || 0}
                     />
                   )}
                 </div>

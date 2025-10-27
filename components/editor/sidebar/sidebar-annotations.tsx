@@ -13,6 +13,7 @@ import {
 } from "@/lib/store/api"
 import type {Annotation, AnnotationType} from "@/lib/types"
 import {formatDate} from "@/lib/utils"
+import {isAnnotationLocked} from "@/lib/utils/annotations"
 
 type AnnotationToolConfig = {type: AnnotationType; icon: React.ReactNode; label: string}
 
@@ -29,7 +30,7 @@ interface SidebarAnnotationsProps {
 }
 
 const AnnotationItem = React.memo(
-  ({documentId, versionId, annotation}: {documentId: string; versionId: string; annotation: Annotation}) => {
+  ({documentId, annotation}: {documentId: string; versionId: string; annotation: Annotation}) => {
     const [deleteAnnotation] = useDeleteAnnotationMutation()
     const [saveDocumentEditor] = useSaveDocumentEditorMutation()
     const {data: editor} = useGetDocumentEditorQuery(documentId, {
@@ -68,8 +69,10 @@ const AnnotationItem = React.memo(
       }
     }
 
+    const isLocked = isAnnotationLocked(annotation)
+
     return (
-      <div className="rounded-lg border border-border bg-background p-3 h-24">
+      <div className={`rounded-lg border border-border p-3 h-24 ${isLocked ? "bg-muted opacity-75" : "bg-background"}`}>
         <div className="flex items-center justify-between gap-2 h-full">
           <div className="flex items-center gap-2 flex-1 min-w-0 max-w-full h-full">
             {annotationConfig.icon}
@@ -113,7 +116,14 @@ const AnnotationItem = React.memo(
               </div>
             </div>
           </div>
-          <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={handleDelete}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`h-6 w-6 shrink-0 ${isLocked ? "opacity-50 cursor-not-allowed" : ""}`}
+            onClick={handleDelete}
+            disabled={isLocked}
+            title={isLocked ? "Cannot delete locked annotation" : "Delete annotation"}
+          >
             <Trash2 className="h-3 w-3" />
           </Button>
         </div>
@@ -141,6 +151,22 @@ export function SidebarAnnotations({documentId}: SidebarAnnotationsProps) {
   const [viewMode, setViewMode] = React.useState<"all" | "grouped">("all")
   const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(new Set())
 
+  // Sort annotations: unlocked first (by createdAt), then locked (by createdAt)
+  const sortedAnnotations = React.useMemo(() => {
+    return [...annotations].sort((a, b) => {
+      const aLocked = isAnnotationLocked(a)
+      const bLocked = isAnnotationLocked(b)
+
+      // If both have same lock status, sort by createdAt
+      if (aLocked === bLocked) {
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      }
+
+      // Unlocked annotations come first
+      return aLocked ? 1 : -1
+    })
+  }, [annotations])
+
   const groupedAnnotations = React.useMemo(() => {
     const groups: Record<AnnotationType, Annotation[]> = {
       highlight: [],
@@ -148,14 +174,14 @@ export function SidebarAnnotations({documentId}: SidebarAnnotationsProps) {
       redaction: [],
     } satisfies {[K in AnnotationType]: Annotation[]}
 
-    for (const annotation of annotations) {
+    for (const annotation of sortedAnnotations) {
       if (annotation.type in groups) {
         groups[annotation.type as keyof typeof groups].push(annotation)
       }
     }
 
     return groups
-  }, [annotations])
+  }, [sortedAnnotations])
 
   const toggleGroup = (type: AnnotationType) => {
     setCollapsedGroups(prev => {
@@ -227,7 +253,7 @@ export function SidebarAnnotations({documentId}: SidebarAnnotationsProps) {
           </div>
         ) : viewMode === "all" ? (
           <div className="space-y-2 p-4">
-            {annotations.map(annotation => (
+            {sortedAnnotations.map(annotation => (
               <AnnotationItem
                 key={annotation.id}
                 documentId={documentId}

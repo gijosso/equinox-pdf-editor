@@ -1,18 +1,13 @@
 import {atomicService} from "@/lib/db/atomic"
 import type {Annotation, PDFVersion} from "@/lib/types"
 
-import {createPDFWithAnnotations} from "./pdf"
-import {createVersionWithXFDF} from "./xfdf"
+import {generateVersionId} from "./file"
+import {generateAnnotationId} from "./id"
 
 export interface SaveVersionOptions {
   documentId: string
   message: string
   annotations: Annotation[]
-  updateDocumentWithVersion: (args: {
-    documentId: string
-    documentUpdates: Record<string, any>
-    version: PDFVersion
-  }) => Promise<any>
 }
 
 export interface SaveVersionResult {
@@ -23,11 +18,11 @@ export interface SaveVersionResult {
 
 /**
  * Save a new version with committed annotations
- * This function handles the complete flow of creating a new version
- * with annotations committed to the PDF blob
+ * This function copies all annotations from the previous version with consistent IDs
+ * so they can be compared across versions for diffing
  */
 export async function saveVersion(options: SaveVersionOptions): Promise<SaveVersionResult> {
-  const {documentId, message, annotations, updateDocumentWithVersion} = options
+  const {documentId, message, annotations} = options
 
   if (!documentId || !message.trim()) {
     return {success: false, error: "Document ID and message are required"}
@@ -44,29 +39,42 @@ export async function saveVersion(options: SaveVersionOptions): Promise<SaveVers
       throw new Error("No current version found")
     }
 
-    const currentVersionResult = await atomicService.getCurrentVersionBlob(documentId, document.currentVersionId)
-    if (!currentVersionResult.success) {
-      throw new Error(currentVersionResult.error.message)
-    }
-
-    const currentVersion = currentVersionResult.data
-
-    const [newPdfBlob, {xfdf, version: versionData}] = await Promise.all([
-      createPDFWithAnnotations(currentVersion.blob, annotations || []),
-      createVersionWithXFDF(documentId, nextVersionNumber, message.trim(), annotations || []),
-    ])
-
-    const version = {
-      ...versionData,
-      blob: newPdfBlob, // Use the new PDF with annotations committed
-      xfdf, // XFDF string with annotations
-    }
-
-    await updateDocumentWithVersion({
+    const newVersion: PDFVersion = {
+      id: generateVersionId(),
       documentId,
-      documentUpdates: {}, // No document updates needed
-      version,
-    })
+      versionNumber: nextVersionNumber,
+      message: message.trim(),
+      createdAt: new Date().toISOString(),
+    }
+
+    const updateResult = await atomicService.updateDocumentWithVersion(documentId, {}, newVersion)
+
+    if (!updateResult.success) {
+      throw new Error(updateResult.error.message)
+    }
+
+    const annotationsToAdd: Annotation[] = []
+
+    for (const historyAnnotation of annotations) {
+      const annotationWithOriginalId: Annotation = {
+        ...historyAnnotation,
+        id: generateAnnotationId(),
+        versionId: newVersion.id,
+        originalId: historyAnnotation.id, // Mark this as the original for future copies
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        committedVersionId: historyAnnotation.committedVersionId || document.currentVersionId,
+      }
+      annotationsToAdd.push(annotationWithOriginalId)
+    }
+
+    // Add all annotations to the new version
+    if (annotationsToAdd.length > 0) {
+      const addAnnotationsResult = await atomicService.addAnnotationsToVersion(newVersion.id, annotationsToAdd)
+      if (!addAnnotationsResult.success) {
+        throw new Error(addAnnotationsResult.error.message)
+      }
+    }
 
     return {success: true, versionNumber: nextVersionNumber}
   } catch (error) {
