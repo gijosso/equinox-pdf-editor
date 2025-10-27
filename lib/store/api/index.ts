@@ -10,6 +10,7 @@ export {documentsApi, versionsApi, annotationsApi, editsApi, editorApi, exportAp
 export {
   useGetAllDocumentsQuery,
   useGetDocumentQuery,
+  useGetDocumentBlobQuery,
   useAddDocumentMutation,
   useUpdateDocumentMutation,
   useUpdateDocumentWithVersionMutation,

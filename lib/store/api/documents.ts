@@ -89,6 +89,25 @@ export const documentsApi = createApi({
       invalidatesTags: (result, error, {documentId}) => [{type: "Document", id: documentId}],
     }),
 
+    getDocumentBlob: builder.query<{blob: Blob}, string>({
+      queryFn: async documentId => {
+        const result = await documentService.getDocumentBlob(documentId)
+        if (!result.success) {
+          return {error: {status: "CUSTOM_ERROR", error: result.error.message}}
+        }
+        if (!result.data) {
+          return {error: {status: "CUSTOM_ERROR", error: "Document blob not found"}}
+        }
+        return {data: {blob: result.data}}
+      },
+      providesTags: (result, error, documentId) => [{type: "Document", id: `${documentId}-blob`}],
+      serializeQueryArgs: ({queryArgs}) => queryArgs,
+      // Don't merge old data with new data (blob should be fetched fresh)
+      merge: (currentCache, newItem) => newItem,
+      // Don't persist blobs to Redux state, keep them in memory only
+      keepUnusedDataFor: 0, // Don't cache blobs
+    }),
+
     deleteDocument: builder.mutation<string, string>({
       queryFn: async documentId => {
         const result = await atomicService.deleteDocumentWithVersions(documentId)
@@ -105,6 +124,7 @@ export const documentsApi = createApi({
 export const {
   useGetAllDocumentsQuery,
   useGetDocumentQuery,
+  useGetDocumentBlobQuery,
   useAddDocumentMutation,
   useUpdateDocumentMutation,
   useUpdateDocumentWithVersionMutation,
