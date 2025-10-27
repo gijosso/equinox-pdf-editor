@@ -9,12 +9,7 @@ import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} fro
 import {ScrollArea} from "@/components/ui/scroll-area"
 import {useToast} from "@/hooks/use-toast"
 import {annotationService} from "@/lib/db/annotations"
-import {
-  useGetDocumentEditorQuery,
-  useGetVersionsByDocumentQuery,
-  useSaveDocumentEditorMutation,
-  useUpdateDocumentMutation,
-} from "@/lib/store/api"
+import {useEditorActions, useGetVersionsByDocumentQuery, useUpdateDocumentMutation} from "@/lib/store/api"
 
 interface VersionHistoryDialogProps {
   open: boolean
@@ -24,14 +19,9 @@ interface VersionHistoryDialogProps {
 
 export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHistoryDialogProps) {
   const [updateDocument, {isLoading: updating}] = useUpdateDocumentMutation()
-  const [saveDocumentEditor] = useSaveDocumentEditorMutation()
+  const {editor, setCurrentVersionId, setDiffMode} = useEditorActions(documentId)
   const {toast} = useToast()
   const [selectedVersions, setSelectedVersions] = React.useState<string[]>([])
-
-  // Get editor state from API
-  const {data: editor} = useGetDocumentEditorQuery(documentId, {
-    skip: !documentId,
-  })
 
   // Use RTK Query to fetch versions
   const {
@@ -72,15 +62,8 @@ export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHi
       // Create a new version ID for the working changes
       const nextVersionId = `working-${Date.now()}`
 
-      // Update editor state with the new version and annotations
-      const updatedEditor = {
-        ...editor,
-        currentVersionId: nextVersionId,
-        // Note: We might need to update annotations through a separate API call
-        // For now, we'll update the editor state to reflect the version change
-      }
-
-      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
+      // Update editor state with the new version
+      await setCurrentVersionId(nextVersionId)
 
       // Show success toast
       toast({
@@ -115,15 +98,8 @@ export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHi
       return
     }
 
-    // Update editor state to enable diff mode and set compare versions
-    const updatedEditor = {
-      ...editor,
-      isDiffMode: true,
-      compareVersionIds: selectedVersions,
-    }
-
     try {
-      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
+      await setDiffMode(true, selectedVersions)
       onOpenChange(false)
     } catch (error) {
       console.error("Failed to enable diff mode:", error)
@@ -141,15 +117,8 @@ export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHi
     }
     const currentVersionId = versions[versions.length - 1]?.id
     if (currentVersionId) {
-      // Update editor state to enable diff mode and set compare versions
-      const updatedEditor = {
-        ...editor,
-        isDiffMode: true,
-        compareVersionIds: [currentVersionId, versionId],
-      }
-
       try {
-        await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
+        await setDiffMode(true, [currentVersionId, versionId])
         onOpenChange(false)
       } catch (error) {
         console.error("Failed to enable diff mode:", error)

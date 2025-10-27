@@ -103,6 +103,9 @@ export interface DocumentEditor {
   // Diff mode state
   isDiffMode: boolean
   compareVersionIds: string[]
+
+  // Sidebar state
+  annotationsViewMode: "all" | "grouped"
 }
 
 export interface VersionEditor {
@@ -138,6 +141,7 @@ export interface EditorRecord {
   historyIndex: number
   isDiffMode: boolean
   compareVersionIds: string[]
+  annotationsViewMode: "all" | "grouped"
   createdAt: string
   updatedAt: string
 }

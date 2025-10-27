@@ -3,7 +3,7 @@
 import React from "react"
 
 import {pdfSearchService} from "@/lib/services/pdf-search"
-import {useGetDocumentEditorQuery, useSaveDocumentEditorMutation} from "@/lib/store/api"
+import {useEditorActions} from "@/lib/store/api"
 
 import {usePDFBlob} from "./use-pdf-blob"
 
@@ -16,10 +16,7 @@ interface UsePDFSearchResult {
 }
 
 export function usePDFSearch(documentId: string, debounceTime: number = 300): UsePDFSearchResult {
-  const [saveDocumentEditor] = useSaveDocumentEditorMutation()
-  const {data: editor} = useGetDocumentEditorQuery(documentId, {
-    skip: !documentId,
-  })
+  const {editor, updateEditor} = useEditorActions(documentId)
 
   const searchQuery = editor?.searchQuery || ""
   const searchResults = editor?.searchResults || []
@@ -41,18 +38,18 @@ export function usePDFSearch(documentId: string, debounceTime: number = 300): Us
           highlightAll: true,
         })
 
-        const updatedEditor = {
-          ...editor,
-          searchResults: results,
-          currentSearchIndex: 0,
-        }
-
-        await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
+        await updateEditor(
+          {
+            searchResults: results,
+            currentSearchIndex: 0,
+          },
+          "Error searching PDF",
+        )
       } catch (error) {
         console.error("Error searching PDF:", error)
       }
     },
-    [documentId, blob, pdfLoading, editor, saveDocumentEditor],
+    [documentId, blob, pdfLoading, editor, updateEditor],
   )
 
   const clearSearch = React.useCallback(async () => {
@@ -60,18 +57,14 @@ export function usePDFSearch(documentId: string, debounceTime: number = 300): Us
       return
     }
 
-    const updatedEditor = {
-      ...editor,
-      searchResults: [],
-      currentSearchIndex: 0,
-    }
-
-    try {
-      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
-    } catch (error) {
-      console.error("Failed to clear search:", error)
-    }
-  }, [documentId, editor, saveDocumentEditor])
+    await updateEditor(
+      {
+        searchResults: [],
+        currentSearchIndex: 0,
+      },
+      "Failed to clear search",
+    )
+  }, [documentId, editor, updateEditor])
 
   const goToNextResult = React.useCallback(async () => {
     if (!documentId || !editor || searchResults.length === 0) {
@@ -81,18 +74,14 @@ export function usePDFSearch(documentId: string, debounceTime: number = 300): Us
     const nextIndex = (currentSearchIndex + 1) % searchResults.length
     const nextResult = searchResults[nextIndex]
 
-    const updatedEditor = {
-      ...editor,
-      currentSearchIndex: nextIndex,
-      currentPage: nextResult.pageNumber,
-    }
-
-    try {
-      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
-    } catch (error) {
-      console.error("Failed to go to next result:", error)
-    }
-  }, [documentId, editor, searchResults, currentSearchIndex, saveDocumentEditor])
+    await updateEditor(
+      {
+        currentSearchIndex: nextIndex,
+        currentPage: nextResult.pageNumber,
+      },
+      "Failed to go to next result",
+    )
+  }, [documentId, editor, searchResults, currentSearchIndex, updateEditor])
 
   const goToPreviousResult = React.useCallback(async () => {
     if (!documentId || !editor || searchResults.length === 0) {
@@ -102,18 +91,14 @@ export function usePDFSearch(documentId: string, debounceTime: number = 300): Us
     const prevIndex = (currentSearchIndex - 1 + searchResults.length) % searchResults.length
     const prevResult = searchResults[prevIndex]
 
-    const updatedEditor = {
-      ...editor,
-      currentSearchIndex: prevIndex,
-      currentPage: prevResult.pageNumber,
-    }
-
-    try {
-      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
-    } catch (error) {
-      console.error("Failed to go to previous result:", error)
-    }
-  }, [documentId, editor, searchResults, currentSearchIndex, saveDocumentEditor])
+    await updateEditor(
+      {
+        currentSearchIndex: prevIndex,
+        currentPage: prevResult.pageNumber,
+      },
+      "Failed to go to previous result",
+    )
+  }, [documentId, editor, searchResults, currentSearchIndex, updateEditor])
 
   // Debounce search
   React.useEffect(() => {

@@ -30,6 +30,7 @@ export {
   useSaveDocumentEditorMutation,
   useGetVersionEditorQuery,
   useSaveVersionEditorMutation,
+  useEditorActions,
 } from "./editor"
 
 export {useExportPDFMutation} from "./export"

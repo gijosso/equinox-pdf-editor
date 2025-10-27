@@ -5,12 +5,7 @@ import React from "react"
 
 import {Button} from "@/components/ui/button"
 import {ScrollArea} from "@/components/ui/scroll-area"
-import {
-  useDeleteAnnotationMutation,
-  useGetAnnotationsByVersionQuery,
-  useGetDocumentEditorQuery,
-  useSaveDocumentEditorMutation,
-} from "@/lib/store/api"
+import {useDeleteAnnotationMutation, useEditorActions, useGetAnnotationsByVersionQuery} from "@/lib/store/api"
 import type {Annotation, AnnotationType} from "@/lib/types"
 import {formatDate} from "@/lib/utils"
 import {isAnnotationLocked} from "@/lib/utils/annotations"
@@ -32,26 +27,10 @@ interface SidebarAnnotationsProps {
 const AnnotationItem = React.memo(
   ({documentId, annotation}: {documentId: string; versionId: string; annotation: Annotation}) => {
     const [deleteAnnotation] = useDeleteAnnotationMutation()
-    const [saveDocumentEditor] = useSaveDocumentEditorMutation()
-    const {data: editor} = useGetDocumentEditorQuery(documentId, {
-      skip: !documentId,
-    })
+    const {setCurrentPage} = useEditorActions(documentId)
 
     const handleSetCurrentPage = async (pageNumber: number) => {
-      if (!editor || !documentId) {
-        return
-      }
-
-      const updatedEditor = {
-        ...editor,
-        currentPage: pageNumber,
-      }
-
-      try {
-        await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
-      } catch (error) {
-        console.error("Failed to set current page:", error)
-      }
+      await setCurrentPage(pageNumber)
     }
 
     // Safety check for annotation type
@@ -135,9 +114,7 @@ const AnnotationItem = React.memo(
 AnnotationItem.displayName = "AnnotationItem"
 
 export function SidebarAnnotations({documentId}: SidebarAnnotationsProps) {
-  const {data: editor} = useGetDocumentEditorQuery(documentId, {
-    skip: !documentId,
-  })
+  const {editor, setAnnotationsViewMode} = useEditorActions(documentId)
   const currentVersionId = editor?.currentVersionId || null
 
   const {
@@ -148,8 +125,12 @@ export function SidebarAnnotations({documentId}: SidebarAnnotationsProps) {
     skip: !currentVersionId,
   })
 
-  const [viewMode, setViewMode] = React.useState<"all" | "grouped">("all")
+  const viewMode = editor?.annotationsViewMode || "all"
   const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(new Set())
+
+  const handleViewModeChange = async (newViewMode: "all" | "grouped") => {
+    await setAnnotationsViewMode(newViewMode)
+  }
 
   // Sort annotations: unlocked first (by createdAt), then locked (by createdAt)
   const sortedAnnotations = React.useMemo(() => {
@@ -230,7 +211,7 @@ export function SidebarAnnotations({documentId}: SidebarAnnotationsProps) {
             variant={viewMode === "all" ? "secondary" : "ghost"}
             size="sm"
             className="h-7 px-2"
-            onClick={() => setViewMode("all")}
+            onClick={() => handleViewModeChange("all")}
           >
             <List className="h-3.5 w-3.5" />
           </Button>
@@ -238,7 +219,7 @@ export function SidebarAnnotations({documentId}: SidebarAnnotationsProps) {
             variant={viewMode === "grouped" ? "secondary" : "ghost"}
             size="sm"
             className="h-7 px-2"
-            onClick={() => setViewMode("grouped")}
+            onClick={() => handleViewModeChange("grouped")}
           >
             <Layers className="h-3.5 w-3.5" />
           </Button>

@@ -6,17 +6,14 @@ import {useState} from "react"
 import {Button} from "@/components/ui/button"
 import {Input} from "@/components/ui/input"
 import {usePDFSearch} from "@/hooks/use-pdf-search"
-import {useGetDocumentEditorQuery, useSaveDocumentEditorMutation} from "@/lib/store/api"
+import {useEditorActions} from "@/lib/store/api"
 
 interface ToolbarSearchProps {
   documentId: string
 }
 
 export function ToolbarSearch({documentId}: ToolbarSearchProps) {
-  const [saveDocumentEditor] = useSaveDocumentEditorMutation()
-  const {data: editor} = useGetDocumentEditorQuery(documentId, {
-    skip: !documentId,
-  })
+  const {editor, setSearchQuery, clearSearch: clearSearchState} = useEditorActions(documentId)
 
   const searchResults = editor?.searchResults || []
   const currentSearchIndex = editor?.currentSearchIndex || 0
@@ -27,43 +24,13 @@ export function ToolbarSearch({documentId}: ToolbarSearchProps) {
   const handleClear = async () => {
     setLocalSearchQuery("")
     clearSearch()
-
-    if (!editor || !documentId) {
-      return
-    }
-
-    const updatedEditor = {
-      ...editor,
-      searchQuery: "",
-      searchResults: [],
-      currentSearchIndex: 0,
-    }
-
-    try {
-      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
-    } catch (error) {
-      console.error("Failed to clear search:", error)
-    }
+    await clearSearchState()
   }
 
   const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setLocalSearchQuery(value)
-
-    if (!editor || !documentId) {
-      return
-    }
-
-    const updatedEditor = {
-      ...editor,
-      searchQuery: value,
-    }
-
-    try {
-      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
-    } catch (error) {
-      console.error("Failed to update search query:", error)
-    }
+    await setSearchQuery(value)
   }
 
   return (

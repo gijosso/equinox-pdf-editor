@@ -4,7 +4,7 @@ import {Highlighter, MousePointer, Square, StickyNote, ZoomIn, ZoomOut} from "lu
 
 import {Button} from "@/components/ui/button"
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip"
-import {useGetDocumentEditorQuery, useSaveDocumentEditorMutation} from "@/lib/store/api"
+import {useEditorActions} from "@/lib/store/api"
 import type {EditorToolType} from "@/lib/types"
 
 import {ToolbarPage} from "./toolbar-page"
@@ -24,69 +24,27 @@ interface ToolbarProps {
 }
 
 export function Toolbar({documentId}: ToolbarProps) {
-  const [saveDocumentEditor] = useSaveDocumentEditorMutation()
-  const {data: editor} = useGetDocumentEditorQuery(documentId, {
-    skip: !documentId,
-  })
+  const {editor, setActiveTool, setViewport} = useEditorActions(documentId)
 
   const activeTool = editor?.activeTool || {type: "select"}
   const viewport = editor?.viewport || {x: 0, y: 0, zoom: 1}
 
   const handleToolChange = async (toolType: EditorToolType) => {
-    if (!editor || !documentId) {
-      return
-    }
-
-    const updatedEditor = {
-      ...editor,
-      activeTool: {type: toolType},
-    }
-
-    try {
-      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
-    } catch (error) {
-      console.error("Failed to change tool:", error)
-    }
+    await setActiveTool({type: toolType})
   }
 
   const handleZoomIn = async () => {
-    if (!editor || !documentId) {
-      return
-    }
-
-    const updatedEditor = {
-      ...editor,
-      viewport: {
-        ...viewport,
-        zoom: viewport.zoom + 0.1,
-      },
-    }
-
-    try {
-      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
-    } catch (error) {
-      console.error("Failed to zoom in:", error)
-    }
+    await setViewport({
+      ...viewport,
+      zoom: viewport.zoom + 0.1,
+    })
   }
 
   const handleZoomOut = async () => {
-    if (!editor || !documentId) {
-      return
-    }
-
-    const updatedEditor = {
-      ...editor,
-      viewport: {
-        ...viewport,
-        zoom: Math.max(0.1, viewport.zoom - 0.1),
-      },
-    }
-
-    try {
-      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
-    } catch (error) {
-      console.error("Failed to zoom out:", error)
-    }
+    await setViewport({
+      ...viewport,
+      zoom: Math.max(0.1, viewport.zoom - 0.1),
+    })
   }
 
   return (

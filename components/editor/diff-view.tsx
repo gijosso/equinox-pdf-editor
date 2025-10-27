@@ -6,7 +6,7 @@ import React from "react"
 import {Button} from "@/components/ui/button"
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs"
 import {annotationService} from "@/lib/db/annotations"
-import {useGetDocumentEditorQuery, useGetVersionsByDocumentQuery, useSaveDocumentEditorMutation} from "@/lib/store/api"
+import {useEditorActions, useGetVersionsByDocumentQuery} from "@/lib/store/api"
 import type {AnnotationDiff, TextDiffResult} from "@/lib/types"
 
 interface DiffViewProps {
@@ -14,8 +14,7 @@ interface DiffViewProps {
 }
 
 export function DiffView({documentId}: DiffViewProps) {
-  const [saveDocumentEditor] = useSaveDocumentEditorMutation()
-  const {data: editor} = useGetDocumentEditorQuery(documentId, {skip: !documentId})
+  const {editor, setDiffMode} = useEditorActions(documentId)
   const {data: versions = []} = useGetVersionsByDocumentQuery(documentId, {skip: !documentId})
   const [annotationDiffs, setAnnotationDiffs] = React.useState<AnnotationDiff[]>([])
   const [textDiff, setTextDiff] = React.useState<TextDiffResult | null>(null)
@@ -104,22 +103,7 @@ export function DiffView({documentId}: DiffViewProps) {
   }
 
   const handleExitDiff = async () => {
-    if (!editor || !documentId) {
-      return
-    }
-
-    // Update editor state to exit diff mode
-    const updatedEditor = {
-      ...editor,
-      isDiffMode: false,
-      compareVersionIds: [],
-    }
-
-    try {
-      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
-    } catch (error) {
-      console.error("Failed to exit diff mode:", error)
-    }
+    await setDiffMode(false, [])
   }
 
   const renderTextDiff = () => {

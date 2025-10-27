@@ -5,17 +5,14 @@ import {Edit, History, Plus, RotateCcw, Trash2} from "lucide-react"
 
 import {Button} from "@/components/ui/button"
 import {ScrollArea} from "@/components/ui/scroll-area"
-import {useGetDocumentEditorQuery, useSaveDocumentEditorMutation} from "@/lib/store/api"
+import {useEditorActions} from "@/lib/store/api"
 
 interface SidebarEditHistoryProps {
   documentId: string
 }
 
 export function SidebarEditHistory({documentId}: SidebarEditHistoryProps) {
-  const [saveDocumentEditor] = useSaveDocumentEditorMutation()
-  const {data: editor} = useGetDocumentEditorQuery(documentId, {
-    skip: !documentId,
-  })
+  const {editor, setHistoryIndex} = useEditorActions(documentId)
 
   const history = editor?.history || []
   const historyIndex = editor?.historyIndex || 0
@@ -47,20 +44,7 @@ export function SidebarEditHistory({documentId}: SidebarEditHistoryProps) {
   }
 
   const handleJumpToHistory = async (index: number) => {
-    if (!editor || !documentId) {
-      return
-    }
-
-    const updatedEditor = {
-      ...editor,
-      historyIndex: index,
-    }
-
-    try {
-      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
-    } catch (error) {
-      console.error("Failed to jump to history:", error)
-    }
+    await setHistoryIndex(index)
   }
 
   return (

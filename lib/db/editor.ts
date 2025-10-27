@@ -35,6 +35,7 @@ export const editorService = {
         historyIndex: editor.historyIndex,
         isDiffMode: editor.isDiffMode,
         compareVersionIds: editor.compareVersionIds,
+        annotationsViewMode: editor.annotationsViewMode,
         createdAt: now,
         updatedAt: now,
       }
@@ -78,6 +79,7 @@ export const editorService = {
         historyIndex: record.historyIndex,
         isDiffMode: record.isDiffMode,
         compareVersionIds: record.compareVersionIds,
+        annotationsViewMode: record.annotationsViewMode,
       }
 
       return {success: true, data: editor}

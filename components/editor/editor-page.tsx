@@ -48,6 +48,7 @@ export function EditorPage({documentId}: EditorPageProps) {
         historyIndex: 0,
         isDiffMode: false,
         compareVersionIds: [],
+        annotationsViewMode: "all" as const,
       }
 
       saveDocumentEditor({documentId, editor: initialEditor})

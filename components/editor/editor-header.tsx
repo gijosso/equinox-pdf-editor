@@ -7,11 +7,10 @@ import React from "react"
 import {Button} from "@/components/ui/button"
 import {usePDFBlob} from "@/hooks/use-pdf-blob"
 import {
+  useEditorActions,
   useGetAnnotationsByVersionQuery,
-  useGetDocumentEditorQuery,
   useGetDocumentQuery,
   useGetVersionsByDocumentQuery,
-  useSaveDocumentEditorMutation,
 } from "@/lib/store/api"
 
 import {ExportPDFButton} from "./export-pdf-button"
@@ -24,12 +23,7 @@ interface EditorHeaderProps {
 
 export function EditorHeader({documentId}: EditorHeaderProps) {
   const router = useRouter()
-  const [saveDocumentEditor] = useSaveDocumentEditorMutation()
-
-  // Get editor state from API
-  const {data: editor} = useGetDocumentEditorQuery(documentId, {
-    skip: !documentId,
-  })
+  const {editor, setSidebarOpen} = useEditorActions(documentId)
   const currentVersionId = editor?.currentVersionId || null
   const sidebarOpen = editor?.sidebarOpen || false
 
@@ -47,20 +41,7 @@ export function EditorHeader({documentId}: EditorHeaderProps) {
   const [showHistoryDialog, setShowHistoryDialog] = React.useState(false)
 
   const handleToggleSidebar = async () => {
-    if (!editor || !documentId) {
-      return
-    }
-
-    const updatedEditor = {
-      ...editor,
-      sidebarOpen: !editor.sidebarOpen,
-    }
-
-    try {
-      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
-    } catch (error) {
-      console.error("Failed to toggle sidebar:", error)
-    }
+    await setSidebarOpen(!sidebarOpen)
   }
 
   return (

@@ -3,36 +3,20 @@
 import {ChevronLeft, ChevronRight} from "lucide-react"
 
 import {Button} from "@/components/ui/button"
-import {useGetDocumentEditorQuery, useSaveDocumentEditorMutation} from "@/lib/store/api"
+import {useEditorActions} from "@/lib/store/api"
 
 interface ToolbarPageProps {
   documentId: string
 }
 
 export function ToolbarPage({documentId}: ToolbarPageProps) {
-  const [saveDocumentEditor] = useSaveDocumentEditorMutation()
-  const {data: editor} = useGetDocumentEditorQuery(documentId, {
-    skip: !documentId,
-  })
+  const {editor, setCurrentPage} = useEditorActions(documentId)
 
   const currentPage = editor?.currentPage || 1
   const totalPages = editor?.totalPages || 1
 
   const handlePageChange = async (newPage: number) => {
-    if (!editor || !documentId) {
-      return
-    }
-
-    const updatedEditor = {
-      ...editor,
-      currentPage: newPage,
-    }
-
-    try {
-      await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
-    } catch (error) {
-      console.error("Failed to change page:", error)
-    }
+    await setCurrentPage(newPage)
   }
 
   return (
