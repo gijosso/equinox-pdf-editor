@@ -33,13 +33,8 @@ export interface XFDFDocument {
   }
 }
 
-/**
- * Extract annotations from a PDF file and convert to XFDF format
- * This creates the initial XFDF version with any existing PDF annotations
- */
 export async function fileToXFDF(file: File): Promise<string> {
   try {
-    // Use pdf-lib to extract annotations
     const extractedAnnotations = await extractPDFAnnotations(file)
 
     // Create XFDF with extracted annotations
@@ -100,10 +95,6 @@ export function annotationsToXFDF(
   return generateXFDFString(xfdfDoc)
 }
 
-/**
- * Convert XFDF string back to JavaScript annotations
- * This loads annotations from a version for editing
- */
 export function xfdfToAnnotations(xfdfString: string): {annotations: XFDFAnnotation[]; metadata: any} {
   try {
     const parser = new DOMParser()
@@ -256,9 +247,6 @@ function parseXFDFDate(xfdfDate: string): string {
   }
 }
 
-/**
- * Generate XFDF XML string using xml2js
- */
 function generateXFDFString(xfdfDoc: XFDFDocument): string {
   const builder = new Builder({headless: true})
 
@@ -356,9 +344,6 @@ function generateXFDFString(xfdfDoc: XFDFDocument): string {
   return builder.buildObject(xfdfObject)
 }
 
-/**
- * Format date for XFDF (Adobe format: D:YYYYMMDDHHmmSSOHH'mm')
- */
 function formatXFDFDate(date: Date): string {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, "0")
@@ -376,10 +361,6 @@ function formatXFDFDate(date: Date): string {
   return `D:${year}${month}${day}${hours}${minutes}${seconds}${offsetSign}${String(offsetHours).padStart(2, "0")}'${String(offsetMinutes).padStart(2, "0")}'`
 }
 
-/**
- * Create a version with XFDF annotations
- * This creates a destructive version containing all current annotations
- */
 export function createVersionWithXFDF(
   documentId: string,
   versionNumber: number,
@@ -408,10 +389,6 @@ export function createVersionWithXFDF(
   return {xfdf, version}
 }
 
-/**
- * Load annotations from XFDF version
- * This loads all annotations from a version for editing
- */
 export function loadAnnotationsFromVersion(xfdfString: string): any[] {
   const {annotations} = xfdfToAnnotations(xfdfString)
   return annotations.map(annotation => ({

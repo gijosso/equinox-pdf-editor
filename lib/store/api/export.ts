@@ -1,4 +1,5 @@
 import {createApi, fetchBaseQuery} from "@reduxjs/toolkit/query/react"
+import {PDFDocument} from "pdf-lib"
 
 import {db} from "@/lib/db/database"
 import {addOriginalPages, createChangeLogPage, createPlaceholderPage, generateExportFilename} from "@/lib/utils/export"
@@ -23,9 +24,6 @@ export const exportApi = createApi({
     exportPDF: builder.mutation<ExportPDFResponse, ExportPDFRequest>({
       queryFn: async ({documentId, versionId}) => {
         try {
-          // Import PDF-lib dynamically to avoid SSR issues
-          const {PDFDocument} = await import("pdf-lib")
-
           // Get document data from IndexedDB
           const document = await db.documents.get(documentId)
           if (!document) {

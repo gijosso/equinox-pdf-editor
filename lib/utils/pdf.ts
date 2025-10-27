@@ -35,9 +35,6 @@ export async function generatePDFThumbnail(file: File): Promise<string> {
   }
 }
 
-/**
- * Extract annotations from a PDF file using pdf-lib
- */
 export async function extractPDFAnnotations(file: File): Promise<any[]> {
   try {
     const arrayBuffer = await file.arrayBuffer()
@@ -78,9 +75,6 @@ export async function extractPDFAnnotations(file: File): Promise<any[]> {
   }
 }
 
-/**
- * Create a new PDF with annotations using pdf-lib
- */
 export async function createPDFWithAnnotations(originalBlob: Blob, annotations: Annotation[]): Promise<Blob> {
   try {
     const arrayBuffer = await originalBlob.arrayBuffer()

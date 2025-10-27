@@ -1,4 +1,4 @@
-import {PDFDocument, StandardFonts, rgb} from "pdf-lib"
+import {PDFDocument, type PDFPage, StandardFonts, rgb} from "pdf-lib"
 
 import type {Annotation, PDFVersion} from "@/lib/types"
 
@@ -11,7 +11,7 @@ export interface ChangeLogOptions {
 }
 
 export interface ChangeLogResult {
-  page: any // PDFPage type from pdf-lib
+  page: PDFPage
   height: number
 }
 
@@ -99,7 +99,7 @@ export async function createChangeLogPage(pdfDoc: PDFDocument, options: ChangeLo
 }
 
 function drawAnnotationsSummary(
-  page: any,
+  page: PDFPage,
   annotations: Annotation[],
   yPosition: number,
   font: any,
@@ -149,7 +149,7 @@ function groupAnnotationsByPage(annotations: Annotation[]): Record<number, Annot
 }
 
 function drawAnnotationsByPage(
-  page: any,
+  page: PDFPage,
   annotationsByPage: Record<number, Annotation[]>,
   yPosition: number,
   font: any,
@@ -165,7 +165,7 @@ function drawAnnotationsByPage(
   return currentY
 }
 
-function drawPageHeader(page: any, pageNum: string, yPosition: number, boldFont: any): number {
+function drawPageHeader(page: PDFPage, pageNum: string, yPosition: number, boldFont: any): number {
   page.drawText(`Page ${pageNum}:`, {
     x: 70,
     y: yPosition,
@@ -176,7 +176,7 @@ function drawPageHeader(page: any, pageNum: string, yPosition: number, boldFont:
   return yPosition - 10
 }
 
-function drawPageAnnotations(page: any, annotations: Annotation[], yPosition: number, font: any): number {
+function drawPageAnnotations(page: PDFPage, annotations: Annotation[], yPosition: number, font: any): number {
   let currentY = yPosition
 
   annotations.forEach(annotation => {
@@ -224,7 +224,7 @@ function formatAnnotationContent(content?: string): string {
   return ` - "${truncatedContent}"`
 }
 
-function drawNoAnnotationsMessage(page: any, yPosition: number, font: any): number {
+function drawNoAnnotationsMessage(page: PDFPage, yPosition: number, font: any): number {
   page.drawText("• No annotations", {
     x: 70,
     y: yPosition,

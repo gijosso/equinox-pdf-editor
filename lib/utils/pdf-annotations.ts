@@ -1,9 +1,9 @@
-import {PDFDocument, rgb} from "pdf-lib"
+import {PDFDocument, type PDFPage, rgb} from "pdf-lib"
 
 import type {Annotation} from "@/lib/types"
 
 export interface PDFAnnotationDrawingOptions {
-  page: any // PDFPage from pdf-lib
+  page: PDFPage
   annotation: Annotation
   pageWidth: number
   pageHeight: number
@@ -31,7 +31,14 @@ export function drawPDFAnnotation(options: PDFAnnotationDrawingOptions): void {
   }
 }
 
-function drawHighlightAnnotation(page: any, x: number, y: number, width: number, height: number, color?: string): void {
+function drawHighlightAnnotation(
+  page: PDFPage,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  color?: string,
+): void {
   page.drawRectangle({
     x,
     y,
@@ -42,7 +49,7 @@ function drawHighlightAnnotation(page: any, x: number, y: number, width: number,
   })
 }
 
-function drawRedactionAnnotation(page: any, x: number, y: number, width: number, height: number): void {
+function drawRedactionAnnotation(page: PDFPage, x: number, y: number, width: number, height: number): void {
   page.drawRectangle({
     x,
     y,
@@ -53,7 +60,7 @@ function drawRedactionAnnotation(page: any, x: number, y: number, width: number,
 }
 
 function drawNoteAnnotation(
-  page: any,
+  page: PDFPage,
   x: number,
   y: number,
   width: number,
