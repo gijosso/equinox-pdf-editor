@@ -1,4 +1,5 @@
 import {atomicService} from "@/lib/db/atomic"
+import {editService} from "@/lib/db/edits"
 import type {Annotation, PDFVersion} from "@/lib/types"
 
 import {generateVersionId} from "./file"
@@ -87,6 +88,12 @@ export async function saveVersion(options: SaveVersionOptions): Promise<SaveVers
       if (!addAnnotationsResult.success) {
         throw new Error(addAnnotationsResult.error.message)
       }
+    }
+
+    // Clear edits from the previous version since they're now committed
+    const clearEditsResult = await editService.deleteEditsByVersion(document.currentVersionId)
+    if (!clearEditsResult.success) {
+      console.warn("Failed to clear edits from previous version:", clearEditsResult.error?.message || "Unknown error")
     }
 
     return {success: true, versionId: newVersion.id, versionNumber: nextVersionNumber}

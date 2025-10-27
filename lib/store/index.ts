@@ -1,6 +1,6 @@
 import {configureStore} from "@reduxjs/toolkit"
 
-import {annotationsApi, documentsApi, editorApi, exportApi, versionsApi} from "./api"
+import {annotationsApi, documentsApi, editorApi, editsApi, exportApi, versionsApi} from "./api"
 import {documentNamesCacheMiddleware} from "./middleware/document-names-cache"
 
 export const store = configureStore({
@@ -8,6 +8,7 @@ export const store = configureStore({
     [documentsApi.reducerPath]: documentsApi.reducer,
     [versionsApi.reducerPath]: versionsApi.reducer,
     [annotationsApi.reducerPath]: annotationsApi.reducer,
+    [editsApi.reducerPath]: editsApi.reducer,
     [editorApi.reducerPath]: editorApi.reducer,
     [exportApi.reducerPath]: exportApi.reducer,
   },
@@ -27,6 +28,7 @@ export const store = configureStore({
       documentsApi.middleware,
       versionsApi.middleware,
       annotationsApi.middleware,
+      editsApi.middleware,
       editorApi.middleware,
       exportApi.middleware,
       documentNamesCacheMiddleware,

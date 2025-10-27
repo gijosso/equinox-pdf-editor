@@ -36,6 +36,21 @@ export interface PDFVersion {
 }
 
 export type AnnotationType = "highlight" | "note" | "redaction"
+export interface Edit {
+  id: string
+  versionId: string
+  type:
+    | "annotation_added"
+    | "annotation_updated"
+    | "annotation_deleted"
+    | "annotation_moved"
+    | "annotation_resized"
+    | "annotation_text_changed"
+  annotationId: string
+  timestamp: string
+  data?: any // Additional data for the edit
+}
+
 export interface Annotation {
   id: string
   versionId: string // Reference to the version this annotation belongs to
@@ -85,7 +100,6 @@ export interface DocumentEditor {
   activeTool: EditorTool
   sidebarOpen: boolean
   lastSaved?: string
-  hasUnsavedChanges: boolean
 
   // PDF-specific state
   currentPage: number
@@ -131,7 +145,6 @@ export interface EditorRecord {
   activeTool: EditorTool
   sidebarOpen: boolean
   lastSaved?: string
-  hasUnsavedChanges: boolean
   currentPage: number
   totalPages: number
   searchQuery: string

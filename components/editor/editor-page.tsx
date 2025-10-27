@@ -38,7 +38,6 @@ export function EditorPage({documentId}: EditorPageProps) {
         viewport: {x: 0, y: 0, zoom: 1},
         activeTool: {type: "select" as const},
         sidebarOpen: true,
-        hasUnsavedChanges: false,
         currentPage: 1,
         totalPages: 1,
         searchQuery: "",

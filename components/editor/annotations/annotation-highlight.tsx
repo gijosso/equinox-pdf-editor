@@ -1,6 +1,6 @@
 "use client"
 
-import type {Annotation} from "@/lib/types"
+import type {Annotation, Edit} from "@/lib/types"
 
 import {BaseAnnotation} from "./base-annotation"
 
@@ -11,7 +11,7 @@ interface AnnotationHighlightProps {
   width: number
   height: number
   scale: number
-  onUpdate?: (annotation: Annotation) => void
+  onUpdate?: (annotation: Annotation, editType?: Edit["type"]) => void
   locked?: boolean
   documentId: string
 }

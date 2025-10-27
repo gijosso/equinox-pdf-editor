@@ -3,7 +3,7 @@
 import React from "react"
 
 import {useGetAnnotationsByVersionQuery, useGetDocumentEditorQuery, useUpdateAnnotationMutation} from "@/lib/store/api"
-import type {Annotation} from "@/lib/types"
+import type {Annotation, Edit} from "@/lib/types"
 import {isAnnotationLocked} from "@/lib/utils/annotations"
 
 import {AnnotationHighlight} from "./annotation-highlight"
@@ -34,7 +34,7 @@ export function AnnotationOverlay({scale, documentId}: AnnotationOverlayProps) {
   )
 
   const handleUpdateAnnotation = React.useCallback(
-    async (annotation: Annotation) => {
+    async (annotation: Annotation, editType?: Edit["type"]) => {
       if (!currentVersionId) {
         return
       }
@@ -50,6 +50,7 @@ export function AnnotationOverlay({scale, documentId}: AnnotationOverlayProps) {
           id: annotation.id,
           versionId: currentVersionId,
           updates: annotation,
+          editType: editType || "annotation_updated", // Use specific edit type or fallback to generic
         }).unwrap()
       } catch (error) {
         console.error("Failed to update annotation:", error)

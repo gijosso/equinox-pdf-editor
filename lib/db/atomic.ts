@@ -191,9 +191,6 @@ export const atomicService = {
     }
   },
 
-  /**
-   * Add annotations to a version atomically
-   */
   async addAnnotationsToVersion(versionId: string, annotations: Annotation[]): Promise<Result<void, DatabaseError>> {
     try {
       return await db.transaction("rw", [db.annotations], async () => {
@@ -252,9 +249,6 @@ export const atomicService = {
     }
   },
 
-  /**
-   * Save document editor atomically
-   */
   async saveDocumentEditor(documentId: string, editor: DocumentEditor): Promise<Result<void, DatabaseError>> {
     try {
       return await db.transaction("rw", [db.editorStates], async (): Promise<Result<void, DatabaseError>> => {
@@ -277,9 +271,6 @@ export const atomicService = {
     }
   },
 
-  /**
-   * Save version editor atomically
-   */
   async saveVersionEditor(versionId: string, editor: VersionEditor): Promise<Result<void, DatabaseError>> {
     try {
       return await db.transaction("rw", [db.versionEditorStates], async (): Promise<Result<void, DatabaseError>> => {
@@ -302,9 +293,6 @@ export const atomicService = {
     }
   },
 
-  /**
-   * Load complete editor for a document
-   */
   async loadDocumentEditor(documentId: string): Promise<Result<DocumentEditor | undefined, DatabaseError>> {
     try {
       return await db.transaction(
@@ -331,9 +319,6 @@ export const atomicService = {
     }
   },
 
-  /**
-   * Load version editor
-   */
   async loadVersionEditor(versionId: string): Promise<Result<VersionEditor | undefined, DatabaseError>> {
     try {
       return await db.transaction(

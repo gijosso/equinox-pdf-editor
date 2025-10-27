@@ -2,7 +2,7 @@
 
 import React from "react"
 
-import type {Annotation} from "@/lib/types"
+import type {Annotation, Edit} from "@/lib/types"
 
 import {BaseAnnotation} from "./base-annotation"
 
@@ -13,7 +13,7 @@ interface AnnotationNoteProps {
   width: number
   height: number
   scale: number
-  onUpdate?: (annotation: Annotation) => void
+  onUpdate?: (annotation: Annotation, editType?: Edit["type"]) => void
   locked?: boolean
   documentId: string
 }
@@ -48,7 +48,7 @@ export function AnnotationNote({
       content: editContent,
       updatedAt: new Date().toISOString(),
     }
-    onUpdate?.(updatedAnnotation)
+    onUpdate?.(updatedAnnotation, "annotation_text_changed")
     setIsEditing(false)
   }
 

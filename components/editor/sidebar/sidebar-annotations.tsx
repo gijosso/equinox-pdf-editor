@@ -25,7 +25,7 @@ interface SidebarAnnotationsProps {
 }
 
 const AnnotationItem = React.memo(
-  ({documentId, annotation}: {documentId: string; versionId: string; annotation: Annotation}) => {
+  ({documentId, versionId, annotation}: {documentId: string; versionId: string; annotation: Annotation}) => {
     const [deleteAnnotation] = useDeleteAnnotationMutation()
     const {setCurrentPage} = useEditorActions(documentId)
 
@@ -42,7 +42,7 @@ const AnnotationItem = React.memo(
 
     const handleDelete = async () => {
       try {
-        await deleteAnnotation(annotation.id).unwrap()
+        await deleteAnnotation({id: annotation.id, versionId}).unwrap()
       } catch (error) {
         console.error("Failed to delete annotation:", error)
       }

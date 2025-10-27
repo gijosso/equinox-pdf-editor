@@ -2,7 +2,10 @@ import {createApi, fetchBaseQuery} from "@reduxjs/toolkit/query/react"
 
 import {annotationService} from "@/lib/db/annotations"
 import {atomicService} from "@/lib/db/atomic"
-import type {Annotation} from "@/lib/types"
+import {store} from "@/lib/store"
+import type {Annotation, Edit} from "@/lib/types"
+
+import {editsApi} from "./edits"
 
 export const annotationsApi = createApi({
   reducerPath: "annotationsApi",
@@ -56,6 +59,17 @@ export const annotationsApi = createApi({
 
         try {
           await queryFulfilled
+          // Track edit for annotation addition
+          await store
+            .dispatch(
+              editsApi.endpoints.addEdit.initiate({
+                versionId: annotation.versionId,
+                type: "annotation_added",
+                annotationId: annotation.id,
+                data: annotation,
+              }),
+            )
+            .unwrap()
         } catch {
           // If the mutation fails, revert the optimistic update
           patchResult.undo()
@@ -63,7 +77,10 @@ export const annotationsApi = createApi({
       },
     }),
 
-    updateAnnotation: builder.mutation<null, {id: string; versionId: string; updates: Partial<Annotation>}>({
+    updateAnnotation: builder.mutation<
+      null,
+      {id: string; versionId: string; updates: Partial<Annotation>; editType?: Edit["type"]}
+    >({
       queryFn: async args => {
         const {id, updates} = args
         const result = await annotationService.updateAnnotation(id, updates)
@@ -76,7 +93,7 @@ export const annotationsApi = createApi({
       },
       invalidatesTags: (result, error, {id}) => [{type: "Annotation", id}],
       // Optimistic update - update UI immediately
-      async onQueryStarted({id, versionId, updates}, {dispatch, queryFulfilled}) {
+      async onQueryStarted({id, versionId, updates, editType}, {dispatch, queryFulfilled}) {
         // Optimistically update the cache
         const patchResult = dispatch(
           annotationsApi.util.updateQueryData("getAnnotationsByVersion", versionId, draft => {
@@ -89,6 +106,17 @@ export const annotationsApi = createApi({
 
         try {
           await queryFulfilled
+          // Track edit for annotation update with specific type
+          await store
+            .dispatch(
+              editsApi.endpoints.addEdit.initiate({
+                versionId,
+                type: editType || "annotation_updated",
+                annotationId: id,
+                data: updates,
+              }),
+            )
+            .unwrap()
         } catch {
           // If the mutation fails, revert the optimistic update
           patchResult.undo()
@@ -96,15 +124,33 @@ export const annotationsApi = createApi({
       },
     }),
 
-    deleteAnnotation: builder.mutation<null, string>({
-      queryFn: async id => {
+    deleteAnnotation: builder.mutation<null, {id: string; versionId: string}>({
+      queryFn: async ({id}) => {
         const result = await annotationService.deleteAnnotation(id)
         if (!result.success) {
           return {error: {status: "CUSTOM_ERROR", error: result.error.message}}
         }
         return {data: null}
       },
-      invalidatesTags: (result, error, id) => [{type: "Annotation", id}],
+      invalidatesTags: (result, error, {id}) => [{type: "Annotation", id}],
+      async onQueryStarted({id, versionId}, {dispatch, queryFulfilled}) {
+        try {
+          await queryFulfilled
+          // Track edit for annotation deletion
+          await store
+            .dispatch(
+              editsApi.endpoints.addEdit.initiate({
+                versionId,
+                type: "annotation_deleted",
+                annotationId: id,
+                data: {deletedAt: new Date().toISOString()},
+              }),
+            )
+            .unwrap()
+        } catch (error) {
+          console.error("Failed to track annotation deletion:", error)
+        }
+      },
     }),
   }),
 })

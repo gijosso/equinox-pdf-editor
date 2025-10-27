@@ -4,7 +4,7 @@ import React from "react"
 import {Rnd, RndResizeCallback} from "react-rnd"
 
 import {useEditorActions} from "@/lib/store/api"
-import type {Annotation} from "@/lib/types"
+import type {Annotation, Edit} from "@/lib/types"
 
 interface BaseAnnotationProps {
   annotation: Annotation
@@ -14,7 +14,7 @@ interface BaseAnnotationProps {
   height: number
   scale: number
   children: React.ReactNode
-  onUpdate?: (annotation: Annotation) => void
+  onUpdate?: (annotation: Annotation, editType?: Edit["type"]) => void
   locked?: boolean
   documentId: string
 }
@@ -50,7 +50,8 @@ export function BaseAnnotation({
       updatedAt: new Date().toISOString(),
     }
 
-    onUpdate?.(updatedAnnotation)
+    // Pass edit type information
+    onUpdate?.(updatedAnnotation, "annotation_moved")
   }
 
   const handleResizeStop: RndResizeCallback = (_e, _direction, ref, _delta, position) => {
@@ -74,7 +75,8 @@ export function BaseAnnotation({
       updatedAt: new Date().toISOString(),
     }
 
-    onUpdate?.(updatedAnnotation)
+    // Pass edit type information
+    onUpdate?.(updatedAnnotation, "annotation_resized")
   }
 
   return (
@@ -107,7 +109,7 @@ export function BaseAnnotation({
           ? "opacity-50 cursor-not-allowed pointer-events-none"
           : isSelectToolActive
             ? "pointer-events-none" // Make transparent to mouse events when select tool is active
-            : "group hover:cursor-grab active:cursor-grabbing z-20"
+            : "group hover:cursor-grab active:cursor-grabbing z-20 hover:shadow-md transition-shadow"
       } // Visual indication for locked annotations
       style={{
         zIndex: isSelectToolActive ? 1 : 20, // Lower z-index when select tool is active

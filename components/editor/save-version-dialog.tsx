@@ -12,6 +12,7 @@ import {store} from "@/lib/store"
 import {
   useGetAnnotationsByVersionQuery,
   useGetDocumentEditorQuery,
+  useHasEditsQuery,
   useSaveDocumentEditorMutation,
 } from "@/lib/store/api"
 import {versionManager} from "@/lib/utils/version-manager"
@@ -32,12 +33,26 @@ export function SaveVersionDialog({open, onOpenChange, onVersionSaved, documentI
     skip: !currentVersionId,
   })
 
+  const {data: hasEdits = false} = useHasEditsQuery(currentVersionId || "", {
+    skip: !currentVersionId,
+  })
+
   const [message, setMessage] = React.useState("")
   const [isLoading, setIsLoading] = React.useState(false)
   const {toast} = useToast()
 
   const handleSave = async () => {
     if (!documentId || !message.trim()) {
+      return
+    }
+
+    // Prevent saving if there are no edits
+    if (!hasEdits) {
+      toast({
+        title: "No changes to save",
+        description: "There are no edits to save. Make some changes before creating a new version.",
+        variant: "destructive",
+      })
       return
     }
 
@@ -74,6 +89,15 @@ export function SaveVersionDialog({open, onOpenChange, onVersionSaved, documentI
           payload: [
             {type: "Annotation", id: `version-${currentVersionId}`}, // Previous version annotations
             {type: "Annotation", id: `version-${result.versionId}`}, // New version annotations
+          ],
+        })
+
+        // Invalidate edits cache to refresh edit data
+        store.dispatch({
+          type: "editsApi/invalidateTags",
+          payload: [
+            {type: "Edit", id: `version-${currentVersionId}`}, // Previous version edits
+            {type: "Edit", id: `version-${result.versionId}`}, // New version edits
           ],
         })
 
@@ -134,11 +158,19 @@ export function SaveVersionDialog({open, onOpenChange, onVersionSaved, documentI
 
           <div className="rounded-lg border border-border bg-muted/50 p-3">
             <div className="text-sm text-muted-foreground">
-              <p>This version will include:</p>
-              <ul className="mt-1 list-disc list-inside">
-                <li>{annotations.length} annotations (will be locked)</li>
-                <li>Original PDF content (preserved)</li>
-              </ul>
+              {hasEdits ? (
+                <>
+                  <p>This version will include:</p>
+                  <ul className="mt-1 list-disc list-inside">
+                    <li>{annotations.length} annotations (will be locked)</li>
+                    <li>Original PDF content (preserved)</li>
+                  </ul>
+                </>
+              ) : (
+                <p className="text-amber-600 dark:text-amber-400">
+                  ⚠️ No edits detected. Make some changes before saving a new version.
+                </p>
+              )}
             </div>
           </div>
 
@@ -146,7 +178,7 @@ export function SaveVersionDialog({open, onOpenChange, onVersionSaved, documentI
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={!message.trim() || isLoading} className="gap-2">
+            <Button onClick={handleSave} disabled={!message.trim() || isLoading || !hasEdits} className="gap-2">
               <Save className="h-4 w-4" />
               {isLoading ? "Saving..." : "Save Version"}
             </Button>

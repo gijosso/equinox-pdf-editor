@@ -6,12 +6,7 @@ import React from "react"
 
 import {Button} from "@/components/ui/button"
 import {usePDFBlob} from "@/hooks/use-pdf-blob"
-import {
-  useEditorActions,
-  useGetAnnotationsByVersionQuery,
-  useGetDocumentQuery,
-  useGetVersionsByDocumentQuery,
-} from "@/lib/store/api"
+import {useEditorActions, useGetDocumentQuery, useGetVersionsByDocumentQuery, useHasEditsQuery} from "@/lib/store/api"
 
 import {ExportPDFButton} from "./export-pdf-button"
 import {SaveVersionDialog} from "./save-version-dialog"
@@ -27,10 +22,10 @@ export function EditorHeader({documentId}: EditorHeaderProps) {
   const currentVersionId = editor?.currentVersionId || null
   const sidebarOpen = editor?.sidebarOpen || false
 
-  const {data: annotations = []} = useGetAnnotationsByVersionQuery(currentVersionId || "", {
+  const {data: document} = useGetDocumentQuery(documentId, {skip: !documentId})
+  const {data: hasEdits = false} = useHasEditsQuery(currentVersionId || "", {
     skip: !currentVersionId,
   })
-  const {data: document} = useGetDocumentQuery(documentId, {skip: !documentId})
   const {data: versions = []} = useGetVersionsByDocumentQuery(documentId, {skip: !documentId})
   const {refreshBlob} = usePDFBlob(documentId)
 
@@ -63,12 +58,7 @@ export function EditorHeader({documentId}: EditorHeaderProps) {
             History
           </Button>
           {currentVersionId && document && <ExportPDFButton documentId={documentId} versionId={currentVersionId} />}
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => setShowSaveDialog(true)}
-            disabled={annotations.length === 0}
-          >
+          <Button variant="default" size="sm" onClick={() => setShowSaveDialog(true)} disabled={!hasEdits}>
             <Save className="mr-2 h-4 w-4" />
             Save Version
           </Button>

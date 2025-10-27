@@ -1,113 +1,119 @@
 "use client"
 
 import {formatDistanceToNow} from "date-fns"
-import {Edit, History, Plus, RotateCcw, Trash2} from "lucide-react"
+import {Edit, History, Maximize2, Move, Plus, RotateCcw, Trash2, Type} from "lucide-react"
+import React from "react"
 
 import {Button} from "@/components/ui/button"
 import {ScrollArea} from "@/components/ui/scroll-area"
-import {useEditorActions} from "@/lib/store/api"
+import {useGetDocumentEditorQuery, useGetEditsByVersionQuery} from "@/lib/store/api"
+import type {Edit as EditType} from "@/lib/types"
 
 interface SidebarEditHistoryProps {
   documentId: string
 }
 
 export function SidebarEditHistory({documentId}: SidebarEditHistoryProps) {
-  const {editor, setHistoryIndex} = useEditorActions(documentId)
+  const {data: editor} = useGetDocumentEditorQuery(documentId, {skip: !documentId})
+  const currentVersionId = editor?.currentVersionId || null
 
-  const history = editor?.history || []
-  const historyIndex = editor?.historyIndex || 0
+  const {data: edits = []} = useGetEditsByVersionQuery(currentVersionId || "", {
+    skip: !currentVersionId,
+  })
 
-  const getActionIcon = (action: string) => {
-    switch (action) {
-      case "add-annotation":
+  // Ref for the scroll area (keeping for potential future use)
+  const scrollAreaRef = React.useRef<HTMLDivElement>(null)
+
+  const getActionIcon = (type: EditType["type"]) => {
+    switch (type) {
+      case "annotation_added":
         return <Plus className="h-4 w-4" />
-      case "update-annotation":
+      case "annotation_updated":
         return <Edit className="h-4 w-4" />
-      case "delete-annotation":
+      case "annotation_deleted":
         return <Trash2 className="h-4 w-4" />
+      case "annotation_moved":
+        return <Move className="h-4 w-4" />
+      case "annotation_resized":
+        return <Maximize2 className="h-4 w-4" />
+      case "annotation_text_changed":
+        return <Type className="h-4 w-4" />
       default:
         return <History className="h-4 w-4" />
     }
   }
 
-  const getActionColor = (action: string) => {
-    switch (action) {
-      case "add-annotation":
+  const getActionColor = (type: EditType["type"]) => {
+    switch (type) {
+      case "annotation_added":
         return "text-green-500"
-      case "update-annotation":
+      case "annotation_updated":
         return "text-blue-500"
-      case "delete-annotation":
+      case "annotation_deleted":
         return "text-red-500"
+      case "annotation_moved":
+        return "text-purple-500"
+      case "annotation_resized":
+        return "text-orange-500"
+      case "annotation_text_changed":
+        return "text-cyan-500"
       default:
         return "text-muted-foreground"
     }
   }
 
-  const handleJumpToHistory = async (index: number) => {
-    await setHistoryIndex(index)
+  const getActionDescription = (edit: EditType) => {
+    switch (edit.type) {
+      case "annotation_added":
+        return "Added annotation"
+      case "annotation_updated":
+        return "Updated annotation"
+      case "annotation_deleted":
+        return "Deleted annotation"
+      case "annotation_moved":
+        return "Moved annotation"
+      case "annotation_resized":
+        return "Resized annotation"
+      case "annotation_text_changed":
+        return "Changed annotation text"
+      default:
+        return "Modified annotation"
+    }
   }
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center border-b border-border h-18 p-4">
-        <p className="text-sm text-muted-foreground">{history.length} total</p>
+        <p className="text-sm text-muted-foreground">{edits.length} edits</p>
       </div>
-      <ScrollArea className="flex-1 overflow-auto bg-muted">
-        {history.length === 0 ? (
+      <ScrollArea ref={scrollAreaRef} className="flex-1 overflow-auto bg-muted">
+        {edits.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-8 text-center">
             <History className="h-12 w-12 text-muted-foreground" />
-            <p className="mt-4 text-sm text-muted-foreground">No edit history yet</p>
-            <p className="mt-1 text-xs text-muted-foreground">Your actions will be tracked here</p>
+            <p className="mt-4 text-sm text-muted-foreground">No edits yet</p>
+            <p className="mt-1 text-xs text-muted-foreground">Your changes will be tracked here</p>
           </div>
         ) : (
           <div className="space-y-1 p-4">
-            {history.map((entry: any, index: number) => {
-              const annotation = entry.state.annotations[entry.state.annotations.length - 1]
-              const highlightedText = annotation?.type === "highlight" && annotation.text ? annotation.text : null
-
-              return (
-                <div
-                  key={entry.id}
-                  className={`rounded-lg border p-3 ${
-                    index === historyIndex
-                      ? "border-primary bg-primary/10"
-                      : index > historyIndex
-                        ? "border-border bg-muted/50 opacity-50"
-                        : "border-border bg-background"
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`mt-0.5 ${getActionColor(entry.action)}`}>{getActionIcon(entry.action)}</div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-foreground">{entry.description}</p>
-                      {highlightedText && (
-                        <p className="mt-1 rounded bg-yellow-100 px-2 py-1 text-xs text-foreground dark:bg-yellow-900/30">
-                          "{highlightedText}"
+            {edits
+              .slice()
+              .reverse()
+              .map((edit: EditType) => {
+                return (
+                  <div key={edit.id} className="rounded-lg border border-border bg-background p-3">
+                    <div className="flex items-start gap-3">
+                      <div className={`mt-0.5 ${getActionColor(edit.type)}`}>{getActionIcon(edit.type)}</div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground">{getActionDescription(edit)}</p>
+                        <p className="text-xs text-muted-foreground">Annotation ID: {edit.annotationId}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(edit.timestamp), {addSuffix: true})}
                         </p>
-                      )}
-                      <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(entry.timestamp, {addSuffix: true})}
-                      </p>
+                      </div>
                     </div>
-                    {index === historyIndex ? (
-                      <span className="rounded bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
-                        Current
-                      </span>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleJumpToHistory(index)}
-                        className="h-7 gap-1 px-2"
-                      >
-                        <RotateCcw className="h-3 w-3" />
-                        <span className="text-xs">Restore</span>
-                      </Button>
-                    )}
                   </div>
-                </div>
-              )
-            })}
+                )
+              })}
           </div>
         )}
       </ScrollArea>

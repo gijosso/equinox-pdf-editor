@@ -1,10 +1,11 @@
 import {annotationsApi} from "./annotations"
 import {documentsApi} from "./documents"
 import {editorApi} from "./editor"
+import {editsApi} from "./edits"
 import {exportApi} from "./export"
 import {versionsApi} from "./versions"
 
-export {documentsApi, versionsApi, annotationsApi, editorApi, exportApi}
+export {documentsApi, versionsApi, annotationsApi, editsApi, editorApi, exportApi}
 
 export {
   useGetAllDocumentsQuery,
@@ -35,10 +36,13 @@ export {
 
 export {useExportPDFMutation} from "./export"
 
+export {useGetEditsByVersionQuery, useAddEditMutation, useDeleteEditsByVersionMutation, useHasEditsQuery} from "./edits"
+
 export const api = {
   documentsApi,
   versionsApi,
   annotationsApi,
+  editsApi,
   editorApi,
   exportApi,
 }
