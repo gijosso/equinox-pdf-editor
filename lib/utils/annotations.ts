@@ -126,8 +126,6 @@ export function getDefaultAnnotationColor(type: AnnotationType): string {
 }
 
 export function isAnnotationLocked(annotation: Annotation): boolean {
-  console.log("annotation", annotation)
-
   if (!annotation.committedVersionId) {
     return false
   }

@@ -4,6 +4,7 @@ import {PDFDocument} from "pdf-lib"
 import {db} from "@/lib/db/database"
 import {documentService} from "@/lib/db/documents"
 import {addOriginalPages, createChangeLogPage, createPlaceholderPage, generateExportFilename} from "@/lib/utils/export"
+import {drawPDFAnnotations} from "@/lib/utils/pdf-annotations"
 
 export interface ExportPDFRequest {
   documentId: string
@@ -37,12 +38,17 @@ export const exportApi = createApi({
             return {error: {status: "CUSTOM_ERROR", error: "Version not found"}}
           }
 
-          // Get all versions for this document
+          // Get all versions for this document up to and including the current version
           const allVersions = await db.versions.where("documentId").equals(documentId).sortBy("createdAt")
 
-          // Get annotations for all versions
+          // Find the current version index to limit the history
+          const currentVersionIndex = allVersions.findIndex(v => v.id === versionId)
+          const versionsUpToCurrent =
+            currentVersionIndex >= 0 ? allVersions.slice(0, currentVersionIndex + 1) : allVersions
+
+          // Get annotations for each version (all annotations are stored in the version where they were created)
           const versionAnnotations = await Promise.all(
-            allVersions.map(async version => ({
+            versionsUpToCurrent.map(async version => ({
               version,
               annotations: await db.annotations.where("versionId").equals(version.id).toArray(),
             })),
@@ -63,6 +69,15 @@ export const exportApi = createApi({
             try {
               const originalPdfBytes = await blobResult.data.arrayBuffer()
               await addOriginalPages(pdfDoc, originalPdfBytes)
+
+              // Draw annotations from the last version onto the PDF pages
+              const lastVersionAnnotations = versionAnnotations[versionAnnotations.length - 1]?.annotations || []
+              // Adjust page numbers to account for the change log page (add 1 to each page number)
+              const adjustedAnnotations = lastVersionAnnotations.map(annotation => ({
+                ...annotation,
+                pageNumber: annotation.pageNumber + 1,
+              }))
+              drawPDFAnnotations(pdfDoc, adjustedAnnotations)
             } catch (error) {
               console.error("Error loading original PDF:", error)
               await createPlaceholderPage(pdfDoc)
@@ -76,7 +91,7 @@ export const exportApi = createApi({
           const blob = new Blob([pdfBytes.buffer as ArrayBuffer], {type: "application/pdf"})
 
           // Generate filename
-          const filename = generateExportFilename(document.name)
+          const filename = generateExportFilename(document.name, currentVersion.versionNumber)
 
           // Create object URL for download
           const downloadUrl = URL.createObjectURL(blob)

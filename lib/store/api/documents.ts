@@ -60,7 +60,6 @@ export const documentsApi = createApi({
         return {data: result.data}
       },
       invalidatesTags: (result, error, {documentId}) => {
-        console.log("Invalidating cache for document:", documentId, "result:", result)
         return [
           {type: "Document", id: documentId},
           {type: "Version", id: `document-${documentId}`},

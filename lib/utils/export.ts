@@ -52,13 +52,22 @@ export async function createChangeLogPage(pdfDoc: PDFDocument, options: ChangeLo
   let yPosition = height - 130
   const minYPosition = 50 // Minimum Y position to prevent content going off page
 
+  const lastVersion = options.versions[options.versions.length - 1]
+  const allAnnotations = lastVersion.annotations
+
   for (let index = 0; index < options.versions.length; index++) {
-    const {version, annotations} = options.versions[index]
+    const {version} = options.versions[index]
 
     // Calculate space needed for this version
     const versionHeaderHeight = 20
     const descriptionHeight = version.message ? 12 : 0
-    const annotationsHeight = calculateAnnotationsHeight(annotations)
+    const currentVersionAnnotations = allAnnotations.filter(
+      annotation =>
+        annotation.committedVersionId === null || annotation.committedVersionId === undefined
+          ? annotation.versionId === version.id // Show uncommitted annotations for the current version
+          : annotation.committedVersionId === version.id, // Show committed annotations for the current version
+    )
+    const annotationsHeight = calculateAnnotationsHeight(currentVersionAnnotations)
     const versionSpacing = 15
     const totalVersionHeight = versionHeaderHeight + descriptionHeight + annotationsHeight + versionSpacing
 
@@ -91,7 +100,7 @@ export async function createChangeLogPage(pdfDoc: PDFDocument, options: ChangeLo
     }
 
     // Annotations summary
-    yPosition = drawAnnotationsSummary(changeLogPage, annotations, yPosition, font, boldFont)
+    yPosition = drawAnnotationsSummary(changeLogPage, currentVersionAnnotations, yPosition, font, boldFont)
     yPosition -= versionSpacing
   }
 
@@ -268,7 +277,6 @@ export async function createPlaceholderPage(pdfDoc: PDFDocument): Promise<void> 
   })
 }
 
-export function generateExportFilename(documentName: string): string {
-  const timestamp = new Date().toISOString().split("T")[0]
-  return `${documentName.replace(/\.pdf$/i, "")}_change_log_${timestamp}.pdf`
+export function generateExportFilename(documentName: string, versionNumber: number): string {
+  return `${documentName.replace(/\.pdf$/i, "")}_v${versionNumber}.pdf`
 }
