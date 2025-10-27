@@ -1,11 +1,10 @@
 import type {Middleware} from "@reduxjs/toolkit"
 
 import {documentNamesCache} from "@/lib/services/document-names-cache"
-import type {RootState} from "@/lib/store"
 
 // Middleware to automatically manage document names cache
 // This middleware listens to document-related actions and updates the cache accordingly
-export const documentNamesCacheMiddleware: Middleware<{}, RootState> = store => next => action => {
+export const documentNamesCacheMiddleware: Middleware = store => next => action => {
   const result = next(action)
 
   // Handle document mutations that affect the document list

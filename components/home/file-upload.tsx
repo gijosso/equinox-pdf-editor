@@ -12,6 +12,7 @@ import {documentService} from "@/lib/db/documents"
 import {useAddDocumentMutation} from "@/lib/store/api"
 import type {PDFDocument} from "@/lib/types"
 import {cn, computeFileHash, isValidFileSize, isValidPdfFile, uploadNewFile} from "@/lib/utils"
+import {ErrorHandler, FileSizeError, FileTypeError} from "@/lib/utils/error-handling"
 
 interface FileUploadProps {
   variant?: "button" | "dropzone"
@@ -43,43 +44,42 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
   // Memoize handlers to prevent unnecessary re-renders
   const validateAndCheckDuplicate = React.useCallback(
     async (file: File) => {
-      const isValidPDF = await isValidPdfFile(file)
-      if (!isValidPDF) {
+      try {
+        const isValidPDF = await isValidPdfFile(file)
+        if (!isValidPDF) {
+          throw new FileTypeError("application/pdf", file.type)
+        }
+
+        if (!isValidFileSize(file)) {
+          const maxSize = 50 * 1024 * 1024 // 50MB
+          throw new FileSizeError(maxSize, file.size)
+        }
+
+        const fileHash = await computeFileHash(file)
+        const existingDocResult = await documentService.getDocumentByHash(fileHash)
+
+        if (!existingDocResult.success) {
+          throw ErrorHandler.handle(existingDocResult.error, {operation: "getDocumentByHash"})
+        }
+
+        const existingDoc = existingDocResult.data
+        if (existingDoc) {
+          return {valid: true, isDuplicate: true, existingDoc, fileHash}
+        }
+
+        return {valid: true, isDuplicate: false}
+      } catch (error) {
+        const appError = ErrorHandler.handle(error, {operation: "validateAndCheckDuplicate", filename: file.name})
+        ErrorHandler.log(appError)
+
         toast({
-          title: "Invalid PDF file",
-          description: "Error while uploading the PDF file.",
+          title: "Validation Error",
+          description: ErrorHandler.getUserMessage(appError),
           variant: "destructive",
         })
-        return {valid: false}
+
+        return {valid: false, error: appError}
       }
-
-      if (!isValidFileSize(file)) {
-        toast({
-          title: "File too large",
-          description: "Please upload a PDF smaller than 50MB.",
-          variant: "destructive",
-        })
-        return {valid: false}
-      }
-
-      const fileHash = await computeFileHash(file)
-      const existingDocResult = await documentService.getDocumentByHash(fileHash)
-
-      if (!existingDocResult.success) {
-        toast({
-          title: "Document error",
-          description: "An error occurred while checking for existing documents",
-          variant: "destructive",
-        })
-        return {valid: false}
-      }
-
-      const existingDoc = existingDocResult.data
-      if (existingDoc) {
-        return {valid: true, isDuplicate: true, existingDoc, fileHash}
-      }
-
-      return {valid: true, isDuplicate: false}
     },
     [toast],
   )
@@ -90,7 +90,6 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
 
       try {
         const {document, version} = await uploadNewFile(file)
-
         await addDocument({document, version}).unwrap()
 
         toast({
@@ -104,22 +103,14 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
 
         router.push(`/editor/${document.id}`)
       } catch (error) {
-        console.error("Upload error:", error)
+        const appError = ErrorHandler.handle(error, {operation: "uploadFile", filename: file.name})
+        ErrorHandler.log(appError)
 
-        // Check if it's a database error
-        if (error instanceof Error && error.message.includes("database")) {
-          toast({
-            title: "Database Error",
-            description: "There was a database error. Please refresh the page and try again.",
-            variant: "destructive",
-          })
-        } else {
-          toast({
-            title: "Upload failed",
-            description: "There was an error uploading your file",
-            variant: "destructive",
-          })
-        }
+        toast({
+          title: "Upload failed",
+          description: ErrorHandler.getUserMessage(appError),
+          variant: "destructive",
+        })
       } finally {
         setUploading(false)
       }

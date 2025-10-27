@@ -1,6 +1,7 @@
 import {PDFDocument, type PDFPage, StandardFonts, rgb} from "pdf-lib"
 
 import type {Annotation, PDFVersion} from "@/lib/types"
+import {PDFProcessingError} from "@/lib/utils/error-handling"
 
 export interface ChangeLogOptions {
   documentName: string
@@ -251,7 +252,7 @@ export async function addOriginalPages(pdfDoc: PDFDocument, originalPdfBytes: Ar
     })
   } catch (error) {
     console.error("Error loading original PDF:", error)
-    throw new Error("Failed to load original PDF")
+    throw new PDFProcessingError("Failed to load original PDF")
   }
 }
 

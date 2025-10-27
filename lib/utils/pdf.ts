@@ -1,6 +1,7 @@
 import {PDFDocument} from "pdf-lib"
 
 import type {Annotation} from "@/lib/types"
+import {PDFProcessingError} from "@/lib/utils/error-handling"
 
 import {drawPDFAnnotations} from "./pdf-annotations"
 
@@ -18,7 +19,7 @@ export async function generatePDFThumbnail(file: File): Promise<string> {
     const context = canvas.getContext("2d")
 
     if (!context) {
-      throw new Error("Could not get canvas context")
+      throw new PDFProcessingError("Could not get canvas context", {pageNumber: 1})
     }
 
     canvas.width = viewport.width

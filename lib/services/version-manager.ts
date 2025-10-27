@@ -1,6 +1,7 @@
 import {annotationService} from "@/lib/db/annotations"
 import {atomicService} from "@/lib/db/atomic"
 import type {Annotation, PDFVersion} from "@/lib/types"
+import {DatabaseError, ErrorHandler} from "@/lib/utils/error-handling"
 
 import {documentService} from "../db"
 import {areAnnotationsDifferent} from "../utils/annotations"
@@ -40,12 +41,15 @@ export class VersionManagerService {
 
       const documentWithVersionResult = await atomicService.getDocumentWithNextVersionNumber(documentId)
       if (!documentWithVersionResult.success) {
-        throw new Error(documentWithVersionResult.error.message)
+        throw ErrorHandler.handle(documentWithVersionResult.error, {
+          operation: "getDocumentWithNextVersionNumber",
+          documentId,
+        })
       }
 
       const {document, nextVersionNumber} = documentWithVersionResult.data
       if (!document?.currentVersionId) {
-        throw new Error("No current version found")
+        throw new DatabaseError("No current version found", {documentId})
       }
 
       const newVersion: PDFVersion = {
@@ -66,13 +70,16 @@ export class VersionManagerService {
       )
 
       if (!updateVersionAnnotationsResult.success) {
-        throw new Error(updateVersionAnnotationsResult.error.message)
+        throw ErrorHandler.handle(updateVersionAnnotationsResult.error, {
+          operation: "updateVersionAnnotations",
+          versionId: document.currentVersionId,
+        })
       }
 
       const updateResult = await atomicService.updateDocumentWithVersion(documentId, {}, newVersion)
 
       if (!updateResult.success) {
-        throw new Error(updateResult.error.message)
+        throw ErrorHandler.handle(updateResult.error, {operation: "updateDocument", documentId})
       }
 
       const annotationsToAdd: Annotation[] = []
@@ -92,7 +99,7 @@ export class VersionManagerService {
       if (annotationsToAdd.length > 0) {
         const addAnnotationsResult = await atomicService.addAnnotationsToVersion(newVersion.id, annotationsToAdd)
         if (!addAnnotationsResult.success) {
-          throw new Error(addAnnotationsResult.error.message)
+          throw ErrorHandler.handle(addAnnotationsResult.error, {operation: "addAnnotations", versionId: newVersion.id})
         }
       }
 
@@ -100,7 +107,7 @@ export class VersionManagerService {
       const updateDocumentResult = await documentService.updateDocument(documentId, {latestVersionId: newVersion.id})
 
       if (!updateDocumentResult.success) {
-        throw new Error(updateDocumentResult.error.message)
+        throw ErrorHandler.handle(updateDocumentResult.error, {operation: "updateDocument", documentId})
       }
 
       return {success: true, versionId: newVersion.id, versionNumber: nextVersionNumber}

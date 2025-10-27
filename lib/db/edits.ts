@@ -1,6 +1,7 @@
 import {Dexie, Table} from "dexie"
 
 import type {Edit} from "@/lib/types"
+import {DatabaseError, type Result, withDatabaseErrorHandling} from "@/lib/utils/error-handling"
 import {generateEditId} from "@/lib/utils/id"
 
 export class EditsTable extends Dexie {
@@ -23,79 +24,52 @@ export interface AddEditOptions {
   data?: any
 }
 
-export interface AddEditResult {
-  success: boolean
-  data?: string
-  error?: {message: string}
-}
-
-export interface GetEditsByVersionResult {
-  success: boolean
-  data?: Edit[]
-  error?: {message: string}
-}
-
-export interface DeleteEditsByVersionResult {
-  success: boolean
-  error?: {message: string}
-}
-
 export const editService = {
-  async addEdit(options: AddEditOptions): Promise<AddEditResult> {
-    try {
-      const edit: Edit = {
-        id: generateEditId(),
-        versionId: options.versionId,
-        type: options.type,
-        annotationId: options.annotationId,
-        timestamp: new Date().toISOString(),
-        data: options.data,
-      }
+  async addEdit(options: AddEditOptions): Promise<Result<string, DatabaseError>> {
+    return withDatabaseErrorHandling(
+      async () => {
+        const edit: Edit = {
+          id: generateEditId(),
+          versionId: options.versionId,
+          type: options.type,
+          annotationId: options.annotationId,
+          timestamp: new Date().toISOString(),
+          data: options.data,
+        }
 
-      await editsDb.edits.add(edit)
-      return {success: true, data: edit.id}
-    } catch (error) {
-      console.error("Failed to add edit:", error)
-      return {
-        success: false,
-        error: {message: error instanceof Error ? error.message : "Unknown error occurred"},
-      }
-    }
+        const id = await editsDb.edits.add(edit)
+        return id
+      },
+      {operation: "addEdit", versionId: options.versionId},
+    )
   },
 
-  async getEditsByVersion(versionId: string): Promise<GetEditsByVersionResult> {
-    try {
-      const edits = await editsDb.edits.where("versionId").equals(versionId).toArray()
-      return {success: true, data: edits}
-    } catch (error) {
-      console.error("Failed to get edits by version:", error)
-      return {
-        success: false,
-        error: {message: error instanceof Error ? error.message : "Unknown error occurred"},
-      }
-    }
+  async getEditsByVersion(versionId: string): Promise<Result<Edit[], DatabaseError>> {
+    return withDatabaseErrorHandling(
+      async () => {
+        const edits = await editsDb.edits.where("versionId").equals(versionId).toArray()
+        return edits
+      },
+      {operation: "getEditsByVersion", versionId},
+    )
   },
 
-  async deleteEditsByVersion(versionId: string): Promise<DeleteEditsByVersionResult> {
-    try {
-      await editsDb.edits.where("versionId").equals(versionId).delete()
-      return {success: true}
-    } catch (error) {
-      console.error("Failed to delete edits by version:", error)
-      return {
-        success: false,
-        error: {message: error instanceof Error ? error.message : "Unknown error occurred"},
-      }
-    }
+  async deleteEditsByVersion(versionId: string): Promise<Result<void, DatabaseError>> {
+    return withDatabaseErrorHandling(
+      async () => {
+        await editsDb.edits.where("versionId").equals(versionId).delete()
+      },
+      {operation: "deleteEditsByVersion", versionId},
+    )
   },
 
-  async hasEdits(versionId: string): Promise<boolean> {
-    try {
-      const count = await editsDb.edits.where("versionId").equals(versionId).count()
-      return count > 0
-    } catch (error) {
-      console.error("Failed to check if version has edits:", error)
-      return false
-    }
+  async hasEdits(versionId: string): Promise<Result<boolean, DatabaseError>> {
+    return withDatabaseErrorHandling(
+      async () => {
+        const count = await editsDb.edits.where("versionId").equals(versionId).count()
+        return count > 0
+      },
+      {operation: "hasEdits", versionId},
+    )
   },
 }

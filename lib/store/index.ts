@@ -3,7 +3,7 @@ import {configureStore} from "@reduxjs/toolkit"
 import {annotationsApi, documentsApi, editorApi, editsApi, exportApi, versionsApi} from "./api"
 import {documentNamesCacheMiddleware} from "./middleware/document-names-cache"
 
-export const store = configureStore({
+const store = configureStore({
   reducer: {
     [documentsApi.reducerPath]: documentsApi.reducer,
     [versionsApi.reducerPath]: versionsApi.reducer,
@@ -34,6 +34,9 @@ export const store = configureStore({
       documentNamesCacheMiddleware,
     ),
   devTools: process.env.NODE_ENV !== "production",
-}) as any
+})
+
+export {store}
 
 export type RootState = ReturnType<typeof store.getState>
+export type AppDispatch = typeof store.dispatch

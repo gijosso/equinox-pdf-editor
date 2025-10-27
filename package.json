@@ -23,7 +23,7 @@
     "@radix-ui/react-tabs": "latest",
     "@radix-ui/react-toast": "1.2.4",
     "@radix-ui/react-tooltip": "latest",
-    "@reduxjs/toolkit": "latest",
+    "@reduxjs/toolkit": "^2.9.2",
     "@types/diff-match-patch": "^1.0.36",
     "@vercel/analytics": "latest",
     "autoprefixer": "^10.4.20",

@@ -1,4 +1,5 @@
 import type {Annotation, AnnotationType, Edit} from "@/lib/types"
+import {ValidationError} from "@/lib/utils/error-handling"
 
 import {generateAnnotationId} from "./id"
 
@@ -91,7 +92,7 @@ export function createAnnotation(type: AnnotationType, options: AnnotationCreati
     case "redaction":
       return createRedactionAnnotation(options)
     default:
-      throw new Error(`Unknown annotation type: ${type}`)
+      throw new ValidationError(`Unknown annotation type: ${type}`, "type", type)
   }
 }
 
