@@ -87,12 +87,29 @@ export class VersionManager {
     const removed: Annotation[] = []
     const modified: Array<{old: Annotation; new: Annotation}> = []
 
+    // Helper function to check if annotations are functionally different
+    const areAnnotationsDifferent = (ann1: Annotation, ann2: Annotation) => {
+      // Compare only the relevant properties that matter for display
+      return (
+        ann1.x !== ann2.x ||
+        ann1.y !== ann2.y ||
+        ann1.width !== ann2.width ||
+        ann1.height !== ann2.height ||
+        ann1.content !== ann2.content ||
+        ann1.text !== ann2.text ||
+        ann1.color !== ann2.color ||
+        ann1.fontSize !== ann2.fontSize ||
+        ann1.type !== ann2.type ||
+        ann1.pageNumber !== ann2.pageNumber
+      )
+    }
+
     // Find added annotations (new originalIds in version2)
     annotations2.forEach(ann2 => {
       const found = annotations1.find(ann1 => ann1.originalId === ann2.originalId)
       if (!found) {
         added.push(ann2)
-      } else if (JSON.stringify(found) !== JSON.stringify(ann2)) {
+      } else if (areAnnotationsDifferent(found, ann2)) {
         modified.push({old: found, new: ann2})
       }
     })

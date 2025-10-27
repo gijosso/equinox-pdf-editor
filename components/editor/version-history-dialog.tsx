@@ -63,10 +63,8 @@ export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHi
         updates: {currentVersionId: versionId},
       }).unwrap()
 
-      // Update editor state to use the loaded version ID so edit history loads correctly
       await setCurrentVersionId(versionId)
 
-      // Show success toast
       toast({
         title: "Version loaded",
         description: `Version ${version.versionNumber} has been loaded successfully.`,
@@ -89,7 +87,6 @@ export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHi
     } else if (selectedVersions.length < 2) {
       setSelectedVersions([...selectedVersions, versionId])
     } else {
-      // Replace the first selected version
       setSelectedVersions([selectedVersions[1], versionId])
     }
   }
@@ -100,7 +97,14 @@ export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHi
     }
 
     try {
-      await setDiffMode(true, selectedVersions)
+      // Sort versions by creation date to ensure older version comes first
+      const sortedVersions = selectedVersions
+        .map(versionId => versions.find(v => v.id === versionId))
+        .filter(Boolean)
+        .sort((a, b) => new Date(a!.createdAt).getTime() - new Date(b!.createdAt).getTime())
+        .map(v => v!.id)
+
+      await setDiffMode(true, sortedVersions)
       onOpenChange(false)
     } catch (error) {
       console.error("Failed to enable diff mode:", error)
@@ -113,13 +117,14 @@ export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHi
   }
 
   const handleCompareVersions = async (versionId: string) => {
-    if (!documentId || !editor) {
+    if (!documentId || !editor || !document) {
       return
     }
-    const currentVersionId = versions[versions.length - 1]?.id
-    if (currentVersionId) {
+
+    const latestVersionId = document.latestVersionId
+    if (latestVersionId) {
       try {
-        await setDiffMode(true, [currentVersionId, versionId])
+        await setDiffMode(true, [versionId, latestVersionId])
         onOpenChange(false)
       } catch (error) {
         console.error("Failed to enable diff mode:", error)

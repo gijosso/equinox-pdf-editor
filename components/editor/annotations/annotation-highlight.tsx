@@ -28,7 +28,7 @@ export function AnnotationHighlight({
   documentId,
 }: AnnotationHighlightProps) {
   const color = annotation.color || "#ffeb3b"
-  const opacity = locked ? 0.1 : 0.3 // Reduced opacity for locked annotations
+  const opacity = locked ? 0.3 : 0.4 // Reduced opacity for locked annotations
 
   return (
     <BaseAnnotation

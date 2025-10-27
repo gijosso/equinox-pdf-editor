@@ -75,7 +75,6 @@ export async function saveVersion(options: SaveVersionOptions): Promise<SaveVers
         ...historyAnnotation,
         id: generateAnnotationId(),
         versionId: newVersion.id,
-        originalId: historyAnnotation.id, // Mark this as the original for future copies
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       }

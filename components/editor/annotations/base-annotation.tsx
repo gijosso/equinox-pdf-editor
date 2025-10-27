@@ -33,6 +33,7 @@ export function BaseAnnotation({
 }: BaseAnnotationProps) {
   const {editor} = useEditorActions(documentId)
   const isSelectToolActive = editor?.activeTool?.type === "select"
+
   const handleDragStop = (e: any, d: any) => {
     // Don't allow dragging locked annotations
     if (locked) {

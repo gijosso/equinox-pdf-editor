@@ -72,7 +72,7 @@ export function AnnotationOverlay({scale, documentId}: AnnotationOverlayProps) {
         const screenWidth = annotation.width * scale
         const screenHeight = annotation.height * scale
 
-        const isLocked = isAnnotationLocked(annotation)
+        const isLocked = isAnnotationLocked(annotation) || editor?.isDiffMode
         const annotationProps = {
           annotation,
           x: screenX,

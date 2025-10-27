@@ -27,17 +27,11 @@ interface SidebarAnnotationsProps {
 const AnnotationItem = React.memo(
   ({documentId, versionId, annotation}: {documentId: string; versionId: string; annotation: Annotation}) => {
     const [deleteAnnotation] = useDeleteAnnotationMutation()
-    const {setCurrentPage} = useEditorActions(documentId)
+    const {setCurrentPage, editor} = useEditorActions(documentId)
+    const isDiffMode = editor?.isDiffMode || false
 
     const handleSetCurrentPage = async (pageNumber: number) => {
       await setCurrentPage(pageNumber)
-    }
-
-    // Safety check for annotation type
-    const annotationConfig = ANNOTATIONS_CONFIGS[annotation.type as AnnotationType]
-    if (!annotationConfig) {
-      console.warn(`Unknown annotation type: ${annotation.type}`, annotation)
-      return null
     }
 
     const handleDelete = async () => {
@@ -48,7 +42,8 @@ const AnnotationItem = React.memo(
       }
     }
 
-    const isLocked = isAnnotationLocked(annotation)
+    const annotationConfig = ANNOTATIONS_CONFIGS[annotation.type]
+    const isLocked = isAnnotationLocked(annotation) || isDiffMode
 
     return (
       <div className={`rounded-lg border border-border p-3 h-24 ${isLocked ? "bg-muted opacity-75" : "bg-background"}`}>
@@ -101,7 +96,13 @@ const AnnotationItem = React.memo(
             className={`h-6 w-6 shrink-0 ${isLocked ? "opacity-50 cursor-not-allowed" : ""}`}
             onClick={handleDelete}
             disabled={isLocked}
-            title={isLocked ? "Cannot delete locked annotation" : "Delete annotation"}
+            title={
+              isLocked
+                ? isDiffMode
+                  ? "Cannot delete during diff mode"
+                  : "Cannot delete locked annotation"
+                : "Delete annotation"
+            }
           >
             <Trash2 className="h-3 w-3" />
           </Button>

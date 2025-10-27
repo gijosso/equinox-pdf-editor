@@ -59,7 +59,7 @@ export async function createChangeLogPage(pdfDoc: PDFDocument, options: ChangeLo
     const versionHeaderHeight = 20
     const descriptionHeight = version.message ? 12 : 0
     const currentVersionAnnotations = annotations.filter(
-      annotation => annotation.committedVersionId === version.id && !annotation.originalId,
+      annotation => annotation.committedVersionId === version.id && annotation.originalId === annotation.id,
     )
     const annotationsHeight = calculateAnnotationsHeight(currentVersionAnnotations)
 

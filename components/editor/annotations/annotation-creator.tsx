@@ -19,15 +19,17 @@ export function AnnotationCreator({scale, documentId, children}: AnnotationCreat
   const activeTool = editor?.activeTool || {type: "select"}
   const currentPage = editor?.currentPage || 1
   const currentVersionId = editor?.currentVersionId || null
+  const isDiffMode = editor?.isDiffMode || false
   const [addAnnotation] = useAddAnnotationMutation()
   const [isCreating, setIsCreating] = React.useState(false)
   const [startPos, setStartPos] = React.useState<{x: number; y: number} | null>(null)
   const [currentPos, setCurrentPos] = React.useState<{x: number; y: number} | null>(null)
 
   const isAnnotationTool = activeTool.type !== "select"
+  const isReadOnly = isDiffMode
 
   const handleMouseDown = (event: React.MouseEvent) => {
-    if (!isAnnotationTool) {
+    if (!isAnnotationTool || isReadOnly) {
       return
     }
 
@@ -128,10 +130,9 @@ export function AnnotationCreator({scale, documentId, children}: AnnotationCreat
 
   // Calculate preview rectangle
   const previewRect = React.useMemo(() => {
-    if (!isCreating || !startPos || !currentPos) {
+    if (!isCreating || !startPos || !currentPos || isReadOnly) {
       return
     }
-    null
 
     const x = Math.min(startPos.x, currentPos.x)
     const y = Math.min(startPos.y, currentPos.y)
@@ -139,7 +140,7 @@ export function AnnotationCreator({scale, documentId, children}: AnnotationCreat
     const height = Math.abs(currentPos.y - startPos.y)
 
     return {x, y, width, height}
-  }, [isCreating, startPos, currentPos])
+  }, [isCreating, startPos, currentPos, isReadOnly])
 
   return (
     <div

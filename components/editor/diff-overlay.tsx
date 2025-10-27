@@ -1,9 +1,43 @@
 "use client"
 
-import type {TextDiff, TextSpan} from "@/lib/types"
+import {ArrowRight} from "lucide-react"
+import React from "react"
+
+import type {AnnotationDiff, TextDiff, TextSpan} from "@/lib/types"
+
+type DiffType = "added" | "removed" | "modified"
+
+interface DiffOverlayConfig {
+  highlightClasses: string
+  outlineClasses: string
+  iconClasses: string
+  icon: string
+}
+
+const DIFF_OVERLAY_CONFIG: Record<DiffType, DiffOverlayConfig> = {
+  added: {
+    highlightClasses: "bg-green-500/50 border-green-500",
+    outlineClasses: "border-green-500",
+    iconClasses: "bg-green-500",
+    icon: "+",
+  },
+  removed: {
+    highlightClasses: "bg-red-500/50 border-red-500",
+    outlineClasses: "border-red-500",
+    iconClasses: "bg-red-500",
+    icon: "-",
+  },
+  modified: {
+    highlightClasses: "bg-yellow-500/50 border-yellow-500",
+    outlineClasses: "border-yellow-500",
+    iconClasses: "bg-yellow-500",
+    icon: "~",
+  },
+} as const
 
 interface DiffOverlayProps {
   textDiffs: TextDiff[]
+  annotationDiffs: AnnotationDiff[]
   pageNumber: number
   scale: number
   viewportWidth: number
@@ -12,84 +46,80 @@ interface DiffOverlayProps {
 
 interface DiffHighlightProps {
   span: TextSpan
-  type: "added" | "removed" | "modified"
+  type: DiffType
   scale: number
 }
 
 function DiffHighlight({span, type, scale}: DiffHighlightProps) {
-  const getHighlightColor = () => {
-    switch (type) {
-      case "added":
-        return "rgba(34, 197, 94, 0.3)" // green-500 with opacity
-      case "removed":
-        return "rgba(239, 68, 68, 0.3)" // red-500 with opacity
-      case "modified":
-        return "rgba(245, 158, 11, 0.3)" // yellow-500 with opacity
-      default:
-        return "rgba(156, 163, 175, 0.3)" // gray-400 with opacity
-    }
-  }
-
-  const getBorderColor = () => {
-    switch (type) {
-      case "added":
-        return "rgba(34, 197, 94, 0.8)" // green-500
-      case "removed":
-        return "rgba(239, 68, 68, 0.8)" // red-500
-      case "modified":
-        return "rgba(245, 158, 11, 0.8)" // yellow-500
-      default:
-        return "rgba(156, 163, 175, 0.8)" // gray-400
-    }
-  }
-
-  const getIcon = () => {
-    switch (type) {
-      case "added":
-        return "+"
-      case "removed":
-        return "-"
-      case "modified":
-        return "~"
-      default:
-        return "="
-    }
-  }
+  const config = DIFF_OVERLAY_CONFIG[type]
 
   return (
     <div
-      className="absolute pointer-events-none"
+      className={`absolute pointer-events-none border rounded-sm ${config.highlightClasses}`}
       style={{
         left: span.x * scale,
         top: span.y * scale,
         width: span.width * scale,
         height: span.height * scale,
-        backgroundColor: getHighlightColor(),
-        border: `1px solid ${getBorderColor()}`,
-        borderRadius: "2px",
       }}
     >
-      {/* Icon indicator */}
       <div
-        className="absolute -top-2 -left-2 w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold text-white"
-        style={{
-          backgroundColor: getBorderColor(),
-        }}
+        className={`absolute -top-2 -left-2 w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold text-white ${config.iconClasses}`}
       >
-        {getIcon()}
+        {config.icon}
       </div>
     </div>
   )
 }
 
-export function DiffOverlay({textDiffs, pageNumber, scale, viewportWidth, viewportHeight}: DiffOverlayProps) {
-  // Filter diffs for the current page and only show non-equal diffs
-  const pageDiffs = textDiffs.filter(diff => {
+interface AnnotationDiffHighlightProps {
+  annotation: AnnotationDiff["annotation"]
+  type: DiffType
+  scale: number
+}
+
+function AnnotationDiffHighlight({annotation, type, scale}: AnnotationDiffHighlightProps) {
+  const config = DIFF_OVERLAY_CONFIG[type]
+
+  return (
+    <div
+      className={`absolute pointer-events-none border-2 rounded bg-transparent ${config.outlineClasses}`}
+      style={{
+        left: annotation.x * scale,
+        top: annotation.y * scale,
+        width: annotation.width * scale,
+        height: annotation.height * scale,
+      }}
+    >
+      <div
+        className={`absolute -top-3 -left-3 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm ${config.iconClasses}`}
+      >
+        {config.icon}
+      </div>
+    </div>
+  )
+}
+
+export function DiffOverlay({
+  textDiffs,
+  annotationDiffs,
+  pageNumber,
+  scale,
+  viewportWidth,
+  viewportHeight,
+}: DiffOverlayProps) {
+  const pageAnnotationDiffs = React.useMemo(
+    () => annotationDiffs.filter(diff => diff.annotation.pageNumber === pageNumber),
+    [annotationDiffs, pageNumber],
+  )
+
+  // Filter text diffs for the current page and only show non-equal diffs
+  const pageTextDiffs = textDiffs.filter(diff => {
     if (diff.type === "equal") return false
     return diff.spans?.some(span => span.pageNumber === pageNumber)
   })
 
-  if (pageDiffs.length === 0) {
+  if (pageTextDiffs.length === 0 && pageAnnotationDiffs.length === 0) {
     return null
   }
 
@@ -101,20 +131,29 @@ export function DiffOverlay({textDiffs, pageNumber, scale, viewportWidth, viewpo
         height: viewportHeight,
       }}
     >
-      {pageDiffs.map((diff, diffIndex) => {
+      {pageTextDiffs.map((diff, diffIndex) => {
         if (!diff.spans) return null
 
         return diff.spans
           .filter(span => span.pageNumber === pageNumber)
           .map((span, spanIndex) => (
             <DiffHighlight
-              key={`${diffIndex}-${spanIndex}`}
+              key={`text-${diffIndex}-${spanIndex}`}
               span={span}
               type={diff.type === "insert" ? "added" : diff.type === "delete" ? "removed" : "modified"}
               scale={scale}
             />
           ))
       })}
+
+      {pageAnnotationDiffs.map((diff, diffIndex) => (
+        <AnnotationDiffHighlight
+          key={`annotation-${diffIndex}`}
+          annotation={diff.annotation}
+          type={diff.type}
+          scale={scale}
+        />
+      ))}
     </div>
   )
 }
@@ -127,16 +166,40 @@ export function DiffLegend({className = ""}: DiffLegendProps) {
   return (
     <div className={`flex items-center gap-4 text-xs ${className}`}>
       <div className="flex items-center gap-1">
-        <div className="w-3 h-3 bg-green-500 rounded"></div>
+        <div className={`w-3 h-3 rounded ${DIFF_OVERLAY_CONFIG.added.iconClasses}`}></div>
         <span className="text-muted-foreground">Added</span>
       </div>
       <div className="flex items-center gap-1">
-        <div className="w-3 h-3 bg-red-500 rounded"></div>
+        <div className={`w-3 h-3 rounded ${DIFF_OVERLAY_CONFIG.removed.iconClasses}`}></div>
         <span className="text-muted-foreground">Removed</span>
       </div>
       <div className="flex items-center gap-1">
-        <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+        <div className={`w-3 h-3 rounded ${DIFF_OVERLAY_CONFIG.modified.iconClasses}`}></div>
         <span className="text-muted-foreground">Modified</span>
+      </div>
+    </div>
+  )
+}
+
+interface VersionComparisonBarProps {
+  version1Number: number
+  version2Number: number
+  className?: string
+}
+
+export function VersionComparisonBar({version1Number, version2Number, className = ""}: VersionComparisonBarProps) {
+  return (
+    <div className={`flex items-center justify-between px-3 py-2 ${className}`}>
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">v{version1Number}</span>
+        </div>
+        <div className="text-muted-foreground">
+          <ArrowRight className="h-4 w-4" />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">v{version2Number}</span>
+        </div>
       </div>
     </div>
   )

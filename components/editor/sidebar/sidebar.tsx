@@ -10,7 +10,7 @@ interface SidebarProps {
 export function Sidebar({documentId}: SidebarProps) {
   return (
     <Tabs defaultValue="annotations" className="flex h-full flex-col" data-sidebar>
-      <div className="border-b border-border p-4">
+      <div className="flex justify-between items-center border-b border-border p-4">
         <TabsList className="w-full">
           <TabsTrigger value="annotations" className="flex-1">
             Annotations

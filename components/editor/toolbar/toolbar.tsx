@@ -31,6 +31,8 @@ export function Toolbar({documentId}: ToolbarProps) {
   const viewport = editor?.viewport || {x: 0, y: 0, zoom: 1}
 
   const isViewingHistoricalVersion = Boolean(editor && document && editor.currentVersionId !== document.latestVersionId)
+  const isDiffMode = editor?.isDiffMode || false
+  const isReadOnly = isViewingHistoricalVersion || isDiffMode
 
   const handleToolChange = async (toolType: EditorToolType) => {
     await setActiveTool({type: toolType})
@@ -63,15 +65,13 @@ export function Toolbar({documentId}: ToolbarProps) {
                   variant={activeTool.type === tool.type ? "default" : "ghost"}
                   size="sm"
                   onClick={() => handleToolChange(tool.type)}
-                  disabled={isViewingHistoricalVersion && tool.type !== "select"}
+                  disabled={isReadOnly && tool.type !== "select"}
                 >
                   <tool.icon className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>
-                  {isViewingHistoricalVersion && tool.type !== "select" ? `${tool.label} (Read-only mode)` : tool.label}
-                </p>
+                <p>{isReadOnly && tool.type !== "select" ? `${tool.label} (Read-only mode)` : tool.label}</p>
               </TooltipContent>
             </Tooltip>
           ))}
