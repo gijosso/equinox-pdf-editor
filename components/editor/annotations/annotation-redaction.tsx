@@ -13,6 +13,7 @@ interface AnnotationRedactionProps {
   scale: number
   onUpdate?: (annotation: Annotation) => void
   locked?: boolean
+  documentId: string
 }
 
 export function AnnotationRedaction({
@@ -24,6 +25,7 @@ export function AnnotationRedaction({
   scale,
   onUpdate,
   locked = false,
+  documentId,
 }: AnnotationRedactionProps) {
   const color = annotation.color || "#000000"
 
@@ -37,6 +39,7 @@ export function AnnotationRedaction({
       scale={scale}
       onUpdate={onUpdate}
       locked={locked}
+      documentId={documentId}
     >
       <div
         className="w-full h-full hover:opacity-80 transition-opacity"

@@ -3,6 +3,7 @@
 import React from "react"
 import {Rnd, RndResizeCallback} from "react-rnd"
 
+import {useEditorActions} from "@/lib/store/api"
 import type {Annotation} from "@/lib/types"
 
 interface BaseAnnotationProps {
@@ -15,6 +16,7 @@ interface BaseAnnotationProps {
   children: React.ReactNode
   onUpdate?: (annotation: Annotation) => void
   locked?: boolean
+  documentId: string
 }
 
 export function BaseAnnotation({
@@ -27,7 +29,10 @@ export function BaseAnnotation({
   children,
   onUpdate,
   locked = false,
+  documentId,
 }: BaseAnnotationProps) {
+  const {editor} = useEditorActions(documentId)
+  const isSelectToolActive = editor?.activeTool?.type === "select"
   const handleDragStop = (e: any, d: any) => {
     // Don't allow dragging locked annotations
     if (locked) {
@@ -81,12 +86,12 @@ export function BaseAnnotation({
       minWidth={10}
       minHeight={10}
       bounds="parent"
-      disableDragging={locked} // Disable dragging for locked annotations
+      disableDragging={locked || isSelectToolActive} // Disable dragging for locked annotations or when select tool is active
       enableResizing={
-        locked
+        locked || isSelectToolActive
           ? false
           : {
-              // Disable resizing for locked annotations
+              // Disable resizing for locked annotations or when select tool is active
               top: true,
               right: true,
               bottom: true,
@@ -100,10 +105,12 @@ export function BaseAnnotation({
       className={
         locked
           ? "opacity-50 cursor-not-allowed pointer-events-none"
-          : "group hover:cursor-grab active:cursor-grabbing z-20"
+          : isSelectToolActive
+            ? "pointer-events-none" // Make transparent to mouse events when select tool is active
+            : "group hover:cursor-grab active:cursor-grabbing z-20"
       } // Visual indication for locked annotations
       style={{
-        zIndex: 20,
+        zIndex: isSelectToolActive ? 1 : 20, // Lower z-index when select tool is active
       }}
       data-annotation={annotation.id}
     >

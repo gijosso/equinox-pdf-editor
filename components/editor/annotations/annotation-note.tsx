@@ -15,6 +15,7 @@ interface AnnotationNoteProps {
   scale: number
   onUpdate?: (annotation: Annotation) => void
   locked?: boolean
+  documentId: string
 }
 
 export function AnnotationNote({
@@ -26,6 +27,7 @@ export function AnnotationNote({
   scale,
   onUpdate,
   locked = false,
+  documentId,
 }: AnnotationNoteProps) {
   const [isEditing, setIsEditing] = React.useState(false)
   const [editContent, setEditContent] = React.useState(annotation.content || "")
@@ -108,6 +110,7 @@ export function AnnotationNote({
       scale={scale}
       onUpdate={onUpdate}
       locked={locked}
+      documentId={documentId}
     >
       <div
         className="w-full h-full relative cursor-pointer"

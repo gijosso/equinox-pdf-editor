@@ -13,6 +13,7 @@ interface AnnotationHighlightProps {
   scale: number
   onUpdate?: (annotation: Annotation) => void
   locked?: boolean
+  documentId: string
 }
 
 export function AnnotationHighlight({
@@ -24,6 +25,7 @@ export function AnnotationHighlight({
   scale,
   onUpdate,
   locked = false,
+  documentId,
 }: AnnotationHighlightProps) {
   const color = annotation.color || "#ffeb3b"
   const opacity = locked ? 0.1 : 0.3 // Reduced opacity for locked annotations
@@ -38,6 +40,7 @@ export function AnnotationHighlight({
       scale={scale}
       onUpdate={onUpdate}
       locked={locked}
+      documentId={documentId}
     >
       <div
         className="w-full h-full hover:opacity-50 transition-opacity"

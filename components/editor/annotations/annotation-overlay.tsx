@@ -20,7 +20,6 @@ interface AnnotationOverlayProps {
 export function AnnotationOverlay({scale, documentId}: AnnotationOverlayProps) {
   const {data: editor} = useGetDocumentEditorQuery(documentId, {skip: !documentId})
   const currentVersionId = editor?.currentVersionId || null
-  const activeTool = editor?.activeTool || {type: "select"}
   const currentPage = editor?.currentPage || 1
   const [updateAnnotation] = useUpdateAnnotationMutation()
 
@@ -33,9 +32,6 @@ export function AnnotationOverlay({scale, documentId}: AnnotationOverlayProps) {
     () => annotations.filter(annotation => annotation.pageNumber === currentPage) || [],
     [annotations, currentPage],
   )
-
-  // Check if select tool is active - if so, make annotations transparent to mouse events
-  const isSelectToolActive = activeTool.type === "select"
 
   const handleUpdateAnnotation = React.useCallback(
     async (annotation: Annotation) => {
@@ -67,7 +63,7 @@ export function AnnotationOverlay({scale, documentId}: AnnotationOverlayProps) {
   }
 
   return (
-    <div className="absolute inset-0 z-10">
+    <div className="absolute inset-0" style={{zIndex: editor?.activeTool?.type === "select" ? 1 : 10}}>
       {pageAnnotations.map(annotation => {
         // Convert PDF coordinates to screen coordinates
         const screenX = annotation.x * scale
@@ -85,6 +81,7 @@ export function AnnotationOverlay({scale, documentId}: AnnotationOverlayProps) {
           scale,
           onUpdate: handleUpdateAnnotation,
           locked: isLocked,
+          documentId,
         }
 
         switch (annotation.type) {
