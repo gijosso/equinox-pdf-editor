@@ -1,14 +1,12 @@
 import {annotationsApi} from "./annotations"
 import {documentsApi} from "./documents"
 import {editorApi} from "./editor"
+import {exportApi} from "./export"
 import {versionsApi} from "./versions"
 
-// Export all APIs
-export {documentsApi, versionsApi, annotationsApi, editorApi}
+export {documentsApi, versionsApi, annotationsApi, editorApi, exportApi}
 
-// Export all hooks from all APIs
 export {
-  // Documents
   useGetAllDocumentsQuery,
   useGetDocumentQuery,
   useAddDocumentMutation,
@@ -17,13 +15,9 @@ export {
   useDeleteDocumentMutation,
 } from "./documents"
 
-export {
-  // Versions
-  useGetVersionsByDocumentQuery,
-} from "./versions"
+export {useGetVersionsByDocumentQuery} from "./versions"
 
 export {
-  // Annotations
   useGetAnnotationsByVersionQuery,
   useUpdateVersionAnnotationsMutation,
   useAddAnnotationMutation,
@@ -32,17 +26,18 @@ export {
 } from "./annotations"
 
 export {
-  // Editor
   useGetDocumentEditorQuery,
   useSaveDocumentEditorMutation,
   useGetVersionEditorQuery,
   useSaveVersionEditorMutation,
 } from "./editor"
 
-// Export combined API for store configuration
+export {useExportPDFMutation} from "./export"
+
 export const api = {
   documentsApi,
   versionsApi,
   annotationsApi,
   editorApi,
+  exportApi,
 }

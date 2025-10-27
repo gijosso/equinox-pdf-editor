@@ -18,15 +18,15 @@ interface EditorPageProps {
 
 export function EditorPage({documentId}: EditorPageProps) {
   const [saveDocumentEditor] = useSaveDocumentEditorMutation()
-  const {data: documentMetadata, isLoading, error} = useGetDocumentQuery(documentId, {skip: !documentId})
+  const {data: document, isLoading, error} = useGetDocumentQuery(documentId, {skip: !documentId})
   const {data: editor} = useGetDocumentEditorQuery(documentId, {skip: !documentId})
 
   React.useEffect(() => {
     // Initialize editor state when document is loaded
-    if (documentMetadata && !editor) {
+    if (document && !editor) {
       const initialEditor = {
         documentId,
-        currentVersionId: documentMetadata.currentVersionId,
+        currentVersionId: document.currentVersionId,
         isEditing: false,
         selectedAnnotations: [],
         viewport: {x: 0, y: 0, zoom: 1},
@@ -48,14 +48,14 @@ export function EditorPage({documentId}: EditorPageProps) {
     }
 
     // Update current version when document metadata changes
-    if (documentMetadata && editor && editor.currentVersionId !== documentMetadata.currentVersionId) {
+    if (document && editor && editor.currentVersionId !== document.currentVersionId) {
       const updatedEditor = {
         ...editor,
-        currentVersionId: documentMetadata.currentVersionId,
+        currentVersionId: document.currentVersionId,
       }
       saveDocumentEditor({documentId, editor: updatedEditor})
     }
-  }, [documentId, documentMetadata, editor, saveDocumentEditor])
+  }, [documentId, document, editor, saveDocumentEditor])
 
   if (isLoading) {
     return (

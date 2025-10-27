@@ -14,6 +14,7 @@ import {
   useSaveDocumentEditorMutation,
 } from "@/lib/store/api"
 
+import {ExportPDFButton} from "./export-pdf-button"
 import {SaveVersionDialog} from "./save-version-dialog"
 import {VersionHistoryDialog} from "./version-history-dialog"
 
@@ -35,12 +36,12 @@ export function EditorHeader({documentId}: EditorHeaderProps) {
   const {data: annotations = []} = useGetAnnotationsByVersionQuery(currentVersionId || "", {
     skip: !currentVersionId,
   })
-  const {data: documentMetadata} = useGetDocumentQuery(documentId, {skip: !documentId})
+  const {data: document} = useGetDocumentQuery(documentId, {skip: !documentId})
   const {data: versions = []} = useGetVersionsByDocumentQuery(documentId, {skip: !documentId})
   const {refreshBlob} = usePDFBlob(documentId)
 
   // Find current version number
-  const currentVersion = versions.find(v => v.id === documentMetadata?.currentVersionId)
+  const currentVersion = versions.find(v => v.id === document?.currentVersionId)
   const versionNumber = currentVersion?.versionNumber
   const [showSaveDialog, setShowSaveDialog] = React.useState(false)
   const [showHistoryDialog, setShowHistoryDialog] = React.useState(false)
@@ -69,7 +70,7 @@ export function EditorHeader({documentId}: EditorHeaderProps) {
           </Button>
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-semibold text-foreground">{documentMetadata?.name}</h1>
+            <h1 className="text-lg font-semibold text-foreground">{document?.name}</h1>
             <span className="text-sm text-muted-foreground">v{versionNumber}</span>
           </div>
         </div>
@@ -78,6 +79,7 @@ export function EditorHeader({documentId}: EditorHeaderProps) {
             <History className="mr-2 h-4 w-4" />
             History
           </Button>
+          {currentVersionId && document && <ExportPDFButton documentId={documentId} versionId={currentVersionId} />}
           <Button
             variant="default"
             size="sm"

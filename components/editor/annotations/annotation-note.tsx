@@ -94,14 +94,12 @@ export function AnnotationNote({annotation, x, y, width, height, scale, onUpdate
         }}
         onDoubleClick={handleDoubleClick}
       >
-        {/* Display content */}
         {!isEditing && (
           <div className="absolute top-2 left-2 right-2 bottom-2 text-xs text-gray-800 overflow-hidden whitespace-pre-wrap">
             {annotation.content || "Double-click to add note..."}
           </div>
         )}
 
-        {/* Edit content */}
         {isEditing && (
           <textarea
             ref={textareaRef}
@@ -114,7 +112,6 @@ export function AnnotationNote({annotation, x, y, width, height, scale, onUpdate
           />
         )}
 
-        {/* Note tail */}
         <div
           className="absolute bottom-0 right-0 w-0 h-0"
           style={{
