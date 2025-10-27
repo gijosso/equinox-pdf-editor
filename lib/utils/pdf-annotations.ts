@@ -10,7 +10,7 @@ export interface PDFAnnotationDrawingOptions {
 }
 
 export function drawPDFAnnotation(options: PDFAnnotationDrawingOptions): void {
-  const {page, annotation, pageWidth, pageHeight} = options
+  const {page, annotation, pageHeight} = options
 
   // Convert PDF coordinates to page coordinates
   const x = annotation.x
@@ -100,7 +100,9 @@ export function drawPDFAnnotations(pdfDoc: PDFDocument, annotations: Annotation[
 
   annotations.forEach(annotation => {
     const page = pages[annotation.pageNumber - 1]
-    if (!page) return
+    if (!page) {
+      return
+    }
 
     const {width: pageWidth, height: pageHeight} = page.getSize()
 

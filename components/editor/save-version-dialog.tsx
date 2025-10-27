@@ -35,7 +35,9 @@ export function SaveVersionDialog({open, onOpenChange, onVersionSaved, documentI
   const {toast} = useToast()
 
   const handleSave = async () => {
-    if (!documentId || !message.trim()) return
+    if (!documentId || !message.trim()) {
+      return
+    }
 
     const result = await saveVersion({
       documentId,

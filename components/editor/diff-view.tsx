@@ -27,12 +27,16 @@ export function DiffView({documentId}: DiffViewProps) {
   const [diffs, setDiffs] = React.useState<AnnotationDiff[]>([])
 
   React.useEffect(() => {
-    if (!documentId || !compareVersionIds[0] || !compareVersionIds[1]) return
+    if (!documentId || !compareVersionIds[0] || !compareVersionIds[1]) {
+      return
+    }
 
     const version1 = versions.find(v => v.id === compareVersionIds[0])
     const version2 = versions.find(v => v.id === compareVersionIds[1])
 
-    if (!version1 || !version2) return
+    if (!version1 || !version2) {
+      return
+    }
 
     // Load annotations from XFDF strings
     const annotations1 = loadAnnotationsFromVersion(version1.xfdf)
@@ -80,7 +84,9 @@ export function DiffView({documentId}: DiffViewProps) {
   }
 
   const handleExitDiff = async () => {
-    if (!editor || !documentId) return
+    if (!editor || !documentId) {
+      return
+    }
 
     // Update editor state to exit diff mode
     const updatedEditor = {

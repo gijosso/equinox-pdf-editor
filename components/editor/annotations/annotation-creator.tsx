@@ -27,7 +27,9 @@ export function AnnotationCreator({scale, children, documentId}: AnnotationCreat
   const isAnnotationTool = activeTool.type !== "select"
 
   const handleMouseDown = (event: React.MouseEvent) => {
-    if (!isAnnotationTool) return
+    if (!isAnnotationTool) {
+      return
+    }
 
     // Don't start creating if clicking on existing annotations
     const target = event.target as HTMLElement
@@ -48,7 +50,9 @@ export function AnnotationCreator({scale, children, documentId}: AnnotationCreat
   }
 
   const handleMouseMove = (event: React.MouseEvent) => {
-    if (!isCreating || !startPos) return
+    if (!isCreating || !startPos) {
+      return
+    }
 
     // Don't update if hovering over existing annotations
     const target = event.target as HTMLElement
@@ -124,7 +128,10 @@ export function AnnotationCreator({scale, children, documentId}: AnnotationCreat
 
   // Calculate preview rectangle
   const previewRect = React.useMemo(() => {
-    if (!isCreating || !startPos || !currentPos) return null
+    if (!isCreating || !startPos || !currentPos) {
+      return
+    }
+    null
 
     const x = Math.min(startPos.x, currentPos.x)
     const y = Math.min(startPos.y, currentPos.y)

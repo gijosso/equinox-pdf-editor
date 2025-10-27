@@ -131,7 +131,9 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (!file) return
+    if (!file) {
+      return
+    }
     await handleFile(file)
   }
 

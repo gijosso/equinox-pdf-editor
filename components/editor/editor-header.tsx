@@ -47,7 +47,9 @@ export function EditorHeader({documentId}: EditorHeaderProps) {
   const [showHistoryDialog, setShowHistoryDialog] = React.useState(false)
 
   const handleToggleSidebar = async () => {
-    if (!editor || !documentId) return
+    if (!editor || !documentId) {
+      return
+    }
 
     const updatedEditor = {
       ...editor,

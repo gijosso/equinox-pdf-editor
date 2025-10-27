@@ -28,7 +28,9 @@ export function ToolbarSearch({documentId}: ToolbarSearchProps) {
     setLocalSearchQuery("")
     clearSearch()
 
-    if (!editor || !documentId) return
+    if (!editor || !documentId) {
+      return
+    }
 
     const updatedEditor = {
       ...editor,
@@ -48,7 +50,9 @@ export function ToolbarSearch({documentId}: ToolbarSearchProps) {
     const value = e.target.value
     setLocalSearchQuery(value)
 
-    if (!editor || !documentId) return
+    if (!editor || !documentId) {
+      return
+    }
 
     const updatedEditor = {
       ...editor,

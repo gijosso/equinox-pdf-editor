@@ -37,7 +37,9 @@ const AnnotationItem = React.memo(
     })
 
     const handleSetCurrentPage = async (pageNumber: number) => {
-      if (!editor || !documentId) return
+      if (!editor || !documentId) {
+        return
+      }
 
       const updatedEditor = {
         ...editor,

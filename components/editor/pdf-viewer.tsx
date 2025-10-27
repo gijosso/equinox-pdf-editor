@@ -31,7 +31,9 @@ export function PDFViewer({documentId}: PDFViewerProps) {
   const [pageDimensions, setPageDimensions] = React.useState<{width: number; height: number} | null>(null)
 
   const handleSetCurrentPage = async (page: number) => {
-    if (!editor || !documentId) return
+    if (!editor || !documentId) {
+      return
+    }
 
     const updatedEditor = {
       ...editor,
@@ -46,7 +48,9 @@ export function PDFViewer({documentId}: PDFViewerProps) {
   }
 
   const handleSetTotalPages = async (pages: number) => {
-    if (!editor || !documentId) return
+    if (!editor || !documentId) {
+      return
+    }
 
     const updatedEditor = {
       ...editor,

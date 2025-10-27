@@ -217,8 +217,9 @@ function getAnnotationTypeLabel(type: string): string {
 }
 
 function formatAnnotationContent(content?: string): string {
-  if (!content) return ""
-
+  if (!content) {
+    return ""
+  }
   const truncatedContent = content.length > 50 ? `${content.substring(0, 50)}...` : content
   return ` - "${truncatedContent}"`
 }

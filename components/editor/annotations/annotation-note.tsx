@@ -54,7 +54,9 @@ export function AnnotationNote({annotation, x, y, width, height, scale, onUpdate
 
   // Handle clicks outside to save
   React.useEffect(() => {
-    if (!isEditing) return
+    if (!isEditing) {
+      return
+    }
 
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement

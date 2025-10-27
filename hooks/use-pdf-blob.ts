@@ -13,10 +13,6 @@ interface UsePDFBlobResult {
   refreshBlob: () => void
 }
 
-interface UsePDFBlobProps {
-  documentId: string
-}
-
 export function usePDFBlob(documentId: string): UsePDFBlobResult {
   const [blob, setBlob] = React.useState<Blob | null>(null)
   const [blobUrl, setBlobUrl] = React.useState<string | null>(null)
@@ -27,7 +23,9 @@ export function usePDFBlob(documentId: string): UsePDFBlobResult {
   const {data: document} = useGetDocumentQuery(documentId || "", {skip: !documentId})
 
   const loadPDFBlob = React.useCallback(async () => {
-    if (!documentId || !document) return
+    if (!documentId || !document) {
+      return
+    }
 
     setLoading(true)
     setError(null)

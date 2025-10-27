@@ -33,7 +33,9 @@ export function Toolbar({documentId}: ToolbarProps) {
   const viewport = editor?.viewport || {x: 0, y: 0, zoom: 1}
 
   const handleToolChange = async (toolType: EditorToolType) => {
-    if (!editor || !documentId) return
+    if (!editor || !documentId) {
+      return
+    }
 
     const updatedEditor = {
       ...editor,
@@ -48,7 +50,9 @@ export function Toolbar({documentId}: ToolbarProps) {
   }
 
   const handleZoomIn = async () => {
-    if (!editor || !documentId) return
+    if (!editor || !documentId) {
+      return
+    }
 
     const updatedEditor = {
       ...editor,
@@ -66,7 +70,9 @@ export function Toolbar({documentId}: ToolbarProps) {
   }
 
   const handleZoomOut = async () => {
-    if (!editor || !documentId) return
+    if (!editor || !documentId) {
+      return
+    }
 
     const updatedEditor = {
       ...editor,

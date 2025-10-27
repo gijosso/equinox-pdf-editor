@@ -47,7 +47,9 @@ export function SidebarEditHistory({documentId}: SidebarEditHistoryProps) {
   }
 
   const handleJumpToHistory = async (index: number) => {
-    if (!editor || !documentId) return
+    if (!editor || !documentId) {
+      return
+    }
 
     const updatedEditor = {
       ...editor,

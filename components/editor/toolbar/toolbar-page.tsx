@@ -19,7 +19,9 @@ export function ToolbarPage({documentId}: ToolbarPageProps) {
   const totalPages = editor?.totalPages || 1
 
   const handlePageChange = async (newPage: number) => {
-    if (!editor || !documentId) return
+    if (!editor || !documentId) {
+      return
+    }
 
     const updatedEditor = {
       ...editor,

@@ -42,10 +42,14 @@ export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHi
   })
 
   const handleLoadVersion = async (versionId: string) => {
-    if (!documentId || !editor) return
+    if (!documentId || !editor) {
+      return
+    }
 
     const version = versions.find(v => v.id === versionId)
-    if (!version) return
+    if (!version) {
+      return
+    }
 
     try {
       // Update document to point to the selected version
@@ -89,7 +93,9 @@ export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHi
   }
 
   const handleCompareVersions = async (versionId: string) => {
-    if (!documentId || !editor) return
+    if (!documentId || !editor) {
+      return
+    }
     const currentVersionId = versions[versions.length - 1]?.id
     if (currentVersionId) {
       // Update editor state to enable diff mode and set compare versions
