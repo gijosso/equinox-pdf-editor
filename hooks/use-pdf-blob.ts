@@ -2,7 +2,7 @@
 
 import React from "react"
 
-import {documentService} from "@/lib/db/documents"
+import {useGetDocumentBlobQuery} from "@/lib/store/api"
 
 interface UsePDFBlobResult {
   blob: Blob | null
@@ -13,53 +13,21 @@ interface UsePDFBlobResult {
 }
 
 export function usePDFBlob(documentId: string): UsePDFBlobResult {
-  const [blob, setBlob] = React.useState<Blob | null>(null)
   const [blobUrl, setBlobUrl] = React.useState<string | null>(null)
-  const [loading, setLoading] = React.useState(false)
-  const [error, setError] = React.useState<string | null>(null)
   const [versionKey, setVersionKey] = React.useState(0)
 
-  const loadBlob = React.useCallback(async () => {
-    if (!documentId) {
-      setBlob(null)
-      setBlobUrl(null)
-      setLoading(false)
-      setError(null)
-      return
-    }
+  const {
+    data: blob,
+    isLoading: loading,
+    error: queryError,
+  } = useGetDocumentBlobQuery(documentId, {
+    skip: !documentId,
+    // Use versionKey to force refetch when needed
+    refetchOnMountOrArgChange: versionKey,
+  })
 
-    setLoading(true)
-    setError(null)
-
-    try {
-      const result = await documentService.getDocumentBlob(documentId)
-      if (!result.success) {
-        setError(result.error.message)
-        setBlob(null)
-        setBlobUrl(null)
-        return
-      }
-
-      if (!result.data) {
-        setError("Document blob not found")
-        setBlob(null)
-        setBlobUrl(null)
-        return
-      }
-
-      setBlob(result.data)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load PDF")
-      setBlob(null)
-      setBlobUrl(null)
-    } finally {
-      setLoading(false)
-    }
-  }, [documentId, versionKey])
-
-  React.useEffect(() => {
-    loadBlob()
-  }, [loadBlob])
+  // Convert RTK Query error to string
+  const error = queryError ? (queryError as any)?.error || "Failed to load PDF" : null
 
   React.useEffect(() => {
     if (blob) {
@@ -75,5 +43,5 @@ export function usePDFBlob(documentId: string): UsePDFBlobResult {
     setVersionKey(prev => prev + 1)
   }, [])
 
-  return {blob, blobUrl, loading, error, refreshBlob}
+  return {blob: blob || null, blobUrl, loading, error, refreshBlob}
 }

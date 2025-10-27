@@ -36,10 +36,9 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
   const router = useRouter()
   const {toast} = useToast()
   const fileInputRef = React.useRef<HTMLInputElement>(null)
-  const [uploading, setUploading] = React.useState(false)
   const [isDragging, setIsDragging] = React.useState(false)
   const [duplicateDialog, setDuplicateDialog] = React.useState<DuplicateDialogState>(initialDuplicateDialogState)
-  const [addDocument] = useAddDocumentMutation()
+  const [addDocument, {isLoading: uploading}] = useAddDocumentMutation()
 
   // Memoize handlers to prevent unnecessary re-renders
   const validateAndCheckDuplicate = React.useCallback(
@@ -86,8 +85,6 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
 
   const uploadFile = React.useCallback(
     async (file: File) => {
-      setUploading(true)
-
       try {
         const {document, version} = await uploadNewFile(file)
         await addDocument({document, version}).unwrap()
@@ -111,8 +108,6 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
           description: ErrorHandler.getUserMessage(appError),
           variant: "destructive",
         })
-      } finally {
-        setUploading(false)
       }
     },
     [addDocument, toast, router],
