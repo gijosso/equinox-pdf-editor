@@ -46,6 +46,7 @@ export class VersionManager {
 
       return {
         success: result.success,
+        versionId: result.versionId,
         versionNumber: result.versionNumber,
         error: result.error,
       }

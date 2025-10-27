@@ -12,6 +12,7 @@ export interface SaveVersionOptions {
 
 export interface SaveVersionResult {
   success: boolean
+  versionId?: string
   versionNumber?: number
   error?: string
 }
@@ -76,7 +77,7 @@ export async function saveVersion(options: SaveVersionOptions): Promise<SaveVers
       }
     }
 
-    return {success: true, versionNumber: nextVersionNumber}
+    return {success: true, versionId: newVersion.id, versionNumber: nextVersionNumber}
   } catch (error) {
     console.error("Failed to save version:", error)
     return {

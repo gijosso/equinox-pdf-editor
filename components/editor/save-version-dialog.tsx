@@ -8,7 +8,12 @@ import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} fro
 import {Label} from "@/components/ui/label"
 import {Textarea} from "@/components/ui/textarea"
 import {useToast} from "@/hooks/use-toast"
-import {useGetAnnotationsByVersionQuery, useGetDocumentEditorQuery} from "@/lib/store/api"
+import {store} from "@/lib/store"
+import {
+  useGetAnnotationsByVersionQuery,
+  useGetDocumentEditorQuery,
+  useSaveDocumentEditorMutation,
+} from "@/lib/store/api"
 import {versionManager} from "@/lib/utils/version-manager"
 
 interface SaveVersionDialogProps {
@@ -19,6 +24,7 @@ interface SaveVersionDialogProps {
 }
 
 export function SaveVersionDialog({open, onOpenChange, onVersionSaved, documentId}: SaveVersionDialogProps) {
+  const [saveDocumentEditor] = useSaveDocumentEditorMutation()
   const {data: editor} = useGetDocumentEditorQuery(documentId, {skip: !documentId})
   const currentVersionId = editor?.currentVersionId || null
 
@@ -44,6 +50,30 @@ export function SaveVersionDialog({open, onOpenChange, onVersionSaved, documentI
       })
 
       if (result.success) {
+        // Update editor state to use the new version as current
+        if (editor && result.versionId) {
+          const updatedEditor = {
+            ...editor,
+            currentVersionId: result.versionId,
+          }
+          await saveDocumentEditor({documentId, editor: updatedEditor}).unwrap()
+        }
+
+        // Invalidate cache to refresh version history and document data
+        store.dispatch({
+          type: "versionsApi/invalidateTags",
+          payload: [
+            {type: "Version", id: `document-${documentId}`},
+            {type: "Document", id: documentId},
+          ],
+        })
+
+        // Also invalidate documentsApi cache to refresh document metadata
+        store.dispatch({
+          type: "documentsApi/invalidateTags",
+          payload: [{type: "Document", id: documentId}],
+        })
+
         // Show success toast
         toast({
           title: "Version saved",
