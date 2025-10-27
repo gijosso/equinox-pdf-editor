@@ -38,10 +38,12 @@ export function usePDFSearch(documentId: string, debounceTime: number = 300): Us
           highlightAll: true,
         })
 
+        const newIndex = currentSearchIndex < results.length ? currentSearchIndex : 0
+
         await updateEditor(
           {
             searchResults: results,
-            currentSearchIndex: 0,
+            currentSearchIndex: newIndex,
           },
           "Error searching PDF",
         )
@@ -49,7 +51,7 @@ export function usePDFSearch(documentId: string, debounceTime: number = 300): Us
         console.error("Error searching PDF:", error)
       }
     },
-    [documentId, blob, pdfLoading, editor, updateEditor],
+    [documentId, blob, pdfLoading, editor, updateEditor, currentSearchIndex],
   )
 
   const clearSearch = React.useCallback(async () => {
