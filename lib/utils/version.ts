@@ -48,6 +48,19 @@ export async function saveVersion(options: SaveVersionOptions): Promise<SaveVers
       createdAt: new Date().toISOString(),
     }
 
+    // Add committed version ID to the annotations of the current version to lock them
+    const updateVersionAnnotationsResult = await atomicService.updateVersionAnnotations(
+      document.currentVersionId,
+      annotations.map(annotation => ({
+        ...annotation,
+        committedVersionId: annotation.versionId,
+      })),
+    )
+
+    if (!updateVersionAnnotationsResult.success) {
+      throw new Error(updateVersionAnnotationsResult.error.message)
+    }
+
     const updateResult = await atomicService.updateDocumentWithVersion(documentId, {}, newVersion)
 
     if (!updateResult.success) {
@@ -64,7 +77,6 @@ export async function saveVersion(options: SaveVersionOptions): Promise<SaveVers
         originalId: historyAnnotation.id, // Mark this as the original for future copies
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        committedVersionId: historyAnnotation.committedVersionId || document.currentVersionId,
       }
       annotationsToAdd.push(annotationWithOriginalId)
     }

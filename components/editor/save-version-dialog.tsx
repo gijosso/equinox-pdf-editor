@@ -68,6 +68,15 @@ export function SaveVersionDialog({open, onOpenChange, onVersionSaved, documentI
           ],
         })
 
+        // Invalidate annotations cache to refresh annotation data
+        store.dispatch({
+          type: "annotationsApi/invalidateTags",
+          payload: [
+            {type: "Annotation", id: `version-${currentVersionId}`}, // Previous version annotations
+            {type: "Annotation", id: `version-${result.versionId}`}, // New version annotations
+          ],
+        })
+
         // Also invalidate documentsApi cache to refresh document metadata
         store.dispatch({
           type: "documentsApi/invalidateTags",
