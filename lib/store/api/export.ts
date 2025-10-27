@@ -46,11 +46,12 @@ export const exportApi = createApi({
           const versionsUpToCurrent =
             currentVersionIndex >= 0 ? allVersions.slice(0, currentVersionIndex + 1) : allVersions
 
-          // Get annotations for each version (all annotations are stored in the version where they were created)
+          // Get annotations and text edits for each version
           const versionAnnotations = await Promise.all(
             versionsUpToCurrent.map(async version => ({
               version,
               annotations: await db.annotations.where("versionId").equals(version.id).toArray(),
+              textEdits: await db.textEdits.where("versionId").equals(version.id).toArray(),
             })),
           )
 

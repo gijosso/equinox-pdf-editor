@@ -1,6 +1,6 @@
 import {configureStore} from "@reduxjs/toolkit"
 
-import {annotationsApi, documentsApi, editorApi, editsApi, exportApi, versionsApi} from "./api"
+import {annotationsApi, documentsApi, editorApi, editsApi, exportApi, textEditsApi, versionsApi} from "./api"
 import {documentNamesCacheMiddleware} from "./middleware/document-names-cache"
 
 const store = configureStore({
@@ -11,19 +11,11 @@ const store = configureStore({
     [editsApi.reducerPath]: editsApi.reducer,
     [editorApi.reducerPath]: editorApi.reducer,
     [exportApi.reducerPath]: exportApi.reducer,
+    [textEditsApi.reducerPath]: textEditsApi.reducer,
   },
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
-      serializableCheck: {
-        ignoredActions: [
-          // Ignore these action types
-          "persist/PERSIST",
-          "persist/REHYDRATE",
-          "persist/REGISTER",
-        ],
-        ignoredActionsPaths: ["meta.arg", "payload.timestamp"],
-        ignoredPaths: ["items.dates"],
-      },
+      serializableCheck: false,
     }).concat(
       documentsApi.middleware,
       versionsApi.middleware,
@@ -31,6 +23,7 @@ const store = configureStore({
       editsApi.middleware,
       editorApi.middleware,
       exportApi.middleware,
+      textEditsApi.middleware,
       documentNamesCacheMiddleware,
     ),
   devTools: process.env.NODE_ENV !== "production",

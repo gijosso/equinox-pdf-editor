@@ -337,11 +337,12 @@ export function getAnnotationCursorStyle(
   if (isReadOnly) return "default"
   if (isCreating) return "crosshair"
   if (toolType === "select") return "default"
+  if (toolType === "text_edit") return "text"
   return "crosshair"
 }
 
 export function getAnnotationUserSelectStyle(toolType: string): "auto" | "none" {
-  return toolType === "select" ? "auto" : "none"
+  return toolType === "select" || toolType === "text_edit" ? "auto" : "none"
 }
 
 export function validateAnnotationCreation(

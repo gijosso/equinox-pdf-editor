@@ -1,6 +1,6 @@
 import Dexie, {Table} from "dexie"
 
-import {Annotation, EditorRecord, PDFDocument, PDFVersion, VersionEditorRecord} from "../types"
+import {Annotation, Edit, EditorRecord, PDFDocument, PDFVersion, TextEdit, VersionEditorRecord} from "../types"
 
 export class Database extends Dexie {
   documents!: Table<PDFDocument, string>
@@ -8,6 +8,8 @@ export class Database extends Dexie {
   annotations!: Table<Annotation, string>
   editorStates!: Table<EditorRecord, string>
   versionEditorStates!: Table<VersionEditorRecord, string>
+  edits!: Table<Edit, string>
+  textEdits!: Table<TextEdit, string>
 
   constructor() {
     super("PDFEditorDB")
@@ -18,6 +20,8 @@ export class Database extends Dexie {
         "id, versionId, pageNumber, type, createdAt, updatedAt, originalId, committedVersionId, [versionId+pageNumber], [versionId+type]",
       editorStates: "id, documentId, currentVersionId, createdAt, updatedAt, [documentId+updatedAt]",
       versionEditorStates: "id, versionId, createdAt, updatedAt, [versionId+updatedAt]",
+      edits: "id, versionId, type, annotationId, timestamp, [versionId+type], [versionId+annotationId]",
+      textEdits: "id, versionId, pageNumber, createdAt",
     })
   }
 }

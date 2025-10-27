@@ -1,6 +1,6 @@
 import {PDFDocument, type PDFPage, StandardFonts, rgb} from "pdf-lib"
 
-import type {Annotation, PDFVersion} from "@/lib/types"
+import type {Annotation, PDFVersion, TextEdit} from "@/lib/types"
 import {PDFProcessingError} from "@/lib/utils/error-handling"
 
 export interface ChangeLogOptions {
@@ -8,6 +8,7 @@ export interface ChangeLogOptions {
   versions: Array<{
     version: PDFVersion
     annotations: Annotation[]
+    textEdits: TextEdit[]
   }>
 }
 
@@ -54,7 +55,7 @@ export async function createChangeLogPage(pdfDoc: PDFDocument, options: ChangeLo
   const minYPosition = 50 // Minimum Y position to prevent content going off page
 
   for (let index = 0; index < options.versions.length; index++) {
-    const {version, annotations} = options.versions[index]
+    const {version, annotations, textEdits} = options.versions[index]
 
     // Calculate space needed for this version
     const versionHeaderHeight = 20
@@ -63,9 +64,11 @@ export async function createChangeLogPage(pdfDoc: PDFDocument, options: ChangeLo
       annotation => annotation.committedVersionId === version.id && annotation.originalId === annotation.id,
     )
     const annotationsHeight = calculateAnnotationsHeight(currentVersionAnnotations)
+    const textEditsHeight = calculateTextEditsHeight(textEdits)
 
     const versionSpacing = 15
-    const totalVersionHeight = versionHeaderHeight + descriptionHeight + annotationsHeight + versionSpacing
+    const totalVersionHeight =
+      versionHeaderHeight + descriptionHeight + annotationsHeight + textEditsHeight + versionSpacing
 
     // Check if we have enough space for this version
     if (yPosition - totalVersionHeight < minYPosition) {
@@ -97,6 +100,12 @@ export async function createChangeLogPage(pdfDoc: PDFDocument, options: ChangeLo
 
     // Annotations summary
     yPosition = drawAnnotationsSummary(changeLogPage, currentVersionAnnotations, yPosition, font, boldFont)
+
+    // Text edits summary
+    if (textEdits.length > 0) {
+      yPosition = drawTextEditsSummary(changeLogPage, textEdits, yPosition, font, boldFont)
+    }
+
     yPosition -= versionSpacing
   }
 
@@ -272,4 +281,93 @@ export async function createPlaceholderPage(pdfDoc: PDFDocument): Promise<void> 
 
 export function generateExportFilename(documentName: string, versionNumber: number): string {
   return `${documentName.replace(/\.pdf$/i, "")}_v${versionNumber}.pdf`
+}
+
+function calculateTextEditsHeight(textEdits: TextEdit[]): number {
+  if (textEdits.length === 0) {
+    return 0
+  }
+
+  const textEditsByPage = groupTextEditsByPage(textEdits)
+  let totalHeight = 15 // Header height
+
+  for (const pageTextEdits of Object.values(textEditsByPage)) {
+    totalHeight += 12 // Page header
+    totalHeight += pageTextEdits.length * 12 // Each text edit line (slightly taller for readability)
+  }
+
+  return totalHeight
+}
+
+function groupTextEditsByPage(textEdits: TextEdit[]): Record<number, TextEdit[]> {
+  return textEdits.reduce(
+    (acc, textEdit) => {
+      if (!acc[textEdit.pageNumber]) {
+        acc[textEdit.pageNumber] = []
+      }
+      acc[textEdit.pageNumber].push(textEdit)
+      return acc
+    },
+    {} as Record<number, TextEdit[]>,
+  )
+}
+
+function drawTextEditsSummary(
+  page: PDFPage,
+  textEdits: TextEdit[],
+  yPosition: number,
+  font: any,
+  boldFont: any,
+): number {
+  let currentY = yPosition
+
+  if (textEdits.length > 0) {
+    page.drawText("Text Edits:", {
+      x: 70,
+      y: currentY,
+      size: 10,
+      font: boldFont,
+      color: rgb(0, 0, 0),
+    })
+    currentY -= 12
+
+    const textEditsByPage = groupTextEditsByPage(textEdits)
+    currentY = drawTextEditsByPage(page, textEditsByPage, currentY, font)
+  }
+
+  return currentY
+}
+
+function drawTextEditsByPage(
+  page: PDFPage,
+  textEditsByPage: Record<number, TextEdit[]>,
+  yPosition: number,
+  font: any,
+): number {
+  let currentY = yPosition
+
+  for (const [pageNumber, pageTextEdits] of Object.entries(textEditsByPage)) {
+    page.drawText(`Page ${pageNumber}:`, {
+      x: 90,
+      y: currentY,
+      size: 9,
+      font: font,
+      color: rgb(0.2, 0.2, 0.2),
+    })
+    currentY -= 10
+
+    for (const textEdit of pageTextEdits) {
+      const editText = `"${textEdit.originalText}" → "${textEdit.newText}"`
+      page.drawText(editText, {
+        x: 110,
+        y: currentY,
+        size: 8,
+        font: font,
+        color: rgb(0.3, 0.3, 0.3),
+      })
+      currentY -= 10
+    }
+  }
+
+  return currentY
 }

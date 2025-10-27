@@ -17,3 +17,7 @@ export function generateEditorStateId(): string {
 export function generateEditId(): string {
   return `edit_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
 }
+
+export function generateTextEditId(): string {
+  return `text_edit_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+}

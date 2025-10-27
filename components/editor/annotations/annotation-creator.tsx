@@ -35,7 +35,7 @@ export function AnnotationCreator({scale, documentId, children}: AnnotationCreat
   const [startPos, setStartPos] = React.useState<{x: number; y: number} | null>(null)
   const [currentPos, setCurrentPos] = React.useState<{x: number; y: number} | null>(null)
 
-  const isAnnotationTool = activeTool.type !== "select"
+  const isAnnotationTool = activeTool.type !== "select" && activeTool.type !== "text_edit"
   const isReadOnly = isDiffMode
 
   // Memoize cursor and user select styles to avoid recalculation
@@ -48,7 +48,7 @@ export function AnnotationCreator({scale, documentId, children}: AnnotationCreat
 
   // Memoize preview color to avoid recalculation
   const previewColor = React.useMemo(
-    () => getAnnotationPreviewColor(activeTool.type as AnnotationType),
+    () => (activeTool.type !== "text_edit" ? getAnnotationPreviewColor(activeTool.type as AnnotationType) : "#666666"),
     [activeTool.type],
   )
 

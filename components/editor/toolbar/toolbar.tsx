@@ -1,6 +1,6 @@
 "use client"
 
-import {Highlighter, MousePointer, Square, StickyNote, ZoomIn, ZoomOut} from "lucide-react"
+import {Edit3, Highlighter, MousePointer, Square, StickyNote, ZoomIn, ZoomOut} from "lucide-react"
 import React from "react"
 
 import {Button} from "@/components/ui/button"
@@ -18,6 +18,7 @@ const EDITOR_TOOL_CONFIGS = {
   highlight: {type: "highlight", icon: Highlighter, label: "Highlight"},
   note: {type: "note", icon: StickyNote, label: "Sticky Note"},
   redaction: {type: "redaction", icon: Square, label: "Redaction"},
+  text_edit: {type: "text_edit", icon: Edit3, label: "Edit Text"},
 } as const satisfies {[K in EditorToolType]: EditorToolConfig}
 
 interface ToolbarProps {

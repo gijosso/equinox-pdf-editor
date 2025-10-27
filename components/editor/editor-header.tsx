@@ -5,7 +5,6 @@ import {useRouter} from "next/navigation"
 import React from "react"
 
 import {Button} from "@/components/ui/button"
-import {usePDFBlob} from "@/hooks/use-pdf-blob"
 import {useEditorActions, useGetDocumentQuery, useGetVersionsByDocumentQuery, useHasEditsQuery} from "@/lib/store/api"
 
 import {ExportPDFButton} from "./export-pdf-button"
@@ -27,7 +26,6 @@ export function EditorHeader({documentId}: EditorHeaderProps) {
   const {data: document} = useGetDocumentQuery(documentId, {skip: !documentId})
   const {data: hasEdits = false} = useHasEditsQuery(currentVersionId || "", {skip: !currentVersionId})
   const {data: versions = []} = useGetVersionsByDocumentQuery(documentId, {skip: !documentId})
-  const {refreshBlob} = usePDFBlob(documentId)
   const currentVersion = React.useMemo(
     () => versions.find(v => v.id === document?.currentVersionId),
     [versions, document?.currentVersionId],
@@ -94,12 +92,7 @@ export function EditorHeader({documentId}: EditorHeaderProps) {
         </div>
       </header>
 
-      <SaveVersionDialog
-        open={showSaveDialog}
-        onOpenChange={setShowSaveDialog}
-        onVersionSaved={refreshBlob}
-        documentId={documentId}
-      />
+      <SaveVersionDialog open={showSaveDialog} onOpenChange={setShowSaveDialog} documentId={documentId} />
       <VersionHistoryDialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog} documentId={documentId} />
     </>
   )

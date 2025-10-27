@@ -3,9 +3,10 @@ import {documentsApi} from "./documents"
 import {editorApi} from "./editor"
 import {editsApi} from "./edits"
 import {exportApi} from "./export"
+import {textEditsApi} from "./text-edits"
 import {versionsApi} from "./versions"
 
-export {documentsApi, versionsApi, annotationsApi, editsApi, editorApi, exportApi}
+export {documentsApi, versionsApi, annotationsApi, editsApi, editorApi, exportApi, textEditsApi}
 
 export {
   useGetAllDocumentsQuery,
@@ -39,6 +40,16 @@ export {useExportPDFMutation} from "./export"
 
 export {useGetEditsByVersionQuery, useAddEditMutation, useDeleteEditsByVersionMutation, useHasEditsQuery} from "./edits"
 
+export {
+  useGetTextEditsByVersionQuery,
+  useGetTextEditsByPageQuery,
+  useAddTextEditMutation,
+  useUpdateTextEditMutation,
+  useDeleteTextEditMutation,
+  useDeleteTextEditsByVersionMutation,
+  useHasTextEditsQuery,
+} from "./text-edits"
+
 export const api = {
   documentsApi,
   versionsApi,
@@ -46,4 +57,5 @@ export const api = {
   editsApi,
   editorApi,
   exportApi,
+  textEditsApi,
 }

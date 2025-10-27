@@ -47,7 +47,11 @@ export interface Edit {
     | "annotation_moved"
     | "annotation_resized"
     | "annotation_text_changed"
-  annotationId: string
+    | "text_inserted"
+    | "text_deleted"
+    | "text_replaced"
+  annotationId?: string
+  textEditId?: string // For text edits that aren't annotations
   timestamp: string
   data?: any // Additional data for the edit
 }
@@ -85,7 +89,7 @@ export interface EditorViewport {
   zoom: number
 }
 
-export type EditorToolType = "select" | "highlight" | "note" | "redaction"
+export type EditorToolType = "select" | "highlight" | "note" | "redaction" | "text_edit"
 export interface EditorTool {
   type: EditorToolType
   color?: string
@@ -205,4 +209,52 @@ export interface VersionDiffResult {
   textDiff: TextDiffResult
   annotationDiff: AnnotationDiff[]
   hasChanges: boolean
+}
+
+// Text editing specific types
+export interface TextEdit {
+  id: string
+  versionId: string
+  pageNumber: number
+  originalText: string
+  newText: string
+  x: number
+  y: number
+  width: number
+  height: number
+  fontFamily?: string
+  fontSize?: number
+  fontWeight?: string | number
+  color?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface FontInfo {
+  fontFamily: string
+  fontSize: number
+  fontWeight: string | number
+  fontStyle?: string
+  color?: string
+  kerning?: number
+  letterSpacing?: number
+  lineHeight?: number
+}
+
+export interface TextSelection {
+  pageNumber: number
+  startX: number
+  startY: number
+  endX: number
+  endY: number
+  text: string
+  fontInfo: FontInfo
+  textSpans: TextSpan[]
+}
+
+export interface TextEditOperation {
+  type: "insert" | "delete" | "replace"
+  selection: TextSelection
+  newText?: string
+  fontInfo?: FontInfo
 }
