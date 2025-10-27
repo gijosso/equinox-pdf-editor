@@ -8,8 +8,12 @@ import {Button} from "@/components/ui/button"
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog"
 import {ScrollArea} from "@/components/ui/scroll-area"
 import {useToast} from "@/hooks/use-toast"
-import {annotationService} from "@/lib/db/annotations"
-import {useEditorActions, useGetVersionsByDocumentQuery, useUpdateDocumentMutation} from "@/lib/store/api"
+import {
+  useEditorActions,
+  useGetDocumentQuery,
+  useGetVersionsByDocumentQuery,
+  useUpdateDocumentMutation,
+} from "@/lib/store/api"
 
 interface VersionHistoryDialogProps {
   open: boolean
@@ -20,8 +24,12 @@ interface VersionHistoryDialogProps {
 export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHistoryDialogProps) {
   const [updateDocument, {isLoading: updating}] = useUpdateDocumentMutation()
   const {editor, setCurrentVersionId, setDiffMode} = useEditorActions(documentId)
+  const {data: document} = useGetDocumentQuery(documentId, {skip: !documentId})
   const {toast} = useToast()
   const [selectedVersions, setSelectedVersions] = React.useState<string[]>([])
+
+  // Get current version ID from editor state
+  const currentVersionId = editor?.currentVersionId || null
 
   // Use RTK Query to fetch versions
   const {
@@ -50,20 +58,13 @@ export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHi
     }
 
     try {
-      // Update document to point to the selected version
       await updateDocument({
         documentId,
         updates: {currentVersionId: versionId},
       }).unwrap()
 
-      const annotationsResult = await annotationService.getAnnotationsByVersion(versionId)
-      const annotations = annotationsResult.success ? annotationsResult.data : []
-
-      // Create a new version ID for the working changes
-      const nextVersionId = `working-${Date.now()}`
-
-      // Update editor state with the new version
-      await setCurrentVersionId(nextVersionId)
+      // Update editor state to use the loaded version ID so edit history loads correctly
+      await setCurrentVersionId(versionId)
 
       // Show success toast
       toast({
@@ -182,8 +183,12 @@ export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHi
                 .map(version => (
                   <div
                     key={version.id}
-                    className={`rounded-lg border border-border bg-card p-4 ${
-                      selectedVersions.includes(version.id) ? "ring-2 ring-primary" : ""
+                    className={`rounded-lg border p-4 ${
+                      version.id === currentVersionId
+                        ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                        : selectedVersions.includes(version.id)
+                          ? "border-border bg-card ring-2 ring-primary"
+                          : "border-border bg-card"
                     }`}
                   >
                     <div className="flex items-start justify-between">
@@ -217,11 +222,16 @@ export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHi
                           variant="outline"
                           size="sm"
                           onClick={() => handleLoadVersion(version.id)}
-                          disabled={updating}
+                          disabled={updating || version.id === currentVersionId}
                         >
-                          {updating ? "Loading..." : "Load"}
+                          {updating ? "Loading..." : version.id === currentVersionId ? "Current" : "Load"}
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleCompareVersions(version.id)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleCompareVersions(version.id)}
+                          disabled={updating || version.id === document?.latestVersionId}
+                        >
                           Compare with Latest
                         </Button>
                       </div>

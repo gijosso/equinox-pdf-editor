@@ -1,6 +1,6 @@
 "use client"
 
-import {ArrowLeft, FileText, History, PanelRight, Save} from "lucide-react"
+import {ArrowLeft, FileText, History, Lock, PanelRight, Save} from "lucide-react"
 import {useRouter} from "next/navigation"
 import React from "react"
 
@@ -32,6 +32,8 @@ export function EditorHeader({documentId}: EditorHeaderProps) {
   // Find current version number
   const currentVersion = versions.find(v => v.id === document?.currentVersionId)
   const versionNumber = currentVersion?.versionNumber
+
+  const isViewingHistoricalVersion = Boolean(editor && document && editor.currentVersionId !== document.latestVersionId)
   const [showSaveDialog, setShowSaveDialog] = React.useState(false)
   const [showHistoryDialog, setShowHistoryDialog] = React.useState(false)
 
@@ -50,6 +52,12 @@ export function EditorHeader({documentId}: EditorHeaderProps) {
             <FileText className="h-5 w-5 text-primary" />
             <h1 className="text-lg font-semibold text-foreground">{document?.name}</h1>
             <span className="text-sm text-muted-foreground">v{versionNumber}</span>
+            {isViewingHistoricalVersion && (
+              <div className="flex items-center gap-1 rounded bg-muted px-2 py-1 text-xs text-muted-foreground">
+                <Lock className="h-3 w-3" />
+                Read-only
+              </div>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -58,7 +66,12 @@ export function EditorHeader({documentId}: EditorHeaderProps) {
             History
           </Button>
           {currentVersionId && document && <ExportPDFButton documentId={documentId} versionId={currentVersionId} />}
-          <Button variant="default" size="sm" onClick={() => setShowSaveDialog(true)} disabled={!hasEdits}>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setShowSaveDialog(true)}
+            disabled={!hasEdits || isViewingHistoricalVersion}
+          >
             <Save className="mr-2 h-4 w-4" />
             Save Version
           </Button>

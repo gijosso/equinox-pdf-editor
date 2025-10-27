@@ -96,6 +96,7 @@ export const uploadNewFile = async (file: File): Promise<{document: PDFDocumentW
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
     currentVersionId: versionId,
+    latestVersionId: versionId, // Initial version is also the latest
     fileHash,
     thumbnail,
     blob, // Add the PDF blob to the document

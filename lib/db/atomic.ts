@@ -50,10 +50,11 @@ export const atomicService = {
           throw versionResult.error
         }
 
-        // Update document to point to the new version
+        // Update document to point to the new version and set it as latest
         const documentResult = await documentService.updateDocument(documentId, {
           ...documentUpdates,
           currentVersionId: version.id,
+          latestVersionId: version.id, // New version becomes the latest
         })
         if (!documentResult.success) {
           throw documentResult.error

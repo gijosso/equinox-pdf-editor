@@ -18,6 +18,7 @@ export interface PDFDocument {
   createdAt: string
   updatedAt: string
   currentVersionId: string
+  latestVersionId: string
   fileHash: string // SHA-256 hash of the file content
   thumbnail: string // Base64 encoded thumbnail
 }

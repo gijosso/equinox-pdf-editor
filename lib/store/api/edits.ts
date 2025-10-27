@@ -13,7 +13,7 @@ export const editsApi = createApi({
       queryFn: async versionId => {
         const result = await editService.getEditsByVersion(versionId)
         if (!result.success) {
-          return {error: {status: "CUSTOM_ERROR", error: result.error.message}}
+          return {error: {status: "CUSTOM_ERROR", error: result.error?.message || "Unknown error"}}
         }
         return {data: result.data || []}
       },
@@ -27,7 +27,7 @@ export const editsApi = createApi({
       queryFn: async args => {
         const result = await editService.addEdit(args)
         if (!result.success) {
-          return {error: {status: "CUSTOM_ERROR", error: result.error.message}}
+          return {error: {status: "CUSTOM_ERROR", error: result.error?.message || "Unknown error"}}
         }
         return {data: result.data || ""}
       },
@@ -38,7 +38,7 @@ export const editsApi = createApi({
       queryFn: async versionId => {
         const result = await editService.deleteEditsByVersion(versionId)
         if (!result.success) {
-          return {error: {status: "CUSTOM_ERROR", error: result.error.message}}
+          return {error: {status: "CUSTOM_ERROR", error: result.error?.message || "Unknown error"}}
         }
         return {data: null}
       },

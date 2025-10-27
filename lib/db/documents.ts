@@ -45,6 +45,7 @@ export const documentService = {
         createdAt: document.createdAt,
         updatedAt: document.updatedAt,
         currentVersionId: document.currentVersionId,
+        latestVersionId: document.latestVersionId,
         fileHash: document.fileHash,
         thumbnail: document.thumbnail,
       }
@@ -86,6 +87,7 @@ export const documentService = {
         createdAt: doc.createdAt,
         updatedAt: doc.updatedAt,
         currentVersionId: doc.currentVersionId,
+        latestVersionId: doc.latestVersionId,
         fileHash: doc.fileHash,
         thumbnail: doc.thumbnail,
       }))
@@ -152,6 +154,7 @@ export const documentService = {
         createdAt: document.createdAt,
         updatedAt: document.updatedAt,
         currentVersionId: document.currentVersionId,
+        latestVersionId: document.latestVersionId,
         fileHash: document.fileHash,
         thumbnail: document.thumbnail,
       }

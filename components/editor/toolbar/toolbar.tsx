@@ -4,7 +4,7 @@ import {Highlighter, MousePointer, Square, StickyNote, ZoomIn, ZoomOut} from "lu
 
 import {Button} from "@/components/ui/button"
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip"
-import {useEditorActions} from "@/lib/store/api"
+import {useEditorActions, useGetDocumentQuery} from "@/lib/store/api"
 import type {EditorToolType} from "@/lib/types"
 
 import {ToolbarPage} from "./toolbar-page"
@@ -25,9 +25,12 @@ interface ToolbarProps {
 
 export function Toolbar({documentId}: ToolbarProps) {
   const {editor, setActiveTool, setViewport} = useEditorActions(documentId)
+  const {data: document} = useGetDocumentQuery(documentId, {skip: !documentId})
 
   const activeTool = editor?.activeTool || {type: "select"}
   const viewport = editor?.viewport || {x: 0, y: 0, zoom: 1}
+
+  const isViewingHistoricalVersion = Boolean(editor && document && editor.currentVersionId !== document.latestVersionId)
 
   const handleToolChange = async (toolType: EditorToolType) => {
     await setActiveTool({type: toolType})
@@ -60,12 +63,15 @@ export function Toolbar({documentId}: ToolbarProps) {
                   variant={activeTool.type === tool.type ? "default" : "ghost"}
                   size="sm"
                   onClick={() => handleToolChange(tool.type)}
+                  disabled={isViewingHistoricalVersion && tool.type !== "select"}
                 >
                   <tool.icon className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{tool.label}</p>
+                <p>
+                  {isViewingHistoricalVersion && tool.type !== "select" ? `${tool.label} (Read-only mode)` : tool.label}
+                </p>
               </TooltipContent>
             </Tooltip>
           ))}
