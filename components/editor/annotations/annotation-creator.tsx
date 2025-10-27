@@ -4,7 +4,17 @@ import React from "react"
 
 import {useAddAnnotationMutation, useGetDocumentEditorQuery} from "@/lib/store/api"
 import type {AnnotationType} from "@/lib/types"
-import {createAnnotation} from "@/lib/utils/annotations"
+import {
+  calculateAnnotationBounds,
+  createAnnotation,
+  getAnnotationCursorStyle,
+  getAnnotationPreviewColor,
+  getAnnotationUserSelectStyle,
+  isWithinAnnotation,
+  screenToPdfCoordinates,
+  screenToPdfDimensions,
+  validateAnnotationCreation,
+} from "@/lib/utils/annotations"
 
 interface AnnotationCreatorProps {
   scale: number
@@ -35,7 +45,7 @@ export function AnnotationCreator({scale, documentId, children}: AnnotationCreat
 
     // Don't start creating if clicking on existing annotations
     const target = event.target as HTMLElement
-    if (target.closest("[data-annotation]")) {
+    if (isWithinAnnotation(target)) {
       return
     }
 
@@ -58,7 +68,7 @@ export function AnnotationCreator({scale, documentId, children}: AnnotationCreat
 
     // Don't update if hovering over existing annotations
     const target = event.target as HTMLElement
-    if (target.closest("[data-annotation]")) {
+    if (isWithinAnnotation(target)) {
       return
     }
 
@@ -79,7 +89,7 @@ export function AnnotationCreator({scale, documentId, children}: AnnotationCreat
 
     // Don't create annotation if releasing over existing annotations
     const target = event.target as HTMLElement
-    if (target.closest("[data-annotation]")) {
+    if (isWithinAnnotation(target)) {
       setIsCreating(false)
       setStartPos(null)
       setCurrentPos(null)
@@ -87,34 +97,36 @@ export function AnnotationCreator({scale, documentId, children}: AnnotationCreat
     }
 
     // Calculate annotation bounds
-    const x = Math.min(startPos.x, currentPos.x)
-    const y = Math.min(startPos.y, currentPos.y)
-    const width = Math.abs(currentPos.x - startPos.x)
-    const height = Math.abs(currentPos.y - startPos.y)
+    const bounds = calculateAnnotationBounds(startPos, currentPos)
 
-    // Only create annotation if it has minimum size and we have a valid version
-    if (width > 5 && height > 5 && currentVersionId) {
-      // Convert screen coordinates to PDF coordinates
-      const pdfX = x / scale
-      const pdfY = y / scale
-      const pdfWidth = width / scale
-      const pdfHeight = height / scale
+    // Validate annotation creation
+    const validation = validateAnnotationCreation(bounds, currentVersionId)
+    if (!validation.isValid) {
+      console.warn("Annotation creation failed:", validation.error)
+      setIsCreating(false)
+      setStartPos(null)
+      setCurrentPos(null)
+      return
+    }
 
-      const annotation = createAnnotation(activeTool.type as AnnotationType, {
-        versionId: currentVersionId,
-        pageNumber: currentPage,
-        x: pdfX,
-        y: pdfY,
-        width: pdfWidth,
-        height: pdfHeight,
-        content: "",
-      })
+    // Convert screen coordinates to PDF coordinates
+    const pdfCoords = screenToPdfCoordinates(bounds.x, bounds.y, {scale})
+    const pdfDims = screenToPdfDimensions(bounds.width, bounds.height, {scale})
 
-      try {
-        await addAnnotation(annotation).unwrap()
-      } catch (error) {
-        console.error("Failed to add annotation:", error)
-      }
+    const annotation = createAnnotation(activeTool.type as AnnotationType, {
+      versionId: currentVersionId!,
+      pageNumber: currentPage,
+      x: pdfCoords.x,
+      y: pdfCoords.y,
+      width: pdfDims.width,
+      height: pdfDims.height,
+      content: "",
+    })
+
+    try {
+      await addAnnotation(annotation).unwrap()
+    } catch (error) {
+      console.error("Failed to add annotation:", error)
     }
 
     setIsCreating(false)
@@ -134,12 +146,7 @@ export function AnnotationCreator({scale, documentId, children}: AnnotationCreat
       return
     }
 
-    const x = Math.min(startPos.x, currentPos.x)
-    const y = Math.min(startPos.y, currentPos.y)
-    const width = Math.abs(currentPos.x - startPos.x)
-    const height = Math.abs(currentPos.y - startPos.y)
-
-    return {x, y, width, height}
+    return calculateAnnotationBounds(startPos, currentPos)
   }, [isCreating, startPos, currentPos, isReadOnly])
 
   return (
@@ -150,10 +157,10 @@ export function AnnotationCreator({scale, documentId, children}: AnnotationCreat
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
       style={{
-        cursor: isAnnotationTool ? "crosshair" : "default",
-        userSelect: isAnnotationTool ? "none" : "auto",
-        WebkitUserSelect: isAnnotationTool ? "none" : "auto",
-        MozUserSelect: isAnnotationTool ? "none" : "auto",
+        cursor: getAnnotationCursorStyle(activeTool.type, isCreating, isReadOnly),
+        userSelect: getAnnotationUserSelectStyle(activeTool.type),
+        WebkitUserSelect: getAnnotationUserSelectStyle(activeTool.type),
+        MozUserSelect: getAnnotationUserSelectStyle(activeTool.type),
       }}
     >
       {children}
@@ -165,24 +172,11 @@ export function AnnotationCreator({scale, documentId, children}: AnnotationCreat
             top: previewRect.y,
             width: previewRect.width,
             height: previewRect.height,
-            borderColor: getPreviewColor(activeTool.type),
-            backgroundColor: `${getPreviewColor(activeTool.type)}20`,
+            borderColor: getAnnotationPreviewColor(activeTool.type as AnnotationType),
+            backgroundColor: `${getAnnotationPreviewColor(activeTool.type as AnnotationType)}20`,
           }}
         />
       )}
     </div>
   )
-}
-
-function getPreviewColor(toolType: string): string {
-  switch (toolType) {
-    case "highlight":
-      return "#ffeb3b"
-    case "note":
-      return "#FFCD45"
-    case "redaction":
-      return "#000000"
-    default:
-      return "#666666"
-  }
 }

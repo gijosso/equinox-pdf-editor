@@ -1,4 +1,4 @@
-import type {Annotation, AnnotationType, PDFVersion} from "@/lib/types"
+import type {Annotation, AnnotationType, Edit} from "@/lib/types"
 
 import {generateAnnotationId} from "./id"
 
@@ -147,4 +147,206 @@ export function areAnnotationsDifferent(ann1: Annotation, ann2: Annotation) {
     ann1.type !== ann2.type ||
     ann1.pageNumber !== ann2.pageNumber
   )
+}
+
+export interface CoordinateConversionOptions {
+  scale: number
+}
+
+export function screenToPdfCoordinates(
+  screenX: number,
+  screenY: number,
+  options: CoordinateConversionOptions,
+): {x: number; y: number} {
+  return {
+    x: screenX / options.scale,
+    y: screenY / options.scale,
+  }
+}
+
+export function pdfToScreenCoordinates(
+  pdfX: number,
+  pdfY: number,
+  options: CoordinateConversionOptions,
+): {x: number; y: number} {
+  return {
+    x: pdfX * options.scale,
+    y: pdfY * options.scale,
+  }
+}
+
+export function screenToPdfDimensions(
+  screenWidth: number,
+  screenHeight: number,
+  options: CoordinateConversionOptions,
+): {width: number; height: number} {
+  return {
+    width: screenWidth / options.scale,
+    height: screenHeight / options.scale,
+  }
+}
+
+export function pdfToScreenDimensions(
+  pdfWidth: number,
+  pdfHeight: number,
+  options: CoordinateConversionOptions,
+): {width: number; height: number} {
+  return {
+    width: pdfWidth * options.scale,
+    height: pdfHeight * options.scale,
+  }
+}
+
+export interface AnnotationBounds {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export function calculateAnnotationBounds(
+  startPos: {x: number; y: number},
+  currentPos: {x: number; y: number},
+): AnnotationBounds {
+  const x = Math.min(startPos.x, currentPos.x)
+  const y = Math.min(startPos.y, currentPos.y)
+  const width = Math.abs(currentPos.x - startPos.x)
+  const height = Math.abs(currentPos.y - startPos.y)
+
+  return {x, y, width, height}
+}
+
+export function isValidAnnotationSize(bounds: AnnotationBounds, minSize: number = 5): boolean {
+  return bounds.width > minSize && bounds.height > minSize
+}
+
+export interface AnnotationUpdateOptions {
+  editType?: Edit["type"]
+  updateTimestamp?: boolean
+}
+
+export function updateAnnotationPosition(
+  annotation: Annotation,
+  newX: number,
+  newY: number,
+  options: AnnotationUpdateOptions = {},
+): Annotation {
+  return {
+    ...annotation,
+    x: newX,
+    y: newY,
+    updatedAt: options.updateTimestamp !== false ? new Date().toISOString() : annotation.updatedAt,
+  }
+}
+
+export function updateAnnotationDimensions(
+  annotation: Annotation,
+  newX: number,
+  newY: number,
+  newWidth: number,
+  newHeight: number,
+  options: AnnotationUpdateOptions = {},
+): Annotation {
+  return {
+    ...annotation,
+    x: newX,
+    y: newY,
+    width: newWidth,
+    height: newHeight,
+    updatedAt: options.updateTimestamp !== false ? new Date().toISOString() : annotation.updatedAt,
+  }
+}
+
+export function updateAnnotationContent(
+  annotation: Annotation,
+  newContent: string,
+  options: AnnotationUpdateOptions = {},
+): Annotation {
+  return {
+    ...annotation,
+    content: newContent,
+    updatedAt: options.updateTimestamp !== false ? new Date().toISOString() : annotation.updatedAt,
+  }
+}
+
+export interface AnnotationStyleConfig {
+  color: string
+  opacity: number
+  borderRadius: string
+  boxShadow?: string
+}
+
+export function getAnnotationStyleConfig(type: AnnotationType, locked: boolean = false): AnnotationStyleConfig {
+  const baseConfig = {
+    highlight: {
+      color: "#ffeb3b",
+      opacity: locked ? 0.3 : 0.4,
+      borderRadius: "2px",
+    },
+    note: {
+      color: "#FFCD45",
+      opacity: 1,
+      borderRadius: "2px",
+      boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+    },
+    redaction: {
+      color: "#000000",
+      opacity: 1,
+      borderRadius: "2px",
+    },
+  }
+
+  return baseConfig[type]
+}
+
+export function getAnnotationPreviewColor(type: AnnotationType): string {
+  const colors = {
+    highlight: "#ffeb3b",
+    note: "#FFCD45",
+    redaction: "#000000",
+  }
+  return colors[type] || "#666666"
+}
+
+export function isWithinAnnotation(target: HTMLElement): boolean {
+  return !!target.closest("[data-annotation]")
+}
+
+export function isWithinAnnotationInteraction(target: HTMLElement): boolean {
+  return !!(
+    target.closest("[data-annotation]") ||
+    target.closest("[data-rnd-drag-handle]") ||
+    target.closest("[data-rnd-resize-handle]")
+  )
+}
+
+export function getAnnotationCursorStyle(
+  toolType: string,
+  isCreating: boolean = false,
+  isReadOnly: boolean = false,
+): string {
+  if (isReadOnly) return "default"
+  if (isCreating) return "crosshair"
+  if (toolType === "select") return "default"
+  return "crosshair"
+}
+
+export function getAnnotationUserSelectStyle(toolType: string): "auto" | "none" {
+  return toolType === "select" ? "auto" : "none"
+}
+
+export function validateAnnotationCreation(
+  bounds: AnnotationBounds,
+  currentVersionId: string | null,
+  minSize: number = 5,
+): {isValid: boolean; error?: string} {
+  if (!currentVersionId) {
+    return {isValid: false, error: "No current version ID"}
+  }
+
+  if (!isValidAnnotationSize(bounds, minSize)) {
+    return {isValid: false, error: "Annotation too small"}
+  }
+
+  return {isValid: true}
 }

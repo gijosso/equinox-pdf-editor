@@ -3,6 +3,7 @@
 import React from "react"
 
 import type {Annotation, Edit} from "@/lib/types"
+import {getAnnotationStyleConfig, isWithinAnnotationInteraction, updateAnnotationContent} from "@/lib/utils/annotations"
 
 import {BaseAnnotation} from "./base-annotation"
 
@@ -32,7 +33,8 @@ export function AnnotationNote({
   const [isEditing, setIsEditing] = React.useState(false)
   const [editContent, setEditContent] = React.useState(annotation.content || "")
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
-  const color = annotation.color || "#FFCD45" // Default PDF sticky note color
+  const styleConfig = getAnnotationStyleConfig("note", locked)
+  const color = annotation.color || styleConfig.color
 
   const handleDoubleClick = () => {
     // Don't allow editing locked annotations
@@ -43,11 +45,9 @@ export function AnnotationNote({
   }
 
   const handleSave = () => {
-    const updatedAnnotation = {
-      ...annotation,
-      content: editContent,
-      updatedAt: new Date().toISOString(),
-    }
+    const updatedAnnotation = updateAnnotationContent(annotation, editContent, {
+      editType: "annotation_text_changed",
+    })
     onUpdate?.(updatedAnnotation, "annotation_text_changed")
     setIsEditing(false)
   }
@@ -77,11 +77,7 @@ export function AnnotationNote({
       const target = event.target as HTMLElement
 
       // Don't save if clicking on annotation elements
-      if (
-        target.closest("[data-annotation]") ||
-        target.closest("[data-rnd-drag-handle]") ||
-        target.closest("[data-rnd-resize-handle]")
-      ) {
+      if (isWithinAnnotationInteraction(target)) {
         return
       }
 
@@ -116,8 +112,8 @@ export function AnnotationNote({
         className="w-full h-full relative cursor-pointer"
         style={{
           backgroundColor: color,
-          borderRadius: "2px",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+          borderRadius: styleConfig.borderRadius,
+          boxShadow: styleConfig.boxShadow,
         }}
         onDoubleClick={handleDoubleClick}
       >

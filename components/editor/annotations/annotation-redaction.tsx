@@ -1,6 +1,7 @@
 "use client"
 
 import type {Annotation, Edit} from "@/lib/types"
+import {getAnnotationStyleConfig} from "@/lib/utils/annotations"
 
 import {BaseAnnotation} from "./base-annotation"
 
@@ -27,7 +28,8 @@ export function AnnotationRedaction({
   locked = false,
   documentId,
 }: AnnotationRedactionProps) {
-  const color = annotation.color || "#000000"
+  const styleConfig = getAnnotationStyleConfig("redaction", locked)
+  const color = annotation.color || styleConfig.color
 
   return (
     <BaseAnnotation
@@ -45,7 +47,7 @@ export function AnnotationRedaction({
         className="w-full h-full hover:opacity-80 transition-opacity"
         style={{
           backgroundColor: color,
-          borderRadius: "2px",
+          borderRadius: styleConfig.borderRadius,
         }}
         title="Redacted content"
       >

@@ -5,6 +5,12 @@ import {Rnd, RndResizeCallback} from "react-rnd"
 
 import {useEditorActions} from "@/lib/store/api"
 import type {Annotation, Edit} from "@/lib/types"
+import {
+  screenToPdfCoordinates,
+  screenToPdfDimensions,
+  updateAnnotationDimensions,
+  updateAnnotationPosition,
+} from "@/lib/utils/annotations"
 
 interface BaseAnnotationProps {
   annotation: Annotation
@@ -41,17 +47,12 @@ export function BaseAnnotation({
     }
 
     // Convert screen coordinates to PDF coordinates
-    const pdfX = d.x / scale
-    const pdfY = d.y / scale
+    const pdfCoords = screenToPdfCoordinates(d.x, d.y, {scale})
 
-    const updatedAnnotation = {
-      ...annotation,
-      x: pdfX,
-      y: pdfY,
-      updatedAt: new Date().toISOString(),
-    }
+    const updatedAnnotation = updateAnnotationPosition(annotation, pdfCoords.x, pdfCoords.y, {
+      editType: "annotation_moved",
+    })
 
-    // Pass edit type information
     onUpdate?.(updatedAnnotation, "annotation_moved")
   }
 
@@ -62,21 +63,22 @@ export function BaseAnnotation({
     }
 
     // Convert screen coordinates to PDF coordinates
-    const pdfX = position.x / scale
-    const pdfY = position.y / scale
-    const pdfWidth = parseFloat(ref.style.width.replace("px", "")) / scale
-    const pdfHeight = parseFloat(ref.style.height.replace("px", "")) / scale
+    const pdfCoords = screenToPdfCoordinates(position.x, position.y, {scale})
+    const pdfDims = screenToPdfDimensions(
+      parseFloat(ref.style.width.replace("px", "")),
+      parseFloat(ref.style.height.replace("px", "")),
+      {scale},
+    )
 
-    const updatedAnnotation = {
-      ...annotation,
-      x: pdfX,
-      y: pdfY,
-      width: pdfWidth,
-      height: pdfHeight,
-      updatedAt: new Date().toISOString(),
-    }
+    const updatedAnnotation = updateAnnotationDimensions(
+      annotation,
+      pdfCoords.x,
+      pdfCoords.y,
+      pdfDims.width,
+      pdfDims.height,
+      {editType: "annotation_resized"},
+    )
 
-    // Pass edit type information
     onUpdate?.(updatedAnnotation, "annotation_resized")
   }
 

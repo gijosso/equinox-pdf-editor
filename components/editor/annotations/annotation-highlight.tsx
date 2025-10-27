@@ -1,6 +1,7 @@
 "use client"
 
 import type {Annotation, Edit} from "@/lib/types"
+import {getAnnotationStyleConfig} from "@/lib/utils/annotations"
 
 import {BaseAnnotation} from "./base-annotation"
 
@@ -27,8 +28,8 @@ export function AnnotationHighlight({
   locked = false,
   documentId,
 }: AnnotationHighlightProps) {
-  const color = annotation.color || "#ffeb3b"
-  const opacity = locked ? 0.3 : 0.4 // Reduced opacity for locked annotations
+  const styleConfig = getAnnotationStyleConfig("highlight", locked)
+  const color = annotation.color || styleConfig.color
 
   return (
     <BaseAnnotation
@@ -46,8 +47,8 @@ export function AnnotationHighlight({
         className="w-full h-full hover:opacity-50 transition-opacity"
         style={{
           backgroundColor: color,
-          opacity,
-          borderRadius: "2px",
+          opacity: styleConfig.opacity,
+          borderRadius: styleConfig.borderRadius,
         }}
         title={annotation.content || "Highlight"}
       />
