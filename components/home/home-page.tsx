@@ -1,6 +1,7 @@
 "use client"
 
 import {FileText, Loader2} from "lucide-react"
+import React from "react"
 
 import {ErrorBoundaryWithSuspense} from "@/components/error-boundary"
 import {HomePageLoading} from "@/components/loading"
@@ -37,6 +38,7 @@ export function HomePage() {
 
 function Home() {
   const {data: documents = [], error, isLoading} = useGetAllDocumentsQuery()
+  const isEmpty = React.useMemo(() => documents.length === 0, [documents.length])
 
   if (isLoading) {
     return (
@@ -61,7 +63,7 @@ function Home() {
 
   return (
     <div className="space-y-6">
-      {documents.length === 0 ? (
+      {isEmpty ? (
         <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
           <div className="w-full">
             <FileUpload variant="dropzone" />

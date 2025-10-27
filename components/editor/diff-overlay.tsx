@@ -112,12 +112,14 @@ export function DiffOverlay({
     () => annotationDiffs.filter(diff => diff.annotation.pageNumber === pageNumber),
     [annotationDiffs, pageNumber],
   )
-
-  // Filter text diffs for the current page and only show non-equal diffs
-  const pageTextDiffs = textDiffs.filter(diff => {
-    if (diff.type === "equal") return false
-    return diff.spans?.some(span => span.pageNumber === pageNumber)
-  })
+  const pageTextDiffs = React.useMemo(
+    () =>
+      textDiffs.filter(diff => {
+        if (diff.type === "equal") return false
+        return diff.spans?.some(span => span.pageNumber === pageNumber)
+      }),
+    [textDiffs, pageNumber],
+  )
 
   if (pageTextDiffs.length === 0 && pageAnnotationDiffs.length === 0) {
     return null

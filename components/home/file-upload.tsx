@@ -40,139 +40,161 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
   const [duplicateDialog, setDuplicateDialog] = React.useState<DuplicateDialogState>(initialDuplicateDialogState)
   const [addDocument] = useAddDocumentMutation()
 
-  const validateAndCheckDuplicate = async (file: File) => {
-    const isValidPDF = await isValidPdfFile(file)
-    if (!isValidPDF) {
-      toast({
-        title: "Invalid PDF file",
-        description: "Error while uploading the PDF file.",
-        variant: "destructive",
-      })
-      return {valid: false}
-    }
-
-    if (!isValidFileSize(file)) {
-      toast({
-        title: "File too large",
-        description: "Please upload a PDF smaller than 50MB.",
-        variant: "destructive",
-      })
-      return {valid: false}
-    }
-
-    const fileHash = await computeFileHash(file)
-    const existingDocResult = await documentService.getDocumentByHash(fileHash)
-
-    if (!existingDocResult.success) {
-      toast({
-        title: "Document error",
-        description: "An error occurred while checking for existing documents",
-        variant: "destructive",
-      })
-      return {valid: false}
-    }
-
-    const existingDoc = existingDocResult.data
-    if (existingDoc) {
-      return {valid: true, isDuplicate: true, existingDoc, fileHash}
-    }
-
-    return {valid: true, isDuplicate: false}
-  }
-
-  const uploadFile = async (file: File) => {
-    setUploading(true)
-
-    try {
-      const {document, version} = await uploadNewFile(file)
-
-      await addDocument({document, version}).unwrap()
-
-      toast({
-        title: "Upload successful",
-        description: `${document.name} has been uploaded successfully.`,
-      })
-
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ""
-      }
-
-      router.push(`/editor/${document.id}`)
-    } catch (error) {
-      console.error("Upload error:", error)
-
-      // Check if it's a database error
-      if (error instanceof Error && error.message.includes("database")) {
+  // Memoize handlers to prevent unnecessary re-renders
+  const validateAndCheckDuplicate = React.useCallback(
+    async (file: File) => {
+      const isValidPDF = await isValidPdfFile(file)
+      if (!isValidPDF) {
         toast({
-          title: "Database Error",
-          description: "There was a database error. Please refresh the page and try again.",
+          title: "Invalid PDF file",
+          description: "Error while uploading the PDF file.",
           variant: "destructive",
         })
-      } else {
+        return {valid: false}
+      }
+
+      if (!isValidFileSize(file)) {
         toast({
-          title: "Upload failed",
-          description: "There was an error uploading your file",
+          title: "File too large",
+          description: "Please upload a PDF smaller than 50MB.",
           variant: "destructive",
         })
+        return {valid: false}
       }
-    } finally {
-      setUploading(false)
-    }
-  }
 
-  const handleFile = async (file: File) => {
-    const validation = await validateAndCheckDuplicate(file)
+      const fileHash = await computeFileHash(file)
+      const existingDocResult = await documentService.getDocumentByHash(fileHash)
 
-    if (!validation.valid) {
-      return
-    }
+      if (!existingDocResult.success) {
+        toast({
+          title: "Document error",
+          description: "An error occurred while checking for existing documents",
+          variant: "destructive",
+        })
+        return {valid: false}
+      }
 
-    if (validation.isDuplicate) {
-      setDuplicateDialog({
-        open: true,
-        existingDoc: validation.existingDoc!,
-        file,
-        fileHash: validation.fileHash!,
-      })
-      return
-    }
+      const existingDoc = existingDocResult.data
+      if (existingDoc) {
+        return {valid: true, isDuplicate: true, existingDoc, fileHash}
+      }
 
-    await uploadFile(file)
-  }
+      return {valid: true, isDuplicate: false}
+    },
+    [toast],
+  )
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) {
-      return
-    }
-    await handleFile(file)
-  }
+  const uploadFile = React.useCallback(
+    async (file: File) => {
+      setUploading(true)
 
-  const handleDrop = async (e: React.DragEvent) => {
-    const file = e.dataTransfer.files?.[0]
+      try {
+        const {document, version} = await uploadNewFile(file)
 
-    if (!file) {
-      return
-    }
+        await addDocument({document, version}).unwrap()
 
-    await handleFile(file)
-  }
+        toast({
+          title: "Upload successful",
+          description: `${document.name} has been uploaded successfully.`,
+        })
 
-  const handleDuplicateConfirm = async () => {
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ""
+        }
+
+        router.push(`/editor/${document.id}`)
+      } catch (error) {
+        console.error("Upload error:", error)
+
+        // Check if it's a database error
+        if (error instanceof Error && error.message.includes("database")) {
+          toast({
+            title: "Database Error",
+            description: "There was a database error. Please refresh the page and try again.",
+            variant: "destructive",
+          })
+        } else {
+          toast({
+            title: "Upload failed",
+            description: "There was an error uploading your file",
+            variant: "destructive",
+          })
+        }
+      } finally {
+        setUploading(false)
+      }
+    },
+    [addDocument, toast, router],
+  )
+
+  const handleFile = React.useCallback(
+    async (file: File) => {
+      const validation = await validateAndCheckDuplicate(file)
+
+      if (!validation.valid) {
+        return
+      }
+
+      if (validation.isDuplicate) {
+        setDuplicateDialog({
+          open: true,
+          existingDoc: validation.existingDoc!,
+          file,
+          fileHash: validation.fileHash!,
+        })
+        return
+      }
+
+      await uploadFile(file)
+    },
+    [validateAndCheckDuplicate, uploadFile],
+  )
+
+  const handleFileSelect = React.useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0]
+      if (!file) {
+        return
+      }
+      await handleFile(file)
+    },
+    [handleFile],
+  )
+
+  const handleDrop = React.useCallback(
+    async (e: React.DragEvent) => {
+      const file = e.dataTransfer.files?.[0]
+
+      if (!file) {
+        return
+      }
+
+      await handleFile(file)
+    },
+    [handleFile],
+  )
+
+  const handleDuplicateConfirm = React.useCallback(async () => {
     if (duplicateDialog.file) {
       await uploadFile(duplicateDialog.file)
     }
 
     setDuplicateDialog(initialDuplicateDialogState)
-  }
+  }, [duplicateDialog.file, uploadFile])
 
-  const handleDuplicateCancel = () => {
+  const handleDuplicateCancel = React.useCallback(() => {
     setDuplicateDialog(initialDuplicateDialogState)
 
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
-  }
+  }, [])
+
+  const handleFileInputClick = React.useCallback(() => {
+    if (!uploading && fileInputRef.current) {
+      fileInputRef.current.click()
+    }
+  }, [uploading])
 
   if (variant === "dropzone") {
     return (
@@ -188,7 +210,7 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
         <Draggable
           setIsDragging={setIsDragging}
           onDrop={handleDrop}
-          onClick={() => !uploading && fileInputRef.current?.click()}
+          onClick={handleFileInputClick}
           className={cn(
             "flex min-h-[70vh] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed transition-all",
             isDragging
@@ -237,7 +259,7 @@ export function FileUpload({variant = "button"}: FileUploadProps) {
         disabled={uploading}
       />
       <Button
-        onClick={() => fileInputRef.current?.click()}
+        onClick={handleFileInputClick}
         disabled={uploading}
         size="lg"
         className={cn(isDragging && "ring-2 ring-primary ring-offset-2")}

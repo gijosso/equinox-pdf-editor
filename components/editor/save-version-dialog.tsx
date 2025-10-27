@@ -8,6 +8,7 @@ import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} fro
 import {Label} from "@/components/ui/label"
 import {Textarea} from "@/components/ui/textarea"
 import {useToast} from "@/hooks/use-toast"
+import {versionManager} from "@/lib/services/version-manager"
 import {store} from "@/lib/store"
 import {
   useGetAnnotationsByVersionQuery,
@@ -15,7 +16,6 @@ import {
   useHasEditsQuery,
   useSaveDocumentEditorMutation,
 } from "@/lib/store/api"
-import {versionManager} from "@/lib/utils/version-manager"
 
 interface SaveVersionDialogProps {
   open: boolean
@@ -41,7 +41,7 @@ export function SaveVersionDialog({open, onOpenChange, onVersionSaved, documentI
   const [isLoading, setIsLoading] = React.useState(false)
   const {toast} = useToast()
 
-  const handleSave = async () => {
+  const handleSave = React.useCallback(async () => {
     if (!documentId || !message.trim()) {
       return
     }
@@ -132,7 +132,7 @@ export function SaveVersionDialog({open, onOpenChange, onVersionSaved, documentI
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [documentId, message, hasEdits, annotations, editor, saveDocumentEditor, toast, onOpenChange, onVersionSaved])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -27,33 +27,34 @@ export function EditorPage({documentId}: EditorPageProps) {
   const {data: document, isLoading, error} = useGetDocumentQuery(documentId, {skip: !documentId})
   const {data: editor} = useGetDocumentEditorQuery(documentId, {skip: !documentId})
 
-  React.useEffect(() => {
-    // Initialize editor state when document is loaded
-    if (document && !editor) {
-      const initialEditor = {
-        documentId,
-        currentVersionId: document.currentVersionId,
-        isEditing: false,
-        selectedAnnotations: [],
-        viewport: {x: 0, y: 0, zoom: 1},
-        activeTool: {type: "select" as const},
-        sidebarOpen: true,
-        currentPage: 1,
-        totalPages: 1,
-        searchQuery: "",
-        searchResults: [],
-        currentSearchIndex: 0,
-        history: [],
-        historyIndex: 0,
-        isDiffMode: false,
-        compareVersionIds: [],
-        annotationsViewMode: "all" as const,
-      }
+  const initialEditor = React.useMemo(
+    () => ({
+      documentId,
+      currentVersionId: document?.currentVersionId || null,
+      isEditing: false,
+      selectedAnnotations: [],
+      viewport: {x: 0, y: 0, zoom: 1},
+      activeTool: {type: "select" as const},
+      sidebarOpen: true,
+      currentPage: 1,
+      totalPages: 1,
+      searchQuery: "",
+      searchResults: [],
+      currentSearchIndex: 0,
+      history: [],
+      historyIndex: 0,
+      isDiffMode: false,
+      compareVersionIds: [],
+      annotationsViewMode: "all" as const,
+    }),
+    [documentId, document?.currentVersionId],
+  )
 
+  React.useEffect(() => {
+    if (document && !editor) {
       saveDocumentEditor({documentId, editor: initialEditor})
     }
 
-    // Update current version when document metadata changes
     if (document && editor && editor.currentVersionId !== document.currentVersionId) {
       const updatedEditor = {
         ...editor,
@@ -61,7 +62,7 @@ export function EditorPage({documentId}: EditorPageProps) {
       }
       saveDocumentEditor({documentId, editor: updatedEditor})
     }
-  }, [documentId, document, editor, saveDocumentEditor])
+  }, [documentId, document, editor, saveDocumentEditor, initialEditor])
 
   if (isLoading) {
     return (
@@ -96,11 +97,20 @@ interface EditorProps {
 }
 
 export function Editor({documentId}: EditorProps) {
-  const {data: editor} = useGetDocumentEditorQuery(documentId, {
-    skip: !documentId,
-  })
-
+  const {data: editor} = useGetDocumentEditorQuery(documentId, {skip: !documentId})
   const sidebarOpen = editor?.sidebarOpen || false
+  const sidebarClasses = React.useMemo(
+    () =>
+      `h-full border-l border-border bg-card transition-all duration-300 ease-in-out ${
+        sidebarOpen ? "w-80" : "w-0"
+      } overflow-hidden shrink-0`,
+    [sidebarOpen],
+  )
+
+  const sidebarContentClasses = React.useMemo(
+    () => `h-full w-80 transition-opacity duration-200 ${sidebarOpen ? "opacity-100" : "opacity-0"}`,
+    [sidebarOpen],
+  )
 
   return (
     <div className="flex h-screen flex-col bg-background">
@@ -118,12 +128,8 @@ export function Editor({documentId}: EditorProps) {
             </div>
           )}
         </div>
-        <div
-          className={`h-full border-l border-border bg-card transition-all duration-300 ease-in-out ${
-            sidebarOpen ? "w-80" : "w-0"
-          } overflow-hidden shrink-0`}
-        >
-          <div className={`h-full w-80 transition-opacity duration-200 ${sidebarOpen ? "opacity-100" : "opacity-0"}`}>
+        <div className={sidebarClasses}>
+          <div className={sidebarContentClasses}>
             <Sidebar documentId={documentId} />
           </div>
         </div>

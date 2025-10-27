@@ -30,20 +30,40 @@ const AnnotationItem = React.memo(
     const {setCurrentPage, editor} = useEditorActions(documentId)
     const isDiffMode = editor?.isDiffMode || false
 
-    const handleSetCurrentPage = async (pageNumber: number) => {
-      await setCurrentPage(pageNumber)
-    }
+    // Memoize handlers to prevent unnecessary re-renders
+    const handleSetCurrentPage = React.useCallback(
+      async (pageNumber: number) => {
+        await setCurrentPage(pageNumber)
+      },
+      [setCurrentPage],
+    )
 
-    const handleDelete = async () => {
+    const handleDelete = React.useCallback(async () => {
       try {
         await deleteAnnotation({id: annotation.id, versionId}).unwrap()
       } catch (error) {
         console.error("Failed to delete annotation:", error)
       }
-    }
+    }, [deleteAnnotation, annotation.id, versionId])
 
-    const annotationConfig = ANNOTATIONS_CONFIGS[annotation.type]
-    const isLocked = isAnnotationLocked(annotation) || isDiffMode
+    const annotationConfig = React.useMemo(() => ANNOTATIONS_CONFIGS[annotation.type], [annotation.type])
+    const isLocked = React.useMemo(() => isAnnotationLocked(annotation) || isDiffMode, [annotation, isDiffMode])
+
+    const formattedDate = React.useMemo(() => {
+      const isUpdated = annotation.updatedAt !== annotation.createdAt
+      const dateToFormat = isUpdated ? annotation.updatedAt : annotation.createdAt
+      const isToday = new Date(dateToFormat).toDateString() === new Date().toDateString()
+
+      return {
+        isUpdated,
+        formatted: formatDate(
+          dateToFormat,
+          isToday
+            ? {hour: "2-digit", minute: "2-digit"}
+            : {weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"},
+        ),
+      }
+    }, [annotation.updatedAt, annotation.createdAt])
 
     return (
       <div className={`rounded-lg border border-border p-3 h-24 ${isLocked ? "bg-muted opacity-75" : "bg-background"}`}>
@@ -66,26 +86,10 @@ const AnnotationItem = React.memo(
                 </div>
               </div>
               <div className="text-xs text-muted-foreground">
-                {annotation.updatedAt !== annotation.createdAt ? (
-                  <div>
-                    Updated:{" "}
-                    {formatDate(
-                      annotation.updatedAt,
-                      new Date(annotation.updatedAt).toDateString() === new Date().toDateString()
-                        ? {hour: "2-digit", minute: "2-digit"}
-                        : {weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"},
-                    )}
-                  </div>
+                {formattedDate.isUpdated ? (
+                  <div>Updated: {formattedDate.formatted}</div>
                 ) : (
-                  <div>
-                    Created:{" "}
-                    {formatDate(
-                      annotation.createdAt,
-                      new Date(annotation.createdAt).toDateString() === new Date().toDateString()
-                        ? {hour: "2-digit", minute: "2-digit"}
-                        : {weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"},
-                    )}
-                  </div>
+                  <div>Created: {formattedDate.formatted}</div>
                 )}
               </div>
             </div>
@@ -129,9 +133,24 @@ export function SidebarAnnotations({documentId}: SidebarAnnotationsProps) {
   const viewMode = editor?.annotationsViewMode || "all"
   const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(new Set())
 
-  const handleViewModeChange = async (newViewMode: "all" | "grouped") => {
-    await setAnnotationsViewMode(newViewMode)
-  }
+  const handleViewModeChange = React.useCallback(
+    async (newViewMode: "all" | "grouped") => {
+      await setAnnotationsViewMode(newViewMode)
+    },
+    [setAnnotationsViewMode],
+  )
+
+  const toggleGroup = React.useCallback((type: AnnotationType) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev)
+      if (next.has(type)) {
+        next.delete(type)
+      } else {
+        next.add(type)
+      }
+      return next
+    })
+  }, [])
 
   // Sort annotations: unlocked first (by createdAt), then locked (by createdAt)
   const sortedAnnotations = React.useMemo(() => {
@@ -164,18 +183,6 @@ export function SidebarAnnotations({documentId}: SidebarAnnotationsProps) {
 
     return groups
   }, [sortedAnnotations])
-
-  const toggleGroup = (type: AnnotationType) => {
-    setCollapsedGroups(prev => {
-      const next = new Set(prev)
-      if (next.has(type)) {
-        next.delete(type)
-      } else {
-        next.add(type)
-      }
-      return next
-    })
-  }
 
   if (isLoading) {
     return (
@@ -276,7 +283,7 @@ export function SidebarAnnotations({documentId}: SidebarAnnotationsProps) {
                       {typeAnnotations.map(annotation => (
                         <AnnotationItem
                           key={annotation.id}
-                          documentId={documentId || ""}
+                          documentId={documentId}
                           versionId={currentVersionId || ""}
                           annotation={annotation}
                         />

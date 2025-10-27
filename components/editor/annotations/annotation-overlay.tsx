@@ -4,7 +4,7 @@ import React from "react"
 
 import {useGetAnnotationsByVersionQuery, useGetDocumentEditorQuery, useUpdateAnnotationMutation} from "@/lib/store/api"
 import type {Annotation, Edit} from "@/lib/types"
-import {isAnnotationLocked} from "@/lib/utils/annotations"
+import {isAnnotationLocked, pdfToScreenCoordinates, pdfToScreenDimensions} from "@/lib/utils/annotations"
 
 import {AnnotationHighlight} from "./annotation-highlight"
 import {AnnotationNote} from "./annotation-note"
@@ -59,43 +59,47 @@ export function AnnotationOverlay({scale, documentId}: AnnotationOverlayProps) {
     [updateAnnotation, currentVersionId],
   )
 
+  // Memoize coordinate calculations for better performance
+  const annotationComponents = React.useMemo(() => {
+    return pageAnnotations.map(annotation => {
+      // Convert PDF coordinates to screen coordinates
+      const screenCoords = pdfToScreenCoordinates(annotation.x, annotation.y, {scale})
+      const screenDims = pdfToScreenDimensions(annotation.width, annotation.height, {scale})
+
+      const isLocked = isAnnotationLocked(annotation) || editor?.isDiffMode
+
+      const annotationProps = {
+        annotation,
+        x: screenCoords.x,
+        y: screenCoords.y,
+        width: screenDims.width,
+        height: screenDims.height,
+        scale,
+        onUpdate: handleUpdateAnnotation,
+        locked: isLocked,
+        documentId,
+      }
+
+      switch (annotation.type) {
+        case "highlight":
+          return <AnnotationHighlight key={annotation.id} {...annotationProps} />
+        case "note":
+          return <AnnotationNote key={annotation.id} {...annotationProps} />
+        case "redaction":
+          return <AnnotationRedaction key={annotation.id} {...annotationProps} />
+        default:
+          return null
+      }
+    })
+  }, [pageAnnotations, scale, editor?.isDiffMode, handleUpdateAnnotation, documentId])
+
   if (pageAnnotations.length === 0) {
     return null
   }
 
   return (
     <div className="absolute inset-0" style={{zIndex: editor?.activeTool?.type === "select" ? 1 : 10}}>
-      {pageAnnotations.map(annotation => {
-        // Convert PDF coordinates to screen coordinates
-        const screenX = annotation.x * scale
-        const screenY = annotation.y * scale
-        const screenWidth = annotation.width * scale
-        const screenHeight = annotation.height * scale
-
-        const isLocked = isAnnotationLocked(annotation) || editor?.isDiffMode
-        const annotationProps = {
-          annotation,
-          x: screenX,
-          y: screenY,
-          width: screenWidth,
-          height: screenHeight,
-          scale,
-          onUpdate: handleUpdateAnnotation,
-          locked: isLocked,
-          documentId,
-        }
-
-        switch (annotation.type) {
-          case "highlight":
-            return <AnnotationHighlight key={annotation.id} {...annotationProps} />
-          case "note":
-            return <AnnotationNote key={annotation.id} {...annotationProps} />
-          case "redaction":
-            return <AnnotationRedaction key={annotation.id} {...annotationProps} />
-          default:
-            return null
-        }
-      })}
+      {annotationComponents}
     </div>
   )
 }

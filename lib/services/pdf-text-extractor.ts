@@ -1,36 +1,15 @@
 import {diff_match_patch} from "diff-match-patch"
 
-export interface TextSpan {
-  text: string
-  pageNumber: number
-  x: number
-  y: number
-  width: number
-  height: number
-  index: number
-}
+import type {TextDiff, TextDiffResult, TextSpan} from "@/lib/types"
 
-export interface TextDiff {
-  type: "equal" | "delete" | "insert"
-  text: string
-  spans?: TextSpan[]
-}
+export class PDFTextExtractorService {
+  private static instance: PDFTextExtractorService
 
-export interface TextDiffResult {
-  diffs: TextDiff[]
-  totalChanges: number
-  addedText: string
-  removedText: string
-}
-
-export class PDFTextExtractor {
-  private static instance: PDFTextExtractor
-
-  static getInstance(): PDFTextExtractor {
-    if (!PDFTextExtractor.instance) {
-      PDFTextExtractor.instance = new PDFTextExtractor()
+  static getInstance(): PDFTextExtractorService {
+    if (!PDFTextExtractorService.instance) {
+      PDFTextExtractorService.instance = new PDFTextExtractorService()
     }
-    return PDFTextExtractor.instance
+    return PDFTextExtractorService.instance
   }
 
   async extractTextFromPDF(pdfBlob: Blob): Promise<TextSpan[]> {
@@ -255,4 +234,4 @@ export class PDFTextExtractor {
   }
 }
 
-export const pdfTextExtractor = PDFTextExtractor.getInstance()
+export const pdfTextExtractorService = PDFTextExtractorService.getInstance()

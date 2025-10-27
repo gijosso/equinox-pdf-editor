@@ -1,6 +1,7 @@
 "use client"
 
 import {Highlighter, MousePointer, Square, StickyNote, ZoomIn, ZoomOut} from "lucide-react"
+import React from "react"
 
 import {Button} from "@/components/ui/button"
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip"
@@ -26,31 +27,42 @@ interface ToolbarProps {
 export function Toolbar({documentId}: ToolbarProps) {
   const {editor, setActiveTool, setViewport} = useEditorActions(documentId)
   const {data: document} = useGetDocumentQuery(documentId, {skip: !documentId})
+  const toolConfigs = React.useMemo(() => Object.values(EDITOR_TOOL_CONFIGS), [])
+  const isViewingHistoricalVersion = React.useMemo(
+    () => Boolean(editor && document && editor.currentVersionId !== document.latestVersionId),
+    [editor, document],
+  )
+  const isDiffMode = React.useMemo(() => editor?.isDiffMode || false, [editor?.isDiffMode])
+  const isReadOnly = React.useMemo(
+    () => isViewingHistoricalVersion || isDiffMode,
+    [isViewingHistoricalVersion, isDiffMode],
+  )
+
+  // Memoize handlers to prevent unnecessary re-renders
+  const handleToolChange = React.useCallback(
+    async (toolType: EditorToolType) => {
+      await setActiveTool({type: toolType})
+    },
+    [setActiveTool],
+  )
 
   const activeTool = editor?.activeTool || {type: "select"}
   const viewport = editor?.viewport || {x: 0, y: 0, zoom: 1}
+  const zoomPercentage = React.useMemo(() => Math.round(viewport.zoom * 100), [viewport.zoom])
 
-  const isViewingHistoricalVersion = Boolean(editor && document && editor.currentVersionId !== document.latestVersionId)
-  const isDiffMode = editor?.isDiffMode || false
-  const isReadOnly = isViewingHistoricalVersion || isDiffMode
-
-  const handleToolChange = async (toolType: EditorToolType) => {
-    await setActiveTool({type: toolType})
-  }
-
-  const handleZoomIn = async () => {
+  const handleZoomIn = React.useCallback(async () => {
     await setViewport({
       ...viewport,
       zoom: viewport.zoom + 0.1,
     })
-  }
+  }, [setViewport, viewport])
 
-  const handleZoomOut = async () => {
+  const handleZoomOut = React.useCallback(async () => {
     await setViewport({
       ...viewport,
       zoom: Math.max(0.1, viewport.zoom - 0.1),
     })
-  }
+  }, [setViewport, viewport])
 
   return (
     <TooltipProvider>
@@ -58,7 +70,7 @@ export function Toolbar({documentId}: ToolbarProps) {
         <ToolbarPage documentId={documentId} />
 
         <div className="flex items-center gap-1">
-          {Object.values(EDITOR_TOOL_CONFIGS).map(tool => (
+          {toolConfigs.map(tool => (
             <Tooltip key={tool.type}>
               <TooltipTrigger asChild>
                 <Button
@@ -85,7 +97,7 @@ export function Toolbar({documentId}: ToolbarProps) {
           <Button variant="ghost" size="sm" onClick={handleZoomOut} disabled={viewport.zoom <= 0.1}>
             <ZoomOut className="h-4 w-4" />
           </Button>
-          <span className="min-w-16 text-center text-sm text-foreground">{Math.round(viewport.zoom * 100)}%</span>
+          <span className="min-w-16 text-center text-sm text-foreground">{zoomPercentage}%</span>
           <Button variant="ghost" size="sm" onClick={handleZoomIn} disabled={viewport.zoom >= 3}>
             <ZoomIn className="h-4 w-4" />
           </Button>

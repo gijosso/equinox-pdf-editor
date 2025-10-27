@@ -38,6 +38,20 @@ export function AnnotationCreator({scale, documentId, children}: AnnotationCreat
   const isAnnotationTool = activeTool.type !== "select"
   const isReadOnly = isDiffMode
 
+  // Memoize cursor and user select styles to avoid recalculation
+  const cursorStyle = React.useMemo(
+    () => getAnnotationCursorStyle(activeTool.type, isCreating, isReadOnly),
+    [activeTool.type, isCreating, isReadOnly],
+  )
+
+  const userSelectStyle = React.useMemo(() => getAnnotationUserSelectStyle(activeTool.type), [activeTool.type])
+
+  // Memoize preview color to avoid recalculation
+  const previewColor = React.useMemo(
+    () => getAnnotationPreviewColor(activeTool.type as AnnotationType),
+    [activeTool.type],
+  )
+
   const handleMouseDown = (event: React.MouseEvent) => {
     if (!isAnnotationTool || isReadOnly) {
       return
@@ -157,10 +171,10 @@ export function AnnotationCreator({scale, documentId, children}: AnnotationCreat
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
       style={{
-        cursor: getAnnotationCursorStyle(activeTool.type, isCreating, isReadOnly),
-        userSelect: getAnnotationUserSelectStyle(activeTool.type),
-        WebkitUserSelect: getAnnotationUserSelectStyle(activeTool.type),
-        MozUserSelect: getAnnotationUserSelectStyle(activeTool.type),
+        cursor: cursorStyle,
+        userSelect: userSelectStyle,
+        WebkitUserSelect: userSelectStyle,
+        MozUserSelect: userSelectStyle,
       }}
     >
       {children}
@@ -172,8 +186,8 @@ export function AnnotationCreator({scale, documentId, children}: AnnotationCreat
             top: previewRect.y,
             width: previewRect.width,
             height: previewRect.height,
-            borderColor: getAnnotationPreviewColor(activeTool.type as AnnotationType),
-            backgroundColor: `${getAnnotationPreviewColor(activeTool.type as AnnotationType)}20`,
+            borderColor: previewColor,
+            backgroundColor: `${previewColor}20`,
           }}
         />
       )}

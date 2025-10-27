@@ -17,6 +17,11 @@ export function SearchHighlightOverlay({scale, documentId}: SearchHighlightOverl
   const currentSearchIndex = editor?.currentSearchIndex || 0
   const currentPage = editor?.currentPage || 1
 
+  const currentPageResults = React.useMemo(
+    () => searchResults.filter(result => result.pageNumber === currentPage),
+    [searchResults, currentPage],
+  )
+
   // TODO: properly wait for text layer rendering
   React.useEffect(() => {
     const waitForTextLayer = (): Promise<HTMLElement> => {
@@ -38,8 +43,6 @@ export function SearchHighlightOverlay({scale, documentId}: SearchHighlightOverl
       try {
         const textLayer = await waitForTextLayer()
         textLayer.querySelectorAll(".search-highlight").forEach(el => el.remove())
-
-        const currentPageResults = searchResults.filter(result => result.pageNumber === currentPage)
 
         currentPageResults.forEach(result => {
           const highlight = document.createElement("div")
@@ -71,7 +74,7 @@ export function SearchHighlightOverlay({scale, documentId}: SearchHighlightOverl
         textLayer.querySelectorAll(".search-highlight").forEach(el => el.remove())
       }
     }
-  }, [searchResults, currentPage, currentSearchIndex, scale])
+  }, [currentPageResults, currentSearchIndex, scale])
 
   return null
 }

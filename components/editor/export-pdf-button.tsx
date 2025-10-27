@@ -1,6 +1,7 @@
 "use client"
 
 import {Download} from "lucide-react"
+import React from "react"
 
 import {Button} from "@/components/ui/button"
 import {useToast} from "@/hooks/use-toast"
@@ -15,7 +16,7 @@ export function ExportPDFButton({documentId, versionId}: ExportPDFButtonProps) {
   const [exportPDF, {isLoading}] = useExportPDFMutation()
   const {toast} = useToast()
 
-  const handleExport = async () => {
+  const handleExport = React.useCallback(async () => {
     try {
       const result = await exportPDF({
         documentId,
@@ -47,7 +48,7 @@ export function ExportPDFButton({documentId, versionId}: ExportPDFButtonProps) {
         variant: "destructive",
       })
     }
-  }
+  }, [exportPDF, documentId, versionId, toast])
 
   return (
     <Button onClick={handleExport} disabled={isLoading} variant="outline" size="sm" className="gap-2">

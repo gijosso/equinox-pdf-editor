@@ -19,33 +19,46 @@ interface EditorHeaderProps {
 export function EditorHeader({documentId}: EditorHeaderProps) {
   const router = useRouter()
   const {editor, setSidebarOpen} = useEditorActions(documentId)
+  const [showSaveDialog, setShowSaveDialog] = React.useState(false)
+  const [showHistoryDialog, setShowHistoryDialog] = React.useState(false)
   const currentVersionId = editor?.currentVersionId || null
   const sidebarOpen = editor?.sidebarOpen || false
 
   const {data: document} = useGetDocumentQuery(documentId, {skip: !documentId})
-  const {data: hasEdits = false} = useHasEditsQuery(currentVersionId || "", {
-    skip: !currentVersionId,
-  })
+  const {data: hasEdits = false} = useHasEditsQuery(currentVersionId || "", {skip: !currentVersionId})
   const {data: versions = []} = useGetVersionsByDocumentQuery(documentId, {skip: !documentId})
   const {refreshBlob} = usePDFBlob(documentId)
+  const currentVersion = React.useMemo(
+    () => versions.find(v => v.id === document?.currentVersionId),
+    [versions, document?.currentVersionId],
+  )
+  const versionNumber = React.useMemo(() => currentVersion?.versionNumber, [currentVersion?.versionNumber])
+  const isViewingHistoricalVersion = React.useMemo(
+    () => Boolean(editor && document && editor.currentVersionId !== document.latestVersionId),
+    [editor, document],
+  )
 
-  // Find current version number
-  const currentVersion = versions.find(v => v.id === document?.currentVersionId)
-  const versionNumber = currentVersion?.versionNumber
-
-  const isViewingHistoricalVersion = Boolean(editor && document && editor.currentVersionId !== document.latestVersionId)
-  const [showSaveDialog, setShowSaveDialog] = React.useState(false)
-  const [showHistoryDialog, setShowHistoryDialog] = React.useState(false)
-
-  const handleToggleSidebar = async () => {
+  const handleToggleSidebar = React.useCallback(async () => {
     await setSidebarOpen(!sidebarOpen)
-  }
+  }, [setSidebarOpen, sidebarOpen])
+
+  const handleGoBack = React.useCallback(() => {
+    router.push("/")
+  }, [router])
+
+  const handleShowHistory = React.useCallback(() => {
+    setShowHistoryDialog(true)
+  }, [])
+
+  const handleShowSave = React.useCallback(() => {
+    setShowSaveDialog(true)
+  }, [])
 
   return (
     <>
       <header className="flex items-center justify-between border-b border-border bg-card px-4 py-3">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/")}>
+          <Button variant="ghost" size="icon" onClick={handleGoBack}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-2">
@@ -61,7 +74,7 @@ export function EditorHeader({documentId}: EditorHeaderProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowHistoryDialog(true)}>
+          <Button variant="outline" size="sm" onClick={handleShowHistory}>
             <History className="mr-2 h-4 w-4" />
             History
           </Button>
@@ -69,7 +82,7 @@ export function EditorHeader({documentId}: EditorHeaderProps) {
           <Button
             variant="default"
             size="sm"
-            onClick={() => setShowSaveDialog(true)}
+            onClick={handleShowSave}
             disabled={!hasEdits || isViewingHistoricalVersion}
           >
             <Save className="mr-2 h-4 w-4" />

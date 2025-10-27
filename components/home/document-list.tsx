@@ -38,11 +38,18 @@ export const DocumentList = () => {
     [deleteDocument, toast],
   )
 
+  const handleDocumentClick = React.useCallback(
+    (documentId: string) => {
+      router.push(`/editor/${documentId}`)
+    },
+    [router],
+  )
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {documents.map(doc => (
         <Card key={doc.id} className="group relative overflow-hidden transition-colors hover:bg-accent/50">
-          <button onClick={() => router.push(`/editor/${doc.id}`)} className="flex w-full flex-col gap-4 p-6 text-left">
+          <button onClick={() => handleDocumentClick(doc.id)} className="flex w-full flex-col gap-4 p-6 text-left">
             <div className="flex items-start gap-3">
               {doc.thumbnail ? (
                 <div className="relative h-16 w-12 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">

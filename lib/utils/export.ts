@@ -121,9 +121,6 @@ function drawAnnotationsSummary(
   return currentY
 }
 
-/**
- * Calculates the height needed for annotations summary
- */
 function calculateAnnotationsHeight(annotations: Annotation[]): number {
   if (annotations.length === 0) {
     return 10 // Height for "No annotations" message

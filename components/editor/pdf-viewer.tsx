@@ -48,9 +48,9 @@ export function PDFViewer({documentId}: PDFViewerProps) {
   const [annotationDiffs, setAnnotationDiffs] = React.useState<AnnotationDiff[]>([])
 
   // Get versions for diff comparison
-  const {data: versions = []} = useGetVersionsByDocumentQuery(documentId, {
-    skip: !documentId || !isDiffMode,
-  })
+  const {data: versions = []} = useGetVersionsByDocumentQuery(documentId, {skip: !documentId || !isDiffMode})
+  const version1 = React.useMemo(() => versions.find(v => v.id === compareVersionIds[0]), [versions, compareVersionIds])
+  const version2 = React.useMemo(() => versions.find(v => v.id === compareVersionIds[1]), [versions, compareVersionIds])
 
   // Track the last processed version comparison to avoid infinite re-renders
   const lastProcessedComparison = React.useRef<string | null>(null)
@@ -70,9 +70,6 @@ export function PDFViewer({documentId}: PDFViewerProps) {
     if (lastProcessedComparison.current === comparisonKey) {
       return
     }
-
-    const version1 = versions.find(v => v.id === compareVersionIds[0])
-    const version2 = versions.find(v => v.id === compareVersionIds[1])
 
     if (!version1 || !version2) {
       setTextDiffs([])
@@ -139,7 +136,7 @@ export function PDFViewer({documentId}: PDFViewerProps) {
     }
 
     calculateDiffs()
-  }, [isDiffMode, compareVersionIds[0], compareVersionIds[1]])
+  }, [isDiffMode, compareVersionIds, version1, version2])
 
   const onDocumentLoadSuccess = React.useCallback(
     ({numPages}: {numPages: number}) => {
@@ -193,10 +190,6 @@ export function PDFViewer({documentId}: PDFViewerProps) {
       </div>
     )
   }
-
-  // Get version numbers for comparison bar
-  const version1 = versions.find(v => v.id === compareVersionIds[0])
-  const version2 = versions.find(v => v.id === compareVersionIds[1])
 
   return (
     <>

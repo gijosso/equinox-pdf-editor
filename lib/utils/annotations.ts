@@ -132,9 +132,7 @@ export function isAnnotationLocked(annotation: Annotation): boolean {
   return !!annotation.committedVersionId
 }
 
-// Helper function to check if annotations are functionally different
 export function areAnnotationsDifferent(ann1: Annotation, ann2: Annotation) {
-  // Compare only the relevant properties that matter for display
   return (
     ann1.x !== ann2.x ||
     ann1.y !== ann2.y ||
@@ -276,7 +274,15 @@ export interface AnnotationStyleConfig {
   boxShadow?: string
 }
 
+const styleConfigCache = new Map<string, AnnotationStyleConfig>()
+
 export function getAnnotationStyleConfig(type: AnnotationType, locked: boolean = false): AnnotationStyleConfig {
+  const cacheKey = `${type}-${locked}`
+
+  if (styleConfigCache.has(cacheKey)) {
+    return styleConfigCache.get(cacheKey)!
+  }
+
   const baseConfig = {
     highlight: {
       color: "#ffeb3b",
@@ -296,7 +302,9 @@ export function getAnnotationStyleConfig(type: AnnotationType, locked: boolean =
     },
   }
 
-  return baseConfig[type]
+  const config = baseConfig[type]
+  styleConfigCache.set(cacheKey, config)
+  return config
 }
 
 export function getAnnotationPreviewColor(type: AnnotationType): string {
