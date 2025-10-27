@@ -12,13 +12,49 @@
   user-select: none !important;
 }
 
-/* Explicitly enable text selection for select tool */
+/* Explicitly enable text selection for select tool and text edit tool */
 .allow-text-selection,
 .allow-text-selection * {
   -webkit-user-select: auto !important;
   -moz-user-select: auto !important;
   -ms-user-select: auto !important;
   user-select: auto !important;
+}
+
+/* Text editing mode styles */
+.text-edit-mode {
+  cursor: text !important;
+}
+
+.text-edit-mode .react-pdf__Page__textContent span {
+  cursor: text !important;
+}
+
+.text-edit-mode .react-pdf__Page__textContent span:hover {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+  border-radius: 2px;
+}
+
+/* Inline text editor */
+.text-inline-editor {
+  font-family: inherit !important;
+  border: 2px solid #3b82f6 !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  border-radius: 2px !important;
+}
+
+/* Text edit display overlays */
+.text-edited {
+  background-color: rgba(34, 197, 94, 0.2) !important;
+  border: 1px solid rgba(34, 197, 94, 0.5) !important;
+  border-radius: 2px !important;
+  transition: all 0.2s ease-in-out;
+}
+
+.text-edited:hover {
+  background-color: rgba(34, 197, 94, 0.3) !important;
+  border-color: rgba(34, 197, 94, 0.7) !important;
 }
 
 :root {

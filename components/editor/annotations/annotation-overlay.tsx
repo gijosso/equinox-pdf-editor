@@ -21,6 +21,10 @@ export function AnnotationOverlay({scale, documentId}: AnnotationOverlayProps) {
   const {data: editor} = useGetDocumentEditorQuery(documentId, {skip: !documentId})
   const currentVersionId = editor?.currentVersionId || null
   const currentPage = editor?.currentPage || 1
+  const isDiffMode = editor?.isDiffMode || false
+  const isTextEditMode = editor?.activeTool?.type === "text_edit"
+  const isSelectMode = editor?.activeTool?.type === "select"
+  const isReadOnly = isDiffMode || isTextEditMode || isSelectMode
   const [updateAnnotation] = useUpdateAnnotationMutation()
 
   const {data: annotations = []} = useGetAnnotationsByVersionQuery(currentVersionId || "", {
@@ -66,7 +70,7 @@ export function AnnotationOverlay({scale, documentId}: AnnotationOverlayProps) {
       const screenCoords = pdfToScreenCoordinates(annotation.x, annotation.y, {scale})
       const screenDims = pdfToScreenDimensions(annotation.width, annotation.height, {scale})
 
-      const isLocked = isAnnotationLocked(annotation) || editor?.isDiffMode
+      const isLocked = isAnnotationLocked(annotation) || isReadOnly
 
       const annotationProps = {
         annotation,
@@ -91,14 +95,14 @@ export function AnnotationOverlay({scale, documentId}: AnnotationOverlayProps) {
           return null
       }
     })
-  }, [pageAnnotations, scale, editor?.isDiffMode, handleUpdateAnnotation, documentId])
+  }, [pageAnnotations, scale, isReadOnly, handleUpdateAnnotation, documentId])
 
   if (pageAnnotations.length === 0) {
     return null
   }
 
   return (
-    <div className="absolute inset-0" style={{zIndex: editor?.activeTool?.type === "select" ? 1 : 10}}>
+    <div className="absolute inset-0" style={{zIndex: isReadOnly ? 1 : 10}}>
       {annotationComponents}
     </div>
   )

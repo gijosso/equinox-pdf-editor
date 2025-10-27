@@ -30,13 +30,15 @@ export function AnnotationCreator({scale, documentId, children}: AnnotationCreat
   const currentPage = editor?.currentPage || 1
   const currentVersionId = editor?.currentVersionId || null
   const isDiffMode = editor?.isDiffMode || false
+  const isTextEditMode = activeTool.type === "text_edit"
+  const isSelectMode = activeTool.type === "select"
   const [addAnnotation] = useAddAnnotationMutation()
   const [isCreating, setIsCreating] = React.useState(false)
   const [startPos, setStartPos] = React.useState<{x: number; y: number} | null>(null)
   const [currentPos, setCurrentPos] = React.useState<{x: number; y: number} | null>(null)
 
   const isAnnotationTool = activeTool.type !== "select" && activeTool.type !== "text_edit"
-  const isReadOnly = isDiffMode
+  const isReadOnly = isDiffMode || isTextEditMode || isSelectMode
 
   // Memoize cursor and user select styles to avoid recalculation
   const cursorStyle = React.useMemo(

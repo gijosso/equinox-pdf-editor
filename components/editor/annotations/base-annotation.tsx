@@ -38,7 +38,10 @@ export function BaseAnnotation({
   documentId,
 }: BaseAnnotationProps) {
   const {editor} = useEditorActions(documentId)
-  const isSelectToolActive = editor?.activeTool?.type === "select"
+  const isDiffMode = editor?.isDiffMode || false
+  const isTextEditMode = editor?.activeTool?.type === "text_edit"
+  const isSelectMode = editor?.activeTool?.type === "select"
+  const isReadOnly = isDiffMode || isTextEditMode || isSelectMode
 
   const handleDragStop = (e: any, d: any) => {
     // Don't allow dragging locked annotations
@@ -91,9 +94,9 @@ export function BaseAnnotation({
       minWidth={10}
       minHeight={10}
       bounds="parent"
-      disableDragging={locked || isSelectToolActive} // Disable dragging for locked annotations or when select tool is active
+      disableDragging={locked || isReadOnly} // Disable dragging for locked annotations or when select tool is active
       enableResizing={
-        locked || isSelectToolActive
+        locked || isReadOnly
           ? false
           : {
               // Disable resizing for locked annotations or when select tool is active
@@ -110,12 +113,12 @@ export function BaseAnnotation({
       className={
         locked
           ? "opacity-50 cursor-not-allowed pointer-events-none"
-          : isSelectToolActive
+          : isReadOnly
             ? "pointer-events-none" // Make transparent to mouse events when select tool is active
             : "group hover:cursor-grab active:cursor-grabbing z-20 hover:shadow-md transition-shadow"
       } // Visual indication for locked annotations
       style={{
-        zIndex: isSelectToolActive ? 1 : 20, // Lower z-index when select tool is active
+        zIndex: isReadOnly ? 1 : 20, // Lower z-index when select tool is active
       }}
       data-annotation={annotation.id}
     >
