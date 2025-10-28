@@ -63,7 +63,7 @@ export function SidebarEditHistory({documentId}: SidebarEditHistoryProps) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center border-b border-border h-18 p-4">
-        <p className="text-sm text-muted-foreground">{edits.length} edits</p>
+        <p className="text-sm text-muted-foreground">{edits.length} total</p>
       </div>
       <ScrollArea ref={scrollAreaRef} className="flex-1 overflow-auto bg-muted">
         {edits.length === 0 ? (

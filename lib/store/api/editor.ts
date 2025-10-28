@@ -99,6 +99,9 @@ export const useEditorActions = (documentId: string) => {
     setAnnotationsViewMode: (mode: DocumentEditor["annotationsViewMode"]) =>
       updateEditor({annotationsViewMode: mode}, "Failed to update view mode"),
 
+    setTextEditsViewMode: (mode: DocumentEditor["textEditsViewMode"]) =>
+      updateEditor({textEditsViewMode: mode}, "Failed to update text edits view mode"),
+
     setSearchQuery: (query: string) => updateEditor({searchQuery: query}, "Failed to update search query"),
 
     setSearchResults: (results: DocumentEditor["searchResults"], index: number = 0) =>

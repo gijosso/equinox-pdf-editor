@@ -125,6 +125,7 @@ export interface DocumentEditor {
 
   // Sidebar state
   annotationsViewMode: "all" | "grouped"
+  textEditsViewMode: "all" | "grouped"
 }
 
 export interface VersionEditor {
@@ -160,6 +161,7 @@ export interface EditorRecord {
   isDiffMode: boolean
   compareVersionIds: string[]
   annotationsViewMode: "all" | "grouped"
+  textEditsViewMode: "all" | "grouped"
   createdAt: string
   updatedAt: string
 }

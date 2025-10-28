@@ -30,6 +30,21 @@ export const LazyEditHistory = dynamic(
   },
 )
 
+export const LazyTextEdits = dynamic(
+  () => import("./editor/sidebar/sidebar-text-edits").then(mod => ({default: mod.SidebarTextEdits})),
+  {
+    loading: () => (
+      <div className="flex h-full items-center justify-center p-4">
+        <div className="text-center">
+          <div className="mb-2 h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto"></div>
+          <p className="text-sm text-muted-foreground">Loading text edits...</p>
+        </div>
+      </div>
+    ),
+    ssr: false,
+  },
+)
+
 export const LazySearchHighlights = dynamic(
   () => import("./editor/search-highlights").then(mod => ({default: mod.SearchHighlightOverlay})),
   {
