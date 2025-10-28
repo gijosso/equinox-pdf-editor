@@ -3,9 +3,9 @@
 import {ArrowRight} from "lucide-react"
 import React from "react"
 
-import type {AnnotationDiff, TextDiff, TextSpan} from "@/lib/types"
+import type {Annotation, AnnotationDiff, TextDiff, TextSpan} from "@/lib/types"
 
-type DiffType = "added" | "removed" | "modified"
+type DiffType = "added" | "removed" | "modified" | "untouched"
 
 interface DiffOverlayConfig {
   highlightClasses: string
@@ -33,11 +33,18 @@ const DIFF_OVERLAY_CONFIG: Record<DiffType, DiffOverlayConfig> = {
     iconClasses: "bg-yellow-500",
     icon: "~",
   },
+  untouched: {
+    highlightClasses: "bg-gray-500/30 border-gray-500",
+    outlineClasses: "border-gray-500",
+    iconClasses: "bg-gray-500",
+    icon: "=",
+  },
 } as const
 
 interface DiffOverlayProps {
   textDiffs: TextDiff[]
   annotationDiffs: AnnotationDiff[]
+  untouchedAnnotations: Annotation[]
   pageNumber: number
   scale: number
   viewportWidth: number
@@ -100,9 +107,37 @@ function AnnotationDiffHighlight({annotation, type, scale}: AnnotationDiffHighli
   )
 }
 
+interface UntouchedAnnotationHighlightProps {
+  annotation: Annotation
+  scale: number
+}
+
+function UntouchedAnnotationHighlight({annotation, scale}: UntouchedAnnotationHighlightProps) {
+  const config = DIFF_OVERLAY_CONFIG.untouched
+
+  return (
+    <div
+      className={`absolute pointer-events-none border-2 rounded bg-transparent ${config.outlineClasses}`}
+      style={{
+        left: annotation.x * scale,
+        top: annotation.y * scale,
+        width: annotation.width * scale,
+        height: annotation.height * scale,
+      }}
+    >
+      <div
+        className={`absolute -top-3 -left-3 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm ${config.iconClasses}`}
+      >
+        {config.icon}
+      </div>
+    </div>
+  )
+}
+
 export function DiffOverlay({
   textDiffs,
   annotationDiffs,
+  untouchedAnnotations,
   pageNumber,
   scale,
   viewportWidth,
@@ -111,6 +146,10 @@ export function DiffOverlay({
   const pageAnnotationDiffs = React.useMemo(
     () => annotationDiffs.filter(diff => diff.annotation.pageNumber === pageNumber),
     [annotationDiffs, pageNumber],
+  )
+  const pageUntouchedAnnotations = React.useMemo(
+    () => untouchedAnnotations.filter(annotation => annotation.pageNumber === pageNumber),
+    [untouchedAnnotations, pageNumber],
   )
   const pageTextDiffs = React.useMemo(
     () =>
@@ -121,7 +160,7 @@ export function DiffOverlay({
     [textDiffs, pageNumber],
   )
 
-  if (pageTextDiffs.length === 0 && pageAnnotationDiffs.length === 0) {
+  if (pageTextDiffs.length === 0 && pageAnnotationDiffs.length === 0 && pageUntouchedAnnotations.length === 0) {
     return null
   }
 
@@ -156,6 +195,10 @@ export function DiffOverlay({
           scale={scale}
         />
       ))}
+
+      {pageUntouchedAnnotations.map((annotation, index) => (
+        <UntouchedAnnotationHighlight key={`untouched-${index}`} annotation={annotation} scale={scale} />
+      ))}
     </div>
   )
 }
@@ -178,6 +221,10 @@ export function DiffLegend({className = ""}: DiffLegendProps) {
       <div className="flex items-center gap-1">
         <div className={`w-3 h-3 rounded ${DIFF_OVERLAY_CONFIG.modified.iconClasses}`}></div>
         <span className="text-muted-foreground">Modified</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <div className={`w-3 h-3 rounded ${DIFF_OVERLAY_CONFIG.untouched.iconClasses}`}></div>
+        <span className="text-muted-foreground">Untouched</span>
       </div>
     </div>
   )

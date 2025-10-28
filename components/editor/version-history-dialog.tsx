@@ -186,13 +186,11 @@ export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHi
         {/* Selection summary and compare button */}
         {selectedVersions.length > 0 && (
           <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-            <div className="text-sm text-muted-foreground">
-              {selectedVersions.length === 1
-                ? "Select one more version to compare"
-                : `Selected ${selectedVersions.length} versions for comparison`}
-            </div>
+            {selectedVersions.length === 1 && (
+              <div className="text-sm text-muted-foreground">Select one more version to compare</div>
+            )}
             {selectedVersions.length === 2 && (
-              <Button onClick={handleCompareSelectedVersions} size="sm">
+              <Button onClick={handleCompareSelectedVersions} className="w-full">
                 Compare Selected Versions
               </Button>
             )}

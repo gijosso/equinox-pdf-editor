@@ -16,7 +16,7 @@ import {
   useGetVersionsByDocumentQuery,
   useSaveDocumentEditorMutation,
 } from "@/lib/store/api"
-import type {AnnotationDiff, TextDiff} from "@/lib/types"
+import type {Annotation, AnnotationDiff, TextDiff} from "@/lib/types"
 import {areAnnotationsDifferent} from "@/lib/utils/annotations"
 
 import {Button} from "../ui/button"
@@ -50,6 +50,7 @@ export function PDFViewer({documentId}: PDFViewerProps) {
   const [pageDimensions, setPageDimensions] = React.useState<{width: number; height: number} | null>(null)
   const [textDiffs, setTextDiffs] = React.useState<TextDiff[]>([])
   const [annotationDiffs, setAnnotationDiffs] = React.useState<AnnotationDiff[]>([])
+  const [untouchedAnnotations, setUntouchedAnnotations] = React.useState<Annotation[]>([])
 
   // Get versions for diff comparison
   const {data: versions = []} = useGetVersionsByDocumentQuery(documentId, {skip: !documentId || !isDiffMode})
@@ -64,6 +65,7 @@ export function PDFViewer({documentId}: PDFViewerProps) {
     if (!isDiffMode || !compareVersionIds[0] || !compareVersionIds[1]) {
       setTextDiffs([])
       setAnnotationDiffs([])
+      setUntouchedAnnotations([])
       lastProcessedComparison.current = null
       return
     }
@@ -78,6 +80,7 @@ export function PDFViewer({documentId}: PDFViewerProps) {
     if (!version1 || !version2) {
       setTextDiffs([])
       setAnnotationDiffs([])
+      setUntouchedAnnotations([])
       return
     }
 
@@ -95,6 +98,7 @@ export function PDFViewer({documentId}: PDFViewerProps) {
         const annotations2 = annotations2Result.success ? annotations2Result.data : []
 
         const calculatedAnnotationDiffs: AnnotationDiff[] = []
+        const calculatedUntouchedAnnotations: Annotation[] = []
 
         // Find added annotations (new originalIds in version2)
         annotations2.forEach(ann2 => {
@@ -112,6 +116,8 @@ export function PDFViewer({documentId}: PDFViewerProps) {
               annotation: ann2,
               oldAnnotation: found,
             })
+          } else {
+            calculatedUntouchedAnnotations.push(ann2)
           }
         })
 
@@ -128,6 +134,7 @@ export function PDFViewer({documentId}: PDFViewerProps) {
         })
 
         setAnnotationDiffs(calculatedAnnotationDiffs)
+        setUntouchedAnnotations(calculatedUntouchedAnnotations)
 
         // Since we're using annotation-only commits, PDF content is preserved
         // No text diffs needed as the original PDF content remains unchanged
@@ -136,6 +143,7 @@ export function PDFViewer({documentId}: PDFViewerProps) {
         console.error("Error calculating diffs:", error)
         setTextDiffs([])
         setAnnotationDiffs([])
+        setUntouchedAnnotations([])
       }
     }
 
@@ -256,6 +264,7 @@ export function PDFViewer({documentId}: PDFViewerProps) {
                           pageNumber={currentPage}
                           textDiffs={textDiffs}
                           annotationDiffs={annotationDiffs}
+                          untouchedAnnotations={untouchedAnnotations}
                           scale={viewport.zoom}
                           viewportWidth={pageDimensions?.width || 0}
                           viewportHeight={pageDimensions?.height || 0}

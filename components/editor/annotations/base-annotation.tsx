@@ -48,10 +48,12 @@ export function BaseAnnotation({
   const isTextEditMode = editor?.activeTool?.type === "text_edit"
   const isSelectMode = editor?.activeTool?.type === "select"
   const isReadOnly = isDiffMode || isTextEditMode || isSelectMode
+  const [isDeleting, setIsDeleting] = React.useState(false)
 
   const handleDelete = React.useCallback(async () => {
-    if (!editor?.currentVersionId) return
+    if (!editor?.currentVersionId || isDeleting) return
 
+    setIsDeleting(true)
     try {
       await deleteAnnotation({id: annotation.id, versionId: editor.currentVersionId}).unwrap()
       toast({
@@ -67,16 +69,17 @@ export function BaseAnnotation({
         variant: "destructive",
         duration: 3000,
       })
+    } finally {
+      setIsDeleting(false)
     }
-  }, [deleteAnnotation, annotation.id, editor?.currentVersionId, toast])
+  }, [deleteAnnotation, annotation.id, editor?.currentVersionId, toast, isDeleting])
 
   const handleDragStop = (e: any, d: any) => {
-    // Don't allow dragging locked annotations
-    if (locked) {
+    // Don't allow dragging locked annotations or if delete is in progress
+    if (locked || isDeleting) {
       return
     }
 
-    // Convert screen coordinates to PDF coordinates
     const pdfCoords = screenToPdfCoordinates(d.x, d.y, {scale})
 
     const updatedAnnotation = updateAnnotationPosition(annotation, pdfCoords.x, pdfCoords.y, {
@@ -87,12 +90,10 @@ export function BaseAnnotation({
   }
 
   const handleResizeStop: RndResizeCallback = (_e, _direction, ref, _delta, position) => {
-    // Don't allow resizing locked annotations
     if (locked) {
       return
     }
 
-    // Convert screen coordinates to PDF coordinates
     const pdfCoords = screenToPdfCoordinates(position.x, position.y, {scale})
     const pdfDims = screenToPdfDimensions(
       parseFloat(ref.style.width.replace("px", "")),
@@ -121,9 +122,9 @@ export function BaseAnnotation({
       minWidth={10}
       minHeight={10}
       bounds="parent"
-      disableDragging={locked || isReadOnly} // Disable dragging for locked annotations or when select tool is active
+      disableDragging={locked || isReadOnly || isDeleting} // Disable dragging for locked annotations or when select tool is active
       enableResizing={
-        locked || isReadOnly
+        locked || isReadOnly || isDeleting
           ? false
           : {
               // Disable resizing for locked annotations or when select tool is active
