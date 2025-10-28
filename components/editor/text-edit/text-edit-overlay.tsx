@@ -8,7 +8,7 @@ import {useDeleteTextEditMutation, useGetDocumentEditorQuery, useGetTextEditsByP
 import type {TextEdit} from "@/lib/types"
 import {getTextEditClasses} from "@/lib/utils/text-edit-styling"
 
-import {Button} from "../ui/button"
+import {Button} from "../../ui/button"
 
 interface TextEditOverlayProps {
   scale: number

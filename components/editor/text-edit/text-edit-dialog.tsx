@@ -5,9 +5,9 @@ import React from "react"
 
 import type {TextEditOperation, TextSelection} from "@/lib/types"
 
-import {Button} from "../ui/button"
-import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "../ui/dialog"
-import {Input} from "../ui/input"
+import {Button} from "../../ui/button"
+import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "../../ui/dialog"
+import {Input} from "../../ui/input"
 
 interface TextEditDialogProps {
   isOpen: boolean

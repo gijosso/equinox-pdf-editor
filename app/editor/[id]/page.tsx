@@ -1,4 +1,4 @@
-import {EditorPage as EditorPageComponent} from "@/components/editor/editor-page"
+import {EditorPage as EditorPageComponent} from "@/components/editor"
 import {ErrorBoundaryWithSuspense} from "@/components/error-boundary"
 import {EditorLoading} from "@/components/loading"
 

@@ -9,7 +9,7 @@ import {useEditorActions, useGetDocumentQuery, useGetVersionsByDocumentQuery, us
 
 import {ExportPDFButton} from "./export-pdf-button"
 import {SaveVersionDialog} from "./save-version-dialog"
-import {VersionHistoryDialog} from "./version-history-dialog"
+import {VersionHistoryDialog} from "./version-history/version-history-dialog"
 
 interface EditorHeaderProps {
   documentId: string

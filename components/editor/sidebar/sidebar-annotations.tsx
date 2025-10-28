@@ -1,122 +1,14 @@
 "use client"
 
-import {ChevronDown, ChevronRight, Highlighter, Layers, List, Square, StickyNote, Trash2} from "lucide-react"
 import React from "react"
 
-import {Button} from "@/components/ui/button"
-import {ScrollArea} from "@/components/ui/scroll-area"
-import {useDeleteAnnotationMutation, useEditorActions, useGetAnnotationsByVersionQuery} from "@/lib/store/api"
-import type {Annotation, AnnotationType} from "@/lib/types"
-import {formatDate} from "@/lib/utils"
-import {isAnnotationLocked} from "@/lib/utils/annotations"
+import {useEditorActions, useGetAnnotationsByVersionQuery} from "@/lib/store/api"
 
-type AnnotationToolConfig = {type: AnnotationType; icon: React.ReactNode; label: string}
-
-const ANNOTATIONS_CONFIGS = {
-  highlight: {type: "highlight" as const, icon: <Highlighter className="h-4 w-4" />, label: "Highlight"},
-  note: {type: "note" as const, icon: <StickyNote className="h-4 w-4" />, label: "Sticky Note"},
-  redaction: {type: "redaction" as const, icon: <Square className="h-4 w-4" />, label: "Redaction"},
-} as const satisfies {[K in AnnotationType]: AnnotationToolConfig}
-
-const ANNOTATION_CONFIGS_ARRAY = Object.values(ANNOTATIONS_CONFIGS)
+import {AnnotationList, AnnotationViewControls} from "./annotations"
 
 interface SidebarAnnotationsProps {
   documentId: string
 }
-
-const AnnotationItem = React.memo(
-  ({documentId, versionId, annotation}: {documentId: string; versionId: string; annotation: Annotation}) => {
-    const [deleteAnnotation] = useDeleteAnnotationMutation()
-    const {setCurrentPage, editor} = useEditorActions(documentId)
-    const isDiffMode = editor?.isDiffMode || false
-
-    // Memoize handlers to prevent unnecessary re-renders
-    const handleSetCurrentPage = React.useCallback(
-      async (pageNumber: number) => {
-        await setCurrentPage(pageNumber)
-      },
-      [setCurrentPage],
-    )
-
-    const handleDelete = React.useCallback(async () => {
-      try {
-        await deleteAnnotation({id: annotation.id, versionId}).unwrap()
-      } catch (error) {
-        console.error("Failed to delete annotation:", error)
-      }
-    }, [deleteAnnotation, annotation.id, versionId])
-
-    const annotationConfig = React.useMemo(() => ANNOTATIONS_CONFIGS[annotation.type], [annotation.type])
-    const isLocked = React.useMemo(() => isAnnotationLocked(annotation) || isDiffMode, [annotation, isDiffMode])
-
-    const formattedDate = React.useMemo(() => {
-      const isUpdated = annotation.updatedAt !== annotation.createdAt
-      const dateToFormat = isUpdated ? annotation.updatedAt : annotation.createdAt
-      const isToday = new Date(dateToFormat).toDateString() === new Date().toDateString()
-
-      return {
-        isUpdated,
-        formatted: formatDate(
-          dateToFormat,
-          isToday
-            ? {hour: "2-digit", minute: "2-digit"}
-            : {weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"},
-        ),
-      }
-    }, [annotation.updatedAt, annotation.createdAt])
-
-    return (
-      <div className={`rounded-lg border border-border p-3 h-24 ${isLocked ? "bg-muted opacity-75" : "bg-background"}`}>
-        <div className="flex items-center justify-between gap-2 h-full">
-          <div className="flex items-center gap-2 flex-1 min-w-0 max-w-full h-full">
-            {annotationConfig.icon}
-            <div className="flex-1 min-w-0 max-w-full h-full flex flex-col justify-between">
-              <div>
-                <button
-                  onClick={() => handleSetCurrentPage(annotation.pageNumber || 1)}
-                  className="text-sm font-medium capitalize text-foreground"
-                >
-                  {annotationConfig.label}
-                </button>
-                <p className="text-xs text-muted-foreground">Page {annotation.pageNumber || 1}</p>
-              </div>
-              <div className="text-sm text-muted-foreground">
-                <div className="block overflow-hidden text-ellipsis whitespace-nowrap italic max-w-48">
-                  {annotation.content}
-                </div>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {formattedDate.isUpdated ? (
-                  <div>Updated: {formattedDate.formatted}</div>
-                ) : (
-                  <div>Created: {formattedDate.formatted}</div>
-                )}
-              </div>
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`h-6 w-6 shrink-0 ${isLocked ? "opacity-50 cursor-not-allowed" : ""}`}
-            onClick={handleDelete}
-            disabled={isLocked}
-            title={
-              isLocked
-                ? isDiffMode
-                  ? "Cannot delete during diff mode"
-                  : "Cannot delete locked annotation"
-                : "Delete annotation"
-            }
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        </div>
-      </div>
-    )
-  },
-)
-
-AnnotationItem.displayName = "AnnotationItem"
 
 export function SidebarAnnotations({documentId}: SidebarAnnotationsProps) {
   const {editor, setAnnotationsViewMode} = useEditorActions(documentId)
@@ -131,7 +23,6 @@ export function SidebarAnnotations({documentId}: SidebarAnnotationsProps) {
   })
 
   const viewMode = editor?.annotationsViewMode || "all"
-  const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(new Set())
 
   const handleViewModeChange = React.useCallback(
     async (newViewMode: "all" | "grouped") => {
@@ -140,59 +31,15 @@ export function SidebarAnnotations({documentId}: SidebarAnnotationsProps) {
     [setAnnotationsViewMode],
   )
 
-  const toggleGroup = React.useCallback((type: AnnotationType) => {
-    setCollapsedGroups(prev => {
-      const next = new Set(prev)
-      if (next.has(type)) {
-        next.delete(type)
-      } else {
-        next.add(type)
-      }
-      return next
-    })
-  }, [])
-
-  // Sort annotations: unlocked first (by createdAt), then locked (by createdAt)
-  const sortedAnnotations = React.useMemo(() => {
-    return [...annotations].sort((a, b) => {
-      const aLocked = isAnnotationLocked(a)
-      const bLocked = isAnnotationLocked(b)
-
-      // If both have same lock status, sort by createdAt
-      if (aLocked === bLocked) {
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      }
-
-      // Unlocked annotations come first
-      return aLocked ? 1 : -1
-    })
-  }, [annotations])
-
-  const groupedAnnotations = React.useMemo(() => {
-    const groups: Record<AnnotationType, Annotation[]> = {
-      highlight: [],
-      note: [],
-      redaction: [],
-    } satisfies {[K in AnnotationType]: Annotation[]}
-
-    for (const annotation of sortedAnnotations) {
-      if (annotation.type in groups) {
-        groups[annotation.type as keyof typeof groups].push(annotation)
-      }
-    }
-
-    return groups
-  }, [sortedAnnotations])
-
   if (isLoading) {
     return (
       <div className="flex h-full flex-col">
         <div className="flex items-center justify-between border-b border-border h-18 p-4">
           <p className="text-sm text-muted-foreground">Loading annotations...</p>
         </div>
-        <ScrollArea className="flex-1 overflow-auto bg-muted">
+        <div className="flex-1 overflow-auto bg-muted">
           <div className="p-4 text-center text-muted-foreground">Loading...</div>
-        </ScrollArea>
+        </div>
       </div>
     )
   }
@@ -203,9 +50,9 @@ export function SidebarAnnotations({documentId}: SidebarAnnotationsProps) {
         <div className="flex items-center justify-between border-b border-border h-18 p-4">
           <p className="text-sm text-muted-foreground">Error loading annotations</p>
         </div>
-        <ScrollArea className="flex-1 overflow-auto bg-muted">
+        <div className="flex-1 overflow-auto bg-muted">
           <div className="p-4 text-center text-destructive">Failed to load annotations</div>
-        </ScrollArea>
+        </div>
       </div>
     )
   }
@@ -214,88 +61,16 @@ export function SidebarAnnotations({documentId}: SidebarAnnotationsProps) {
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-border h-18 p-4">
         <p className="text-sm text-muted-foreground">{annotations.length} total</p>
-        <div className="flex gap-1 rounded-md border border-border p-1">
-          <Button
-            variant={viewMode === "all" ? "secondary" : "ghost"}
-            size="sm"
-            className="h-7 px-2"
-            onClick={() => handleViewModeChange("all")}
-          >
-            <List className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant={viewMode === "grouped" ? "secondary" : "ghost"}
-            size="sm"
-            className="h-7 px-2"
-            onClick={() => handleViewModeChange("grouped")}
-          >
-            <Layers className="h-3.5 w-3.5" />
-          </Button>
-        </div>
+        <AnnotationViewControls viewMode={viewMode} onViewModeChange={handleViewModeChange} />
       </div>
-      <ScrollArea className="flex-1 overflow-auto bg-muted">
-        {annotations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-8 text-center">
-            <StickyNote className="h-12 w-12 text-muted-foreground" />
-            <p className="mt-4 text-sm text-muted-foreground">No annotations yet</p>
-            <p className="mt-1 text-xs text-muted-foreground">Use the tools above to add annotations</p>
-          </div>
-        ) : viewMode === "all" ? (
-          <div className="space-y-2 p-4">
-            {sortedAnnotations.map(annotation => (
-              <AnnotationItem
-                key={annotation.id}
-                documentId={documentId}
-                versionId={currentVersionId || ""}
-                annotation={annotation}
-              />
-            ))}
-          </div>
-        ) : (
-          <div>
-            {ANNOTATION_CONFIGS_ARRAY.map(config => {
-              const typeAnnotations = groupedAnnotations[config.type]
-
-              if (typeAnnotations.length === 0) {
-                return null
-              }
-
-              const isCollapsed = collapsedGroups.has(config.type)
-
-              return (
-                <div key={config.type}>
-                  <button
-                    onClick={() => toggleGroup(config.type)}
-                    className="flex w-full items-center gap-2 border-b border-border py-2 px-4 hover:opacity-70 transition-opacity bg-background"
-                  >
-                    {isCollapsed ? (
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                    )}
-                    {config.icon}
-                    <h3 className="text-sm font-semibold text-foreground">
-                      {config.label} ({typeAnnotations.length})
-                    </h3>
-                  </button>
-                  {!isCollapsed && (
-                    <div className="space-y-2 p-4">
-                      {typeAnnotations.map(annotation => (
-                        <AnnotationItem
-                          key={annotation.id}
-                          documentId={documentId}
-                          versionId={currentVersionId || ""}
-                          annotation={annotation}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </ScrollArea>
+      {currentVersionId && (
+        <AnnotationList
+          documentId={documentId}
+          versionId={currentVersionId}
+          annotations={annotations}
+          viewMode={viewMode}
+        />
+      )}
     </div>
   )
 }

@@ -233,7 +233,7 @@ export interface TextEdit {
   fontSize?: number
   fontWeight?: string | number
   color?: string
-  operation?: "insert" | "delete" | "replace"
+  operation?: TextEditOperation["type"]
   createdAt: string
   updatedAt: string
 }

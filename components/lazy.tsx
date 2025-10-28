@@ -46,7 +46,7 @@ export const LazyTextEdits = dynamic(
 )
 
 export const LazySearchHighlights = dynamic(
-  () => import("./editor/search-highlights").then(mod => ({default: mod.SearchHighlightOverlay})),
+  () => import("./editor/pdf-viewer/search-highlights").then(mod => ({default: mod.SearchHighlightOverlay})),
   {
     loading: () => null, // Invisible when loading
     ssr: false,

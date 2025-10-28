@@ -7,7 +7,7 @@ import {useTextSelection} from "@/hooks/use-text-selection"
 import {useGetDocumentEditorQuery} from "@/lib/store/api"
 import type {TextEditOperation} from "@/lib/types"
 
-import {TextEditDialog} from "./text-edit-dialog"
+import {TextEditDialog} from "."
 
 interface TextEditorProps {
   scale: number

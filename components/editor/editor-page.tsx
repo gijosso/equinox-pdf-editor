@@ -46,6 +46,7 @@ export function EditorPage({documentId}: EditorPageProps) {
       isDiffMode: false,
       compareVersionIds: [],
       annotationsViewMode: "all" as const,
+      textEditsViewMode: "all" as const,
     }),
     [documentId, document?.currentVersionId],
   )

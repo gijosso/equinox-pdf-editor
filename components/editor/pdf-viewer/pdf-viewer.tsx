@@ -11,12 +11,11 @@ import {usePDFBlob} from "@/hooks/use-pdf-blob"
 import {setupPDFWorker} from "@/lib/pdf-worker-setup"
 import {useGetDocumentEditorQuery, useSaveDocumentEditorMutation} from "@/lib/store/api"
 
-import {Button} from "../ui/button"
-import {AnnotationCreator} from "./annotations/annotation-creator"
-import {AnnotationOverlay} from "./annotations/annotation-overlay"
-import {DiffLegend, DiffOverlay, VersionComparisonBar} from "./diff-overlay"
-import {TextEditOverlay} from "./text-edit-overlay"
-import {TextEditor} from "./text-editor"
+import {Button} from "../../ui/button"
+import {AnnotationCreator, AnnotationOverlay} from "../annotations"
+import {TextEditOverlay} from "../text-edit"
+import {TextEditor} from "../text-edit/text-editor"
+import {DiffLegend, DiffOverlay, VersionComparisonBar} from "./diff"
 import {VersionDiffProvider} from "./version-diff-provider"
 
 interface PDFViewerProps {

@@ -1,6 +1,5 @@
 "use client"
 
-import {ArrowRight} from "lucide-react"
 import React from "react"
 
 import type {Annotation, AnnotationDiff, TextDiff, TextSpan} from "@/lib/types"
@@ -59,16 +58,10 @@ interface DiffHighlightProps {
 
 function DiffHighlight({span, type, scale}: DiffHighlightProps) {
   const config = DIFF_OVERLAY_CONFIG[type]
-
   return (
     <div
       className={`absolute pointer-events-none border rounded-sm ${config.highlightClasses}`}
-      style={{
-        left: span.x * scale,
-        top: span.y * scale,
-        width: span.width * scale,
-        height: span.height * scale,
-      }}
+      style={{left: span.x * scale, top: span.y * scale, width: span.width * scale, height: span.height * scale}}
     >
       <div
         className={`absolute -top-2 -left-2 w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold text-white ${config.iconClasses}`}
@@ -87,7 +80,6 @@ interface AnnotationDiffHighlightProps {
 
 function AnnotationDiffHighlight({annotation, type, scale}: AnnotationDiffHighlightProps) {
   const config = DIFF_OVERLAY_CONFIG[type]
-
   return (
     <div
       className={`absolute pointer-events-none border-2 rounded bg-transparent ${config.outlineClasses}`}
@@ -114,7 +106,6 @@ interface UntouchedAnnotationHighlightProps {
 
 function UntouchedAnnotationHighlight({annotation, scale}: UntouchedAnnotationHighlightProps) {
   const config = DIFF_OVERLAY_CONFIG.untouched
-
   return (
     <div
       className={`absolute pointer-events-none border-2 rounded bg-transparent ${config.outlineClasses}`}
@@ -165,16 +156,9 @@ export function DiffOverlay({
   }
 
   return (
-    <div
-      className="absolute inset-0 pointer-events-none z-10"
-      style={{
-        width: viewportWidth,
-        height: viewportHeight,
-      }}
-    >
+    <div className="absolute inset-0 pointer-events-none z-10" style={{width: viewportWidth, height: viewportHeight}}>
       {pageTextDiffs.map((diff, diffIndex) => {
         if (!diff.spans) return null
-
         return diff.spans
           .filter(span => span.pageNumber === pageNumber)
           .map((span, spanIndex) => (
@@ -199,57 +183,6 @@ export function DiffOverlay({
       {pageUntouchedAnnotations.map((annotation, index) => (
         <UntouchedAnnotationHighlight key={`untouched-${index}`} annotation={annotation} scale={scale} />
       ))}
-    </div>
-  )
-}
-
-interface DiffLegendProps {
-  className?: string
-}
-
-export function DiffLegend({className = ""}: DiffLegendProps) {
-  return (
-    <div className={`flex items-center gap-4 text-xs ${className}`}>
-      <div className="flex items-center gap-1">
-        <div className={`w-3 h-3 rounded ${DIFF_OVERLAY_CONFIG.added.iconClasses}`}></div>
-        <span className="text-muted-foreground">Added</span>
-      </div>
-      <div className="flex items-center gap-1">
-        <div className={`w-3 h-3 rounded ${DIFF_OVERLAY_CONFIG.removed.iconClasses}`}></div>
-        <span className="text-muted-foreground">Removed</span>
-      </div>
-      <div className="flex items-center gap-1">
-        <div className={`w-3 h-3 rounded ${DIFF_OVERLAY_CONFIG.modified.iconClasses}`}></div>
-        <span className="text-muted-foreground">Modified</span>
-      </div>
-      <div className="flex items-center gap-1">
-        <div className={`w-3 h-3 rounded ${DIFF_OVERLAY_CONFIG.untouched.iconClasses}`}></div>
-        <span className="text-muted-foreground">Untouched</span>
-      </div>
-    </div>
-  )
-}
-
-interface VersionComparisonBarProps {
-  version1Number: number
-  version2Number: number
-  className?: string
-}
-
-export function VersionComparisonBar({version1Number, version2Number, className = ""}: VersionComparisonBarProps) {
-  return (
-    <div className={`flex items-center justify-between px-3 py-2 ${className}`}>
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">v{version1Number}</span>
-        </div>
-        <div className="text-muted-foreground">
-          <ArrowRight className="h-4 w-4" />
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">v{version2Number}</span>
-        </div>
-      </div>
     </div>
   )
 }
