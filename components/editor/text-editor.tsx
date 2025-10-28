@@ -21,6 +21,7 @@ export function TextEditor({scale, documentId, children}: TextEditorProps) {
   const currentPage = editor?.currentPage || 1
   const currentVersionId = editor?.currentVersionId || null
   const isTextEditMode = activeTool.type === "text_edit"
+  const isDiffMode = editor?.isDiffMode || false
   const [isDialogOpen, setIsDialogOpen] = React.useState(false)
 
   // Use custom hooks for text selection and operations
@@ -73,7 +74,7 @@ export function TextEditor({scale, documentId, children}: TextEditorProps) {
   }, [clearSelection])
 
   return (
-    <div className="relative w-full h-full allow-text-selection">
+    <div className={`relative w-full h-full allow-text-selection ${isDiffMode ? "pointer-events-none" : ""}`}>
       {children}
 
       {textSelection && (

@@ -283,6 +283,127 @@ export function generateExportFilename(documentName: string, versionNumber: numb
   return `${documentName.replace(/\.pdf$/i, "")}_v${versionNumber}.pdf`
 }
 
+export async function applyTextEditsToPDF(pdfDoc: PDFDocument, textEdits: TextEdit[]): Promise<void> {
+  if (textEdits.length === 0) {
+    return
+  }
+
+  // Group text edits by page number
+  const textEditsByPage = groupTextEditsByPage(textEdits)
+
+  // Apply text edits to each page
+  for (const [pageNumberStr, pageTextEdits] of Object.entries(textEditsByPage)) {
+    const pageNumber = parseInt(pageNumberStr, 10)
+    const page = pdfDoc.getPage(pageNumber - 1) // PDF pages are 0-indexed
+
+    for (const textEdit of pageTextEdits) {
+      await applyTextEditToPage(page, textEdit)
+    }
+  }
+}
+
+async function applyTextEditToPage(page: PDFPage, textEdit: TextEdit): Promise<void> {
+  const {width, height} = page.getSize()
+
+  // Convert PDF coordinates to page coordinates
+  // PDF coordinates: (0,0) is bottom-left, (width, height) is top-right
+  const x = textEdit.x
+  const y = height - textEdit.y - textEdit.height // Flip Y coordinate
+
+  // Determine what to draw based on operation type
+  if (textEdit.operation === "delete") {
+    // For delete operations, draw a strikethrough or remove text visually
+    await drawDeletedText(page, textEdit, x, y)
+  } else if (textEdit.operation === "insert" || textEdit.operation === "replace") {
+    // For insert/replace operations, draw the new text
+    await drawNewText(page, textEdit, x, y)
+  }
+}
+
+async function drawDeletedText(page: PDFPage, textEdit: TextEdit, x: number, y: number): Promise<void> {
+  const font = await page.doc.embedFont(StandardFonts.Helvetica)
+  const fontSize = textEdit.fontSize || 12
+
+  // Draw original text with strikethrough
+  page.drawText(textEdit.originalText, {
+    x,
+    y,
+    size: fontSize,
+    font,
+    color: rgb(0.7, 0.7, 0.7), // Grayed out
+  })
+
+  // Draw strikethrough line
+  const textWidth = font.widthOfTextAtSize(textEdit.originalText, fontSize)
+  page.drawLine({
+    start: {x, y: y + fontSize / 2},
+    end: {x: x + textWidth, y: y + fontSize / 2},
+    thickness: 1,
+    color: rgb(0.5, 0.5, 0.5),
+  })
+}
+
+async function drawNewText(page: PDFPage, textEdit: TextEdit, x: number, y: number): Promise<void> {
+  const font = await page.doc.embedFont(StandardFonts.Helvetica)
+  const fontSize = textEdit.fontSize || 12
+  const fontColor = textEdit.color ? parseColor(textEdit.color) : rgb(0, 0, 0)
+
+  // Draw new text
+  page.drawText(textEdit.newText || "", {
+    x,
+    y,
+    size: fontSize,
+    font,
+    color: fontColor,
+  })
+
+  // For replace operations, also show what was replaced (with strikethrough)
+  if (textEdit.operation === "replace" && textEdit.originalText) {
+    const newTextWidth = font.widthOfTextAtSize(textEdit.newText || "", fontSize)
+    const originalTextWidth = font.widthOfTextAtSize(textEdit.originalText, fontSize)
+
+    // Draw original text below with strikethrough
+    page.drawText(textEdit.originalText, {
+      x: x + newTextWidth + 5, // Offset to the right
+      y: y - fontSize - 2, // Below the new text
+      size: fontSize * 0.8, // Slightly smaller
+      font,
+      color: rgb(0.7, 0.7, 0.7), // Grayed out
+    })
+
+    // Draw strikethrough for original text
+    page.drawLine({
+      start: {x: x + newTextWidth + 5, y: y - fontSize - 2 + (fontSize * 0.8) / 2},
+      end: {x: x + newTextWidth + 5 + originalTextWidth, y: y - fontSize - 2 + (fontSize * 0.8) / 2},
+      thickness: 1,
+      color: rgb(0.5, 0.5, 0.5),
+    })
+  }
+}
+
+function parseColor(colorStr: string): any {
+  // Handle hex colors
+  if (colorStr.startsWith("#")) {
+    const hex = colorStr.slice(1)
+    const r = parseInt(hex.slice(0, 2), 16) / 255
+    const g = parseInt(hex.slice(2, 4), 16) / 255
+    const b = parseInt(hex.slice(4, 6), 16) / 255
+    return rgb(r, g, b)
+  }
+
+  // Handle rgb() format
+  if (colorStr.startsWith("rgb(")) {
+    const values = colorStr
+      .slice(4, -1)
+      .split(",")
+      .map(v => parseInt(v.trim(), 10))
+    return rgb(values[0] / 255, values[1] / 255, values[2] / 255)
+  }
+
+  // Default to black
+  return rgb(0, 0, 0)
+}
+
 function calculateTextEditsHeight(textEdits: TextEdit[]): number {
   if (textEdits.length === 0) {
     return 0

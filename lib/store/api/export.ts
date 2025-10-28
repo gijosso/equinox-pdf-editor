@@ -71,6 +71,18 @@ export const exportApi = createApi({
               const originalPdfBytes = await blobResult.data.arrayBuffer()
               await addOriginalPages(pdfDoc, originalPdfBytes)
 
+              // Get all text edits from all versions up to current
+              // const allTextEdits = versionAnnotations.flatMap(version => version.textEdits)
+
+              // Adjust text edit page numbers to account for the change log page (add 1 to each page number)
+              // const adjustedTextEdits = allTextEdits.map(textEdit => ({
+              //   ...textEdit,
+              //   pageNumber: textEdit.pageNumber + 1,
+              // }))
+
+              // TODO: Instead of applying text edits here, we should apply them in the client-side using the reconstructive approach
+              // await applyTextEditsToPDF(pdfDoc, adjustedTextEdits)
+
               // Draw annotations from the last version onto the PDF pages
               const lastVersionAnnotations = versionAnnotations[versionAnnotations.length - 1]?.annotations || []
               // Adjust page numbers to account for the change log page (add 1 to each page number)
