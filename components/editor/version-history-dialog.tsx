@@ -102,6 +102,14 @@ export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHi
         .filter(Boolean)
         .sort((a, b) => new Date(a!.createdAt).getTime() - new Date(b!.createdAt).getTime())
         .map(v => v!.id)
+      const latestVersionId = sortedVersions[sortedVersions.length - 1]
+
+      await updateDocument({
+        documentId,
+        updates: {currentVersionId: latestVersionId},
+      }).unwrap()
+
+      await setCurrentVersionId(latestVersionId)
 
       await setDiffMode(true, sortedVersions)
       onOpenChange(false)
@@ -113,7 +121,18 @@ export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHi
         variant: "destructive",
       })
     }
-  }, [documentId, editor, selectedVersions, versions, setDiffMode, onOpenChange, toast])
+  }, [
+    documentId,
+    editor,
+    document,
+    selectedVersions,
+    versions,
+    setDiffMode,
+    setCurrentVersionId,
+    updateDocument,
+    onOpenChange,
+    toast,
+  ])
 
   const handleCompareVersions = React.useCallback(
     async (versionId: string) => {
@@ -124,6 +143,15 @@ export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHi
       const latestVersionId = document.latestVersionId
       if (latestVersionId) {
         try {
+          // First, load the latest version to ensure we're viewing the most recent state
+          await updateDocument({
+            documentId,
+            updates: {currentVersionId: latestVersionId},
+          }).unwrap()
+
+          await setCurrentVersionId(latestVersionId)
+
+          // Then enable diff mode to compare with the selected version
           await setDiffMode(true, [versionId, latestVersionId])
           onOpenChange(false)
         } catch (error) {
@@ -136,7 +164,7 @@ export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHi
         }
       }
     },
-    [documentId, editor, document, setDiffMode, onOpenChange, toast],
+    [documentId, editor, document, setDiffMode, setCurrentVersionId, updateDocument, onOpenChange, toast],
   )
 
   const reversedVersions = React.useMemo(() => versions.slice().reverse(), [versions])

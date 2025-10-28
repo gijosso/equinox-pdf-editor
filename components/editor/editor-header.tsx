@@ -22,7 +22,7 @@ export function EditorHeader({documentId}: EditorHeaderProps) {
   const [showHistoryDialog, setShowHistoryDialog] = React.useState(false)
   const currentVersionId = editor?.currentVersionId || null
   const sidebarOpen = editor?.sidebarOpen || false
-
+  const isDiffMode = editor?.isDiffMode || false
   const {data: document} = useGetDocumentQuery(documentId, {skip: !documentId})
   const {data: hasEdits = false} = useHasEditsQuery(currentVersionId || "", {skip: !currentVersionId})
   const {data: versions = []} = useGetVersionsByDocumentQuery(documentId, {skip: !documentId})
@@ -72,7 +72,7 @@ export function EditorHeader({documentId}: EditorHeaderProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleShowHistory}>
+          <Button variant="outline" size="sm" onClick={handleShowHistory} disabled={isDiffMode}>
             <History className="mr-2 h-4 w-4" />
             History
           </Button>
