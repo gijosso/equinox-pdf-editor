@@ -357,7 +357,7 @@ function drawTextEditsByPage(
     currentY -= 10
 
     for (const textEdit of pageTextEdits) {
-      const editText = `"${textEdit.originalText}" → "${textEdit.newText}"`
+      const editText = `"${textEdit.originalText}" -> "${textEdit.newText}"`
       page.drawText(editText, {
         x: 110,
         y: currentY,
