@@ -1,5 +1,5 @@
 import type {TextEdit} from "@/lib/types"
-import {DatabaseError, type Result, withDatabaseErrorHandling} from "@/lib/utils/error-handling"
+import {DatabaseError, type Result, TextEditNotFoundError, withDatabaseErrorHandling} from "@/lib/utils/error-handling"
 import {generateTextEditId} from "@/lib/utils/id"
 
 import {db} from "./database"
@@ -17,6 +17,7 @@ export interface AddTextEditOptions {
   fontSize?: number
   fontWeight?: string | number
   color?: string
+  operation?: "insert" | "delete" | "replace"
 }
 
 export const textEditService = {
@@ -38,6 +39,7 @@ export const textEditService = {
           fontSize: options.fontSize,
           fontWeight: options.fontWeight,
           color: options.color,
+          operation: options.operation,
           createdAt: now,
           updatedAt: now,
         }
@@ -88,6 +90,10 @@ export const textEditService = {
   async deleteTextEdit(id: string): Promise<Result<void, DatabaseError>> {
     return withDatabaseErrorHandling(
       async () => {
+        const textEdit = await db.textEdits.get(id)
+        if (!textEdit) {
+          throw new TextEditNotFoundError(id)
+        }
         await db.textEdits.delete(id)
       },
       {operation: "deleteTextEdit", textEditId: id},

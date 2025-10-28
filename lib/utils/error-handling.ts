@@ -97,6 +97,16 @@ export class EditNotFoundError extends AppError {
   }
 }
 
+export class TextEditNotFoundError extends AppError {
+  readonly code = "TEXT_EDIT_NOT_FOUND" as const
+  readonly statusCode = 404
+  readonly isRetryable = false
+
+  constructor(textEditId: string) {
+    super(`Text edit with id "${textEditId}" not found`, {textEditId})
+  }
+}
+
 // File-related errors
 export class FileError extends AppError {
   readonly code = "FILE_ERROR" as const

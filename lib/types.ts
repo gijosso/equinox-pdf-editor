@@ -190,6 +190,10 @@ export interface TextSpan {
   width: number
   height: number
   index: number
+  fontFamily?: string
+  fontSize?: number
+  fontWeight?: string | number
+  color?: string
 }
 
 export interface TextDiff {
@@ -226,6 +230,7 @@ export interface TextEdit {
   fontSize?: number
   fontWeight?: string | number
   color?: string
+  operation?: "insert" | "delete" | "replace"
   createdAt: string
   updatedAt: string
 }

@@ -2,6 +2,7 @@
 
 import React from "react"
 
+import {useToast} from "@/hooks/use-toast"
 import {useAddAnnotationMutation, useGetDocumentEditorQuery} from "@/lib/store/api"
 import type {AnnotationType} from "@/lib/types"
 import {
@@ -33,6 +34,7 @@ export function AnnotationCreator({scale, documentId, children}: AnnotationCreat
   const isTextEditMode = activeTool.type === "text_edit"
   const isSelectMode = activeTool.type === "select"
   const [addAnnotation] = useAddAnnotationMutation()
+  const {toast} = useToast()
   const [isCreating, setIsCreating] = React.useState(false)
   const [startPos, setStartPos] = React.useState<{x: number; y: number} | null>(null)
   const [currentPos, setCurrentPos] = React.useState<{x: number; y: number} | null>(null)
@@ -141,8 +143,21 @@ export function AnnotationCreator({scale, documentId, children}: AnnotationCreat
 
     try {
       await addAnnotation(annotation).unwrap()
+
+      // Show success toast
+      toast({
+        title: "Annotation Created",
+        description: `Successfully created ${activeTool.type} annotation.`,
+        duration: 2000,
+      })
     } catch (error) {
       console.error("Failed to add annotation:", error)
+      toast({
+        title: "Error",
+        description: "Failed to create annotation. Please try again.",
+        variant: "destructive",
+        duration: 3000,
+      })
     }
 
     setIsCreating(false)

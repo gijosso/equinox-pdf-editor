@@ -1,5 +1,6 @@
 import {createApi, fetchBaseQuery} from "@reduxjs/toolkit/query/react"
 
+import {db} from "@/lib/db/database"
 import {textEditService} from "@/lib/db/text-edits"
 import type {TextEdit} from "@/lib/types"
 
@@ -52,6 +53,7 @@ export const textEditsApi = createApi({
         fontSize?: number
         fontWeight?: string | number
         color?: string
+        operation?: "insert" | "delete" | "replace"
       }
     >({
       queryFn: async args => {
@@ -78,24 +80,29 @@ export const textEditsApi = createApi({
       invalidatesTags: (result, error, {id}) => [{type: "TextEdit", id}],
     }),
 
-    deleteTextEdit: builder.mutation<void, string>({
-      queryFn: async id => {
+    deleteTextEdit: builder.mutation<void, {id: string; versionId: string}>({
+      queryFn: async ({id, versionId}) => {
         const result = await textEditService.deleteTextEdit(id)
         if (!result.success) {
           return {error: {status: "CUSTOM_ERROR", error: result.error?.message || "Unknown error"}}
         }
         return {data: undefined}
       },
-      invalidatesTags: (result, error, id) => [{type: "TextEdit", id}],
+      invalidatesTags: (result, error, {id, versionId}) => [
+        {type: "TextEdit", id},
+        {type: "TextEdit", id: `version-${versionId}`},
+      ],
     }),
 
     deleteTextEditsByVersion: builder.mutation<void, string>({
       queryFn: async versionId => {
-        const result = await textEditService.deleteTextEditsByVersion(versionId)
-        if (!result.success) {
-          return {error: {status: "CUSTOM_ERROR", error: result.error?.message || "Unknown error"}}
+        try {
+          await textEditService.deleteTextEditsByVersion(versionId)
+          return {data: undefined}
+        } catch (error) {
+          console.error("Delete error:", error)
+          return {error: {status: "CUSTOM_ERROR", error: "Failed to delete text edits"}}
         }
-        return {data: undefined}
       },
       invalidatesTags: (result, error, versionId) => [{type: "TextEdit", id: `version-${versionId}`}],
     }),

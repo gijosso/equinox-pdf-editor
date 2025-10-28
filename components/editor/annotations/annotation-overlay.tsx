@@ -15,9 +15,10 @@ interface AnnotationOverlayProps {
   pageWidth: number
   pageHeight: number
   documentId: string
+  className?: string
 }
 
-export function AnnotationOverlay({scale, documentId}: AnnotationOverlayProps) {
+export function AnnotationOverlay({scale, documentId, className}: AnnotationOverlayProps) {
   const {data: editor} = useGetDocumentEditorQuery(documentId, {skip: !documentId})
   const currentVersionId = editor?.currentVersionId || null
   const currentPage = editor?.currentPage || 1
@@ -101,9 +102,5 @@ export function AnnotationOverlay({scale, documentId}: AnnotationOverlayProps) {
     return null
   }
 
-  return (
-    <div className="absolute inset-0" style={{zIndex: isReadOnly ? 1 : 10}}>
-      {annotationComponents}
-    </div>
-  )
+  return <div className={`absolute inset-0 ${className}`}>{annotationComponents}</div>
 }

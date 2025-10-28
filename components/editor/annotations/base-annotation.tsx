@@ -1,9 +1,11 @@
 "use client"
 
+import {Trash2} from "lucide-react"
 import React from "react"
 import {Rnd, RndResizeCallback} from "react-rnd"
 
-import {useEditorActions} from "@/lib/store/api"
+import {useToast} from "@/hooks/use-toast"
+import {useDeleteAnnotationMutation, useEditorActions} from "@/lib/store/api"
 import type {Annotation, Edit} from "@/lib/types"
 import {
   screenToPdfCoordinates,
@@ -11,6 +13,8 @@ import {
   updateAnnotationDimensions,
   updateAnnotationPosition,
 } from "@/lib/utils/annotations"
+
+import {Button} from "../../ui/button"
 
 interface BaseAnnotationProps {
   annotation: Annotation
@@ -38,10 +42,33 @@ export function BaseAnnotation({
   documentId,
 }: BaseAnnotationProps) {
   const {editor} = useEditorActions(documentId)
+  const [deleteAnnotation] = useDeleteAnnotationMutation()
+  const {toast} = useToast()
   const isDiffMode = editor?.isDiffMode || false
   const isTextEditMode = editor?.activeTool?.type === "text_edit"
   const isSelectMode = editor?.activeTool?.type === "select"
   const isReadOnly = isDiffMode || isTextEditMode || isSelectMode
+
+  const handleDelete = React.useCallback(async () => {
+    if (!editor?.currentVersionId) return
+
+    try {
+      await deleteAnnotation({id: annotation.id, versionId: editor.currentVersionId}).unwrap()
+      toast({
+        title: "Annotation Deleted",
+        description: "Annotation has been successfully deleted.",
+        duration: 2000,
+      })
+    } catch (error) {
+      console.error("Failed to delete annotation:", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete annotation. Please try again.",
+        variant: "destructive",
+        duration: 3000,
+      })
+    }
+  }, [deleteAnnotation, annotation.id, editor?.currentVersionId, toast])
 
   const handleDragStop = (e: any, d: any) => {
     // Don't allow dragging locked annotations
@@ -111,18 +138,27 @@ export function BaseAnnotation({
             }
       }
       className={
-        locked
+        locked || isReadOnly
           ? "opacity-50 cursor-not-allowed pointer-events-none"
-          : isReadOnly
-            ? "pointer-events-none" // Make transparent to mouse events when select tool is active
-            : "group hover:cursor-grab active:cursor-grabbing z-20 hover:shadow-md transition-shadow"
+          : "group hover:cursor-grab active:cursor-grabbing z-20 hover:shadow-md transition-shadow"
       } // Visual indication for locked annotations
       style={{
-        zIndex: isReadOnly ? 1 : 20, // Lower z-index when select tool is active
+        zIndex: locked || isReadOnly ? 1 : 20, // Lower z-index when select tool is active
       }}
       data-annotation={annotation.id}
     >
-      <div className="w-full h-full relative">{children}</div>
+      <div className="w-full h-full relative">
+        {children}
+
+        {/* Delete button - only show when not read-only and not locked */}
+        {!isReadOnly && !locked && (
+          <div className="absolute -top-8 right-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1 z-30">
+            <Button size="sm" variant="destructive" className="h-6 w-6 p-0" onClick={handleDelete}>
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
+      </div>
     </Rnd>
   )
 }

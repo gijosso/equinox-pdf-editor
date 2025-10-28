@@ -23,6 +23,8 @@ import {Button} from "../ui/button"
 import {AnnotationCreator} from "./annotations/annotation-creator"
 import {AnnotationOverlay} from "./annotations/annotation-overlay"
 import {DiffLegend, DiffOverlay, VersionComparisonBar} from "./diff-overlay"
+import {TextEditOverlay} from "./text-edit-overlay"
+import {TextEditor} from "./text-editor"
 
 interface PDFViewerProps {
   documentId: string
@@ -41,6 +43,8 @@ export function PDFViewer({documentId}: PDFViewerProps) {
   const currentPage = editor?.currentPage || 1
   const viewport = editor?.viewport || {x: 0, y: 0, zoom: 1}
   const isDiffMode = editor?.isDiffMode || false
+  const isAnnotationTool = editor?.activeTool?.type !== "select" && editor?.activeTool?.type !== "text_edit"
+  const isTextEditTool = editor?.activeTool?.type === "text_edit"
   const compareVersionIds = editor?.compareVersionIds || []
   const {blobUrl, loading, error} = usePDFBlob(documentId)
   const [pageDimensions, setPageDimensions] = React.useState<{width: number; height: number} | null>(null)
@@ -210,45 +214,56 @@ export function PDFViewer({documentId}: PDFViewerProps) {
           <div className="flex justify-center items-center relative min-h-full w-full min-w-0">
             <div className="relative">
               <Document file={blobUrl} onLoadSuccess={onDocumentLoadSuccess} className="h-full w-full">
-                <AnnotationCreator
-                  scale={viewport.zoom}
-                  pageWidth={pageDimensions?.width || 0}
-                  pageHeight={pageDimensions?.height || 0}
-                  documentId={documentId}
-                >
-                  <div className="relative">
-                    <Page
-                      pageNumber={currentPage}
-                      renderTextLayer={true}
-                      renderAnnotationLayer={true}
-                      className="border border-border"
-                      scale={viewport.zoom}
-                      onLoadSuccess={onPageLoadSuccess}
-                    />
-
-                    <LazySearchHighlights scale={viewport.zoom} documentId={documentId} />
-
-                    {pageDimensions && (
-                      <AnnotationOverlay
-                        scale={viewport.zoom}
-                        pageWidth={pageDimensions.width}
-                        pageHeight={pageDimensions.height}
-                        documentId={documentId}
-                      />
-                    )}
-
-                    {isDiffMode && compareVersionIds.length === 2 && (
-                      <DiffOverlay
+                <TextEditor scale={viewport.zoom} documentId={documentId}>
+                  <AnnotationCreator
+                    scale={viewport.zoom}
+                    pageWidth={pageDimensions?.width || 0}
+                    pageHeight={pageDimensions?.height || 0}
+                    documentId={documentId}
+                  >
+                    <div className="relative">
+                      <Page
                         pageNumber={currentPage}
-                        textDiffs={textDiffs}
-                        annotationDiffs={annotationDiffs}
+                        renderTextLayer={true}
+                        className="border border-border"
                         scale={viewport.zoom}
-                        viewportWidth={pageDimensions?.width || 0}
-                        viewportHeight={pageDimensions?.height || 0}
+                        onLoadSuccess={onPageLoadSuccess}
                       />
-                    )}
-                  </div>
-                </AnnotationCreator>
+
+                      <LazySearchHighlights scale={viewport.zoom} documentId={documentId} />
+
+                      {pageDimensions && (
+                        <AnnotationOverlay
+                          scale={viewport.zoom}
+                          pageWidth={pageDimensions.width}
+                          pageHeight={pageDimensions.height}
+                          documentId={documentId}
+                          className={isDiffMode || !isAnnotationTool ? "z-0" : "z-10"}
+                        />
+                      )}
+
+                      {pageDimensions && (
+                        <TextEditOverlay
+                          scale={viewport.zoom}
+                          pageNumber={currentPage}
+                          documentId={documentId}
+                          className={isDiffMode || !isTextEditTool ? "z-0" : "z-10"}
+                        />
+                      )}
+
+                      {isDiffMode && compareVersionIds.length === 2 && (
+                        <DiffOverlay
+                          pageNumber={currentPage}
+                          textDiffs={textDiffs}
+                          annotationDiffs={annotationDiffs}
+                          scale={viewport.zoom}
+                          viewportWidth={pageDimensions?.width || 0}
+                          viewportHeight={pageDimensions?.height || 0}
+                        />
+                      )}
+                    </div>
+                  </AnnotationCreator>
+                </TextEditor>
               </Document>
             </div>
           </div>
