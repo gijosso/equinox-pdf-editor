@@ -47,6 +47,26 @@ const EDIT_ACTION_CONFIG: Record<EditActionType, EditActionConfig> = {
     color: "text-cyan-500",
     description: "Changed annotation text",
   },
+  text_inserted: {
+    icon: <Type className="h-4 w-4" />,
+    color: "text-green-600",
+    description: "Inserted text",
+  },
+  text_deleted: {
+    icon: <Trash2 className="h-4 w-4" />,
+    color: "text-red-600",
+    description: "Deleted text",
+  },
+  text_replaced: {
+    icon: <Edit className="h-4 w-4" />,
+    color: "text-blue-600",
+    description: "Replaced text",
+  },
+  text_edit_deleted: {
+    icon: <Trash2 className="h-4 w-4" />,
+    color: "text-orange-600",
+    description: "Deleted text edit",
+  },
 } as const
 
 interface SidebarEditHistoryProps {
@@ -79,10 +99,14 @@ export function SidebarEditHistory({documentId}: SidebarEditHistoryProps) {
               return (
                 <div key={edit.id} className="rounded-lg border border-border bg-background p-3">
                   <div className="flex items-start gap-3">
-                    <div className={`mt-0.5 ${config.color}`}>{config.icon}</div>
+                    <div className={`mt-0.5 ${config?.color || "text-muted-foreground"}`}>{config?.icon}</div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-foreground">{config.description}</p>
-                      <p className="text-xs text-muted-foreground">Annotation ID: {edit.annotationId}</p>
+                      <p className="text-sm font-medium text-foreground">{config?.description || edit.type}</p>
+                      {edit.annotationId ? (
+                        <p className="text-xs text-muted-foreground">Annotation ID: {edit.annotationId}</p>
+                      ) : edit.textEditId ? (
+                        <p className="text-xs text-muted-foreground">Text Edit ID: {edit.textEditId}</p>
+                      ) : null}
                       <p className="text-xs text-muted-foreground">
                         {formatDistanceToNow(new Date(edit.timestamp), {addSuffix: true})}
                       </p>

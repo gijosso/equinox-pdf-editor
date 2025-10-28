@@ -50,6 +50,7 @@ export interface Edit {
     | "text_inserted"
     | "text_deleted"
     | "text_replaced"
+    | "text_edit_deleted"
   annotationId?: string
   textEditId?: string // For text edits that aren't annotations
   timestamp: string

@@ -2,7 +2,10 @@ import {createApi, fetchBaseQuery} from "@reduxjs/toolkit/query/react"
 
 import {db} from "@/lib/db/database"
 import {textEditService} from "@/lib/db/text-edits"
+import {store} from "@/lib/store"
 import type {TextEdit} from "@/lib/types"
+
+import {editsApi} from "./edits"
 
 export const textEditsApi = createApi({
   reducerPath: "textEditsApi",
@@ -67,38 +70,97 @@ export const textEditsApi = createApi({
         {type: "TextEdit", id: `version-${versionId}`},
         {type: "TextEdit", id: `version-${versionId}-page-${pageNumber}`},
       ],
+      async onQueryStarted(args, {dispatch, queryFulfilled}) {
+        try {
+          const result = await queryFulfilled
+          const textEditId = result.data
+
+          // Determine the edit type based on operation
+          let editType: "text_inserted" | "text_deleted" | "text_replaced"
+          switch (args.operation) {
+            case "insert":
+              editType = "text_inserted"
+              break
+            case "delete":
+              editType = "text_deleted"
+              break
+            case "replace":
+            default:
+              editType = "text_replaced"
+              break
+          }
+
+          // Track edit for text edit addition
+          await store
+            .dispatch(
+              editsApi.endpoints.addEdit.initiate({
+                versionId: args.versionId,
+                type: editType,
+                textEditId: textEditId,
+                data: {
+                  pageNumber: args.pageNumber,
+                  originalText: args.originalText,
+                  newText: args.newText,
+                  operation: args.operation,
+                },
+              }),
+            )
+            .unwrap()
+        } catch (error) {
+          console.error("Failed to track text edit addition:", error)
+        }
+      },
     }),
 
-    updateTextEdit: builder.mutation<void, {id: string; updates: Partial<TextEdit>}>({
+    updateTextEdit: builder.mutation<null, {id: string; updates: Partial<TextEdit>}>({
       queryFn: async ({id, updates}) => {
         const result = await textEditService.updateTextEdit(id, updates)
         if (!result.success) {
           return {error: {status: "CUSTOM_ERROR", error: result.error?.message || "Unknown error"}}
         }
-        return {data: undefined}
+        return {data: null}
       },
       invalidatesTags: (result, error, {id}) => [{type: "TextEdit", id}],
     }),
 
-    deleteTextEdit: builder.mutation<void, {id: string; versionId: string}>({
+    deleteTextEdit: builder.mutation<null, {id: string; versionId: string}>({
       queryFn: async ({id, versionId}) => {
         const result = await textEditService.deleteTextEdit(id)
         if (!result.success) {
           return {error: {status: "CUSTOM_ERROR", error: result.error?.message || "Unknown error"}}
         }
-        return {data: undefined}
+        return {data: null}
       },
       invalidatesTags: (result, error, {id, versionId}) => [
         {type: "TextEdit", id},
         {type: "TextEdit", id: `version-${versionId}`},
       ],
+      async onQueryStarted({id, versionId}, {dispatch, queryFulfilled}) {
+        try {
+          await queryFulfilled
+
+          // Track edit for text edit deletion
+          await store
+            .dispatch(
+              editsApi.endpoints.addEdit.initiate({
+                versionId,
+                type: "text_edit_deleted",
+                textEditId: id,
+                data: {deletedAt: new Date().toISOString()},
+              }),
+            )
+            .unwrap()
+        } catch (error) {
+          console.error("Failed to track text edit deletion:", error)
+        }
+      },
     }),
 
-    deleteTextEditsByVersion: builder.mutation<void, string>({
+    deleteTextEditsByVersion: builder.mutation<null, string>({
       queryFn: async versionId => {
         try {
           await textEditService.deleteTextEditsByVersion(versionId)
-          return {data: undefined}
+          return {data: null}
         } catch (error) {
           console.error("Delete error:", error)
           return {error: {status: "CUSTOM_ERROR", error: "Failed to delete text edits"}}

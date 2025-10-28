@@ -23,7 +23,10 @@ export const editsApi = createApi({
       ],
     }),
 
-    addEdit: builder.mutation<string, {versionId: string; type: Edit["type"]; annotationId: string; data?: any}>({
+    addEdit: builder.mutation<
+      string,
+      {versionId: string; type: Edit["type"]; annotationId?: string; textEditId?: string; data?: any}
+    >({
       queryFn: async args => {
         const result = await editService.addEdit(args)
         if (!result.success) {

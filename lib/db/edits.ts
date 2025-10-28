@@ -9,7 +9,8 @@ import {db} from "./database"
 export interface AddEditOptions {
   versionId: string
   type: Edit["type"]
-  annotationId: string
+  annotationId?: string
+  textEditId?: string
   data?: any
 }
 
@@ -22,6 +23,7 @@ export const editService = {
           versionId: options.versionId,
           type: options.type,
           annotationId: options.annotationId,
+          textEditId: options.textEditId,
           timestamp: new Date().toISOString(),
           data: options.data,
         }
