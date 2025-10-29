@@ -54,22 +54,24 @@ export function EditorHeader({documentId}: EditorHeaderProps) {
 
   return (
     <>
-      <header className="flex items-center justify-between border-b border-border bg-card px-4 py-3">
-        <div className="flex items-center gap-3">
+      <header className="flex items-center justify-between border-b border-border bg-card px-4 py-3 gap-2">
+        <div className="flex items-center">
           <Button variant="ghost" size="icon" onClick={handleGoBack}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div className="flex items-center gap-2">
+        </div>
+        <div className="flex flex-1 shrink items-center overflow-hidden gap-2">
+          <div className="flex items-center justify-center shrink-0">
             <FileText className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-semibold text-foreground">{document?.name}</h1>
-            <span className="text-sm text-muted-foreground">v{versionNumber}</span>
-            {isViewingHistoricalVersion && (
-              <div className="flex items-center gap-1 rounded bg-muted px-2 py-1 text-xs text-muted-foreground">
-                <Lock className="h-3 w-3" />
-                Read-only
-              </div>
-            )}
           </div>
+          <h1 className="text-lg font-semibold text-foreground truncate">{document?.name}</h1>
+          <span className="text-sm text-muted-foreground">v{versionNumber}</span>
+          {isViewingHistoricalVersion && (
+            <div className="flex items-center gap-1 rounded bg-muted px-2 py-1 text-xs text-muted-foreground">
+              <Lock className="h-3 w-3" />
+              Read-only
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleShowHistory} disabled={isDiffMode}>
