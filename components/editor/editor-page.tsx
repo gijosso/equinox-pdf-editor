@@ -4,6 +4,7 @@ import React from "react"
 
 import {setupPDFWorker} from "@/lib/pdf-worker-setup"
 import {useGetDocumentEditorQuery, useGetDocumentQuery, useSaveDocumentEditorMutation} from "@/lib/store/api"
+import type {DocumentEditor, EditorTool} from "@/lib/types"
 
 import {ErrorBoundaryWithSuspense} from "../error-boundary"
 import {EditorLoading} from "../loading"
@@ -33,7 +34,7 @@ export function EditorPage({documentId}: EditorPageProps) {
       isEditing: false,
       selectedAnnotations: [],
       viewport: {x: 0, y: 0, zoom: 1},
-      activeTool: {type: "select" as const},
+      activeTool: {type: "select" as EditorTool["type"]},
       sidebarOpen: true,
       currentPage: 1,
       totalPages: 1,
@@ -44,8 +45,8 @@ export function EditorPage({documentId}: EditorPageProps) {
       historyIndex: 0,
       isDiffMode: false,
       compareVersionIds: [],
-      annotationsViewMode: "all" as const,
-      textEditsViewMode: "all" as const,
+      annotationsViewMode: "all" as DocumentEditor["annotationsViewMode"],
+      textEditsViewMode: "all" as DocumentEditor["textEditsViewMode"],
     }),
     [documentId, document?.currentVersionId],
   )

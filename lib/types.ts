@@ -36,7 +36,6 @@ export interface PDFVersion {
   textContent?: string
 }
 
-export type AnnotationType = "highlight" | "note" | "redaction"
 export interface Edit {
   id: string
   versionId: string
@@ -60,7 +59,7 @@ export interface Edit {
 export interface Annotation {
   id: string
   versionId: string // Reference to the version this annotation belongs to
-  type: AnnotationType
+  type: "highlight" | "note" | "redaction"
   pageNumber: number
   createdAt: string
   updatedAt: string
@@ -76,10 +75,9 @@ export interface Annotation {
   committedVersionId?: string // Version number this annotation was committed from (for display)
 }
 
-export type AnnotationDiffType = "added" | "removed" | "modified" | "untouched"
 export interface AnnotationDiff {
   id: string
-  type: AnnotationDiffType
+  type: "added" | "removed" | "modified" | "untouched"
   annotation: Annotation
   oldAnnotation?: Annotation
 }
@@ -90,9 +88,8 @@ export interface EditorViewport {
   zoom: number
 }
 
-export type EditorToolType = "select" | "highlight" | "note" | "redaction" | "text_edit"
 export interface EditorTool {
-  type: EditorToolType
+  type: "select" | "highlight" | "note" | "redaction" | "text_edit"
   color?: string
   size?: number
 }

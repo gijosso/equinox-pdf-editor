@@ -27,6 +27,7 @@ export const editorService = {
           isDiffMode: editor.isDiffMode,
           compareVersionIds: editor.compareVersionIds,
           annotationsViewMode: editor.annotationsViewMode,
+          textEditsViewMode: editor.textEditsViewMode,
           createdAt: now,
           updatedAt: now,
         }
@@ -65,6 +66,7 @@ export const editorService = {
           isDiffMode: record.isDiffMode,
           compareVersionIds: record.compareVersionIds,
           annotationsViewMode: record.annotationsViewMode,
+          textEditsViewMode: record.textEditsViewMode,
         }
 
         return editor

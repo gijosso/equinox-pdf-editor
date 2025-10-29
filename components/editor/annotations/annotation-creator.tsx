@@ -4,7 +4,7 @@ import React from "react"
 
 import {useToast} from "@/hooks/use-toast"
 import {useAddAnnotationMutation, useGetDocumentEditorQuery} from "@/lib/store/api"
-import type {AnnotationType} from "@/lib/types"
+import type {Annotation} from "@/lib/types"
 import {
   calculateAnnotationBounds,
   createAnnotation,
@@ -52,7 +52,8 @@ export function AnnotationCreator({scale, documentId, children}: AnnotationCreat
 
   // Memoize preview color to avoid recalculation
   const previewColor = React.useMemo(
-    () => (activeTool.type !== "text_edit" ? getAnnotationPreviewColor(activeTool.type as AnnotationType) : "#666666"),
+    () =>
+      activeTool.type !== "text_edit" ? getAnnotationPreviewColor(activeTool.type as Annotation["type"]) : "#666666",
     [activeTool.type],
   )
 
@@ -131,7 +132,7 @@ export function AnnotationCreator({scale, documentId, children}: AnnotationCreat
     const pdfCoords = screenToPdfCoordinates(bounds.x, bounds.y, {scale})
     const pdfDims = screenToPdfDimensions(bounds.width, bounds.height, {scale})
 
-    const annotation = createAnnotation(activeTool.type as AnnotationType, {
+    const annotation = createAnnotation(activeTool.type as Annotation["type"], {
       versionId: currentVersionId!,
       pageNumber: currentPage,
       x: pdfCoords.x,

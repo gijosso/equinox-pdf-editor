@@ -1,4 +1,4 @@
-import type {Annotation, AnnotationType, Edit} from "@/lib/types"
+import type {Annotation, Edit} from "@/lib/types"
 import {ValidationError} from "@/lib/utils/error-handling"
 
 import {generateAnnotationId} from "./id"
@@ -83,7 +83,7 @@ export function createRedactionAnnotation(options: AnnotationCreationOptions): A
   }
 }
 
-export function createAnnotation(type: AnnotationType, options: AnnotationCreationOptions): Annotation {
+export function createAnnotation(type: Annotation["type"], options: AnnotationCreationOptions): Annotation {
   switch (type) {
     case "highlight":
       return createHighlightAnnotation(options)
@@ -116,7 +116,7 @@ export function validateAnnotation(annotation: Partial<Annotation>): boolean {
   return true
 }
 
-export function getDefaultAnnotationColor(type: AnnotationType): string {
+export function getDefaultAnnotationColor(type: Annotation["type"]): string {
   switch (type) {
     case "highlight":
       return "#ffeb3b" // Yellow
@@ -277,7 +277,7 @@ export interface AnnotationStyleConfig {
 
 const styleConfigCache = new Map<string, AnnotationStyleConfig>()
 
-export function getAnnotationStyleConfig(type: AnnotationType, locked: boolean = false): AnnotationStyleConfig {
+export function getAnnotationStyleConfig(type: Annotation["type"], locked: boolean = false): AnnotationStyleConfig {
   const cacheKey = `${type}-${locked}`
 
   if (styleConfigCache.has(cacheKey)) {
@@ -308,7 +308,7 @@ export function getAnnotationStyleConfig(type: AnnotationType, locked: boolean =
   return config
 }
 
-export function getAnnotationPreviewColor(type: AnnotationType): string {
+export function getAnnotationPreviewColor(type: Annotation["type"]): string {
   const colors = {
     highlight: "#ffeb3b",
     note: "#FFCD45",

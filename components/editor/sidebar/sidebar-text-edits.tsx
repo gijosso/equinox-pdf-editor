@@ -3,6 +3,7 @@
 import React from "react"
 
 import {useEditorActions, useGetTextEditsByVersionQuery} from "@/lib/store/api"
+import type {DocumentEditor} from "@/lib/types"
 
 import {TextEditList, TextEditViewControls} from "./text-edits"
 
@@ -13,7 +14,7 @@ interface SidebarTextEditsProps {
 export function SidebarTextEdits({documentId}: SidebarTextEditsProps) {
   const {editor, setTextEditsViewMode} = useEditorActions(documentId)
   const currentVersionId = editor?.currentVersionId || null
-
+  const viewMode = editor?.textEditsViewMode || "all"
   const {
     data: textEdits = [],
     isLoading,
@@ -22,10 +23,8 @@ export function SidebarTextEdits({documentId}: SidebarTextEditsProps) {
     skip: !currentVersionId,
   })
 
-  const viewMode = editor?.textEditsViewMode || "all"
-
   const handleViewModeChange = React.useCallback(
-    async (newViewMode: "all" | "grouped") => {
+    async (newViewMode: DocumentEditor["textEditsViewMode"]) => {
       await setTextEditsViewMode(newViewMode)
     },
     [setTextEditsViewMode],

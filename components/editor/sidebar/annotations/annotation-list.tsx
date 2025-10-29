@@ -4,7 +4,7 @@ import {ChevronDown, ChevronRight} from "lucide-react"
 import React from "react"
 
 import {ScrollArea} from "@/components/ui/scroll-area"
-import type {Annotation, AnnotationType} from "@/lib/types"
+import type {Annotation} from "@/lib/types"
 import {isAnnotationLocked} from "@/lib/utils/annotations"
 
 import {ANNOTATION_CONFIGS_ARRAY} from "./annotation-configs"
@@ -20,7 +20,7 @@ interface AnnotationListProps {
 export function AnnotationList({documentId, versionId, annotations, viewMode}: AnnotationListProps) {
   const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(new Set())
 
-  const toggleGroup = React.useCallback((type: AnnotationType) => {
+  const toggleGroup = React.useCallback((type: Annotation["type"]) => {
     setCollapsedGroups(prev => {
       const next = new Set(prev)
       if (next.has(type)) {
@@ -49,11 +49,11 @@ export function AnnotationList({documentId, versionId, annotations, viewMode}: A
   }, [annotations])
 
   const groupedAnnotations = React.useMemo(() => {
-    const groups: Record<AnnotationType, Annotation[]> = {
+    const groups: Record<Annotation["type"], Annotation[]> = {
       highlight: [],
       note: [],
       redaction: [],
-    } satisfies {[K in AnnotationType]: Annotation[]}
+    } satisfies {[K in Annotation["type"]]: Annotation[]}
 
     for (const annotation of sortedAnnotations) {
       if (annotation.type in groups) {

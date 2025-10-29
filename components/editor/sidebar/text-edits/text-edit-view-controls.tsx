@@ -3,10 +3,11 @@
 import {Layers, List} from "lucide-react"
 
 import {Button} from "@/components/ui/button"
+import type {DocumentEditor} from "@/lib/types"
 
 interface TextEditViewControlsProps {
-  viewMode: "all" | "grouped"
-  onViewModeChange: (mode: "all" | "grouped") => void
+  viewMode: DocumentEditor["textEditsViewMode"]
+  onViewModeChange: (mode: DocumentEditor["textEditsViewMode"]) => void
 }
 
 export function TextEditViewControls({viewMode, onViewModeChange}: TextEditViewControlsProps) {

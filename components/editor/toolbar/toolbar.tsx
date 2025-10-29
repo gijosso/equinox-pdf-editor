@@ -6,7 +6,7 @@ import React from "react"
 import {Button} from "@/components/ui/button"
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip"
 import {useEditorActions, useGetDocumentQuery} from "@/lib/store/api"
-import type {EditorToolType} from "@/lib/types"
+import type {EditorTool} from "@/lib/types"
 
 import {EDITOR_TOOL_CONFIGS} from "./toolbar-configs"
 import {ToolbarPage} from "./toolbar-page"
@@ -32,7 +32,7 @@ export function Toolbar({documentId}: ToolbarProps) {
 
   // Memoize handlers to prevent unnecessary re-renders
   const handleToolChange = React.useCallback(
-    async (toolType: EditorToolType) => {
+    async (toolType: EditorTool["type"]) => {
       await setActiveTool({type: toolType})
     },
     [setActiveTool],

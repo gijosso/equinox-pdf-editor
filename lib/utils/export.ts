@@ -205,9 +205,6 @@ function drawPageAnnotations(page: PDFPage, annotations: Annotation[], yPosition
   return currentY
 }
 
-/**
- * Formats annotation text for display
- */
 function formatAnnotationText(annotation: Annotation): string {
   const annotationType = getAnnotationTypeLabel(annotation.type)
   const content = formatAnnotationContent(annotation.content)
