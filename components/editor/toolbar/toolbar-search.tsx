@@ -46,7 +46,7 @@ export function ToolbarSearch({documentId}: ToolbarSearchProps) {
   )
 
   return (
-    <div className="flex items-center border-border gap-4">
+    <div className="flex items-center border-border gap-2">
       <div className="relative">
         <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -54,7 +54,7 @@ export function ToolbarSearch({documentId}: ToolbarSearchProps) {
           placeholder="Search in document..."
           value={localSearchQuery}
           onChange={handleInputChange}
-          className="h-8 w-64 pl-8 pr-8 bg-muted"
+          className="h-8 w-48 pl-8 pr-8 bg-muted"
           disabled={isSearching}
         />
         {localSearchQuery && (
@@ -71,7 +71,6 @@ export function ToolbarSearch({documentId}: ToolbarSearchProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground w-12 text-center">{searchResultText}</span>
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -86,6 +85,7 @@ export function ToolbarSearch({documentId}: ToolbarSearchProps) {
             <ChevronDown className="h-4 w-4" />
           </Button>
         </div>
+        <span className="hidden lg:block text-sm text-muted-foreground w-12 text-center">{searchResultText}</span>
       </div>
     </div>
   )

@@ -51,9 +51,10 @@ export function ExportPDFButton({documentId, versionId}: ExportPDFButtonProps) {
   }, [exportPDF, documentId, versionId, toast])
 
   return (
-    <Button onClick={handleExport} disabled={isLoading} variant="outline" size="sm" className="gap-2">
+    <Button onClick={handleExport} disabled={isLoading} variant="outline" size="sm">
       <Download className="h-4 w-4" />
-      {isLoading ? "Exporting..." : "Export PDF"}
+      <span className="hidden sm:block">Export</span>
+      <span className="hidden lg:block">PDF</span>
     </Button>
   )
 }

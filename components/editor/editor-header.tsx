@@ -73,18 +73,19 @@ export function EditorHeader({documentId}: EditorHeaderProps) {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleShowHistory} disabled={isDiffMode}>
-            <History className="mr-2 h-4 w-4" />
-            History
+            <History className="h-4 w-4" />
+            <span className="hidden sm:block">History</span>
           </Button>
-          {currentVersionId && document && <ExportPDFButton documentId={documentId} versionId={currentVersionId} />}
+          {currentVersionId && <ExportPDFButton documentId={documentId} versionId={currentVersionId} />}
           <Button
             variant="default"
             size="sm"
             onClick={handleShowSave}
             disabled={!hasEdits || isViewingHistoricalVersion}
           >
-            <Save className="mr-2 h-4 w-4" />
-            Save Version
+            <Save className="h-4 w-4" />
+            <span className="hidden sm:block">Save</span>
+            <span className="hidden lg:block">Version</span>
           </Button>
           <Button variant="ghost" size="icon" onClick={handleToggleSidebar}>
             <PanelRight className={`h-5 w-5 ${sidebarOpen ? "text-primary" : ""}`} />

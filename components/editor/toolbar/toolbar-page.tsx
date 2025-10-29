@@ -40,7 +40,7 @@ export function ToolbarPage({documentId}: ToolbarPageProps) {
         <Button variant="ghost" size="sm" onClick={handlePreviousPage} disabled={isFirstPage}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <span className="text-sm w-12 text-center">
+        <span className="hidden lg:block text-sm w-12 text-center">
           {currentPage} of {totalPages}
         </span>
         <Button variant="ghost" size="sm" onClick={handleNextPage} disabled={isLastPage}>

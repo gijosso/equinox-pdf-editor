@@ -81,7 +81,7 @@ export function Toolbar({documentId}: ToolbarProps) {
           ))}
         </div>
 
-        <div className="w-64">
+        <div className="hidden md:block w-64">
           <ToolbarSearch documentId={documentId} />
         </div>
 
@@ -89,7 +89,7 @@ export function Toolbar({documentId}: ToolbarProps) {
           <Button variant="ghost" size="sm" onClick={handleZoomOut} disabled={viewport.zoom <= 0.1}>
             <ZoomOut className="h-4 w-4" />
           </Button>
-          <span className="min-w-16 text-center text-sm text-foreground">{zoomPercentage}%</span>
+          <span className="hidden lg:block min-w-16 text-center text-sm text-foreground">{zoomPercentage}%</span>
           <Button variant="ghost" size="sm" onClick={handleZoomIn} disabled={viewport.zoom >= 3}>
             <ZoomIn className="h-4 w-4" />
           </Button>

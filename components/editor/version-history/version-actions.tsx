@@ -27,13 +27,16 @@ export function VersionActions({selectedVersions, onClose, documentId}: VersionA
 
   const canCompare = selectedVersions.length === 2
 
+  const sortedVersions = React.useMemo(() => {
+    return selectedVersions.sort((a, b) => a.versionNumber - b.versionNumber)
+  }, [selectedVersions])
+
   return (
     <div className="flex justify-between items-center border-t border-border p-4">
       <div className="text-sm text-muted-foreground">
-        {selectedVersions.length === 0 && "Select versions to compare"}
-        {selectedVersions.length === 1 && "Select one more version to compare"}
-        {selectedVersions.length === 2 && "Ready to compare selected versions"}
-        {selectedVersions.length > 2 && "Select only 2 versions to compare"}
+        {sortedVersions.length === 0
+          ? "Select versions to compare"
+          : `Compare v${sortedVersions[0].versionNumber} -> v${sortedVersions[1]?.versionNumber ?? "?"}`}
       </div>
       <div className="flex gap-2">
         <Button variant="outline" onClick={onClose}>
