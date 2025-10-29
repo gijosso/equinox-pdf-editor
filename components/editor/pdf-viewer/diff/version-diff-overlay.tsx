@@ -1,33 +1,47 @@
 "use client"
 
+import {X} from "lucide-react"
 import React from "react"
 
 import {annotationService} from "@/lib/db/annotations"
 import {useEditorActions, useGetVersionsByDocumentQuery} from "@/lib/store/api"
-import type {Annotation, AnnotationDiff, PDFVersion, TextDiff} from "@/lib/types"
+import type {Annotation, AnnotationDiff, TextDiff} from "@/lib/types"
 import {areAnnotationsDifferent} from "@/lib/utils/annotations"
 
-interface VersionDiffProviderProps {
+import {DiffOverlay} from "./diff-overlay"
+
+interface VersionDiffOverlayProps {
   documentId: string
-  isDiffMode: boolean
-  compareVersionIds: string[]
-  children: (args: {
-    version1: PDFVersion | undefined
-    version2: PDFVersion | undefined
-    textDiffs: TextDiff[]
-    annotationDiffs: AnnotationDiff[]
-    untouchedAnnotations: Annotation[]
-    handleCloseDiff: () => Promise<void>
-  }) => React.ReactNode
+  scale: number
+  pageWidth: number
+  pageHeight: number
+  renderHeader?: boolean
+  renderOverlay?: boolean
 }
 
-export function VersionDiffProvider({documentId, isDiffMode, compareVersionIds, children}: VersionDiffProviderProps) {
-  const {setDiffMode} = useEditorActions(documentId)
+export function VersionDiffOverlay({
+  documentId,
+  scale,
+  pageWidth,
+  pageHeight,
+  renderHeader = false,
+  renderOverlay = false,
+}: VersionDiffOverlayProps) {
+  const {setDiffMode, editor} = useEditorActions(documentId)
+  const isDiffMode = editor?.isDiffMode || false
+  const compareVersionIds = editor?.compareVersionIds || []
+  const currentPage = editor?.currentPage || 1
 
   // Get versions for diff comparison
   const {data: versions = []} = useGetVersionsByDocumentQuery(documentId, {skip: !documentId || !isDiffMode})
-  const version1 = React.useMemo(() => versions.find(v => v.id === compareVersionIds[0]), [versions, compareVersionIds])
-  const version2 = React.useMemo(() => versions.find(v => v.id === compareVersionIds[1]), [versions, compareVersionIds])
+  const [oldestVersion, latestVersion] = React.useMemo(() => {
+    const v1 = versions.find(v => v.id === compareVersionIds[0])
+    const v2 = versions.find(v => v.id === compareVersionIds[1])
+    if (!v1 || !v2) {
+      return [undefined, undefined]
+    }
+    return v1.versionNumber < v2.versionNumber ? [v1, v2] : [v2, v1]
+  }, [versions, compareVersionIds])
 
   const [textDiffs, setTextDiffs] = React.useState<TextDiff[]>([])
   const [annotationDiffs, setAnnotationDiffs] = React.useState<AnnotationDiff[]>([])
@@ -36,9 +50,8 @@ export function VersionDiffProvider({documentId, isDiffMode, compareVersionIds, 
   // Track the last processed version comparison to avoid infinite re-renders
   const lastProcessedComparison = React.useRef<string | null>(null)
 
-  // Calculate diffs when in diff mode
   React.useEffect(() => {
-    if (!isDiffMode || !compareVersionIds[0] || !compareVersionIds[1]) {
+    if (!isDiffMode || !oldestVersion || !latestVersion) {
       setTextDiffs([])
       setAnnotationDiffs([])
       setUntouchedAnnotations([])
@@ -46,14 +59,14 @@ export function VersionDiffProvider({documentId, isDiffMode, compareVersionIds, 
       return
     }
 
-    const comparisonKey = `${compareVersionIds[0]}-${compareVersionIds[1]}`
+    const comparisonKey = `${oldestVersion.id}-${latestVersion.id}`
 
     // Skip if we've already processed this comparison
     if (lastProcessedComparison.current === comparisonKey) {
       return
     }
 
-    if (!version1 || !version2) {
+    if (!oldestVersion || !latestVersion) {
       setTextDiffs([])
       setAnnotationDiffs([])
       setUntouchedAnnotations([])
@@ -66,8 +79,8 @@ export function VersionDiffProvider({documentId, isDiffMode, compareVersionIds, 
     const calculateDiffs = async () => {
       try {
         const [annotations1Result, annotations2Result] = await Promise.all([
-          annotationService.getAnnotationsByVersion(version1.id),
-          annotationService.getAnnotationsByVersion(version2.id),
+          annotationService.getAnnotationsByVersion(oldestVersion.id),
+          annotationService.getAnnotationsByVersion(latestVersion.id),
         ])
 
         const annotations1 = annotations1Result.success ? annotations1Result.data : []
@@ -124,11 +137,38 @@ export function VersionDiffProvider({documentId, isDiffMode, compareVersionIds, 
     }
 
     calculateDiffs()
-  }, [isDiffMode, compareVersionIds, version1, version2])
+  }, [isDiffMode, oldestVersion, latestVersion])
 
   const handleCloseDiff = React.useCallback(async () => {
     await setDiffMode(false, [])
   }, [setDiffMode])
 
-  return <>{children({version1, version2, textDiffs, annotationDiffs, untouchedAnnotations, handleCloseDiff})}</>
+  // Header bar should only render when diff mode is active and renderHeader is true
+  const showHeader = renderHeader && isDiffMode && compareVersionIds.length === 2 && oldestVersion && latestVersion
+
+  // Diff overlay should only render when diff mode is active, page dimensions are available, and renderOverlay is true
+  const showDiffOverlay =
+    renderOverlay &&
+    isDiffMode &&
+    compareVersionIds.length === 2 &&
+    oldestVersion &&
+    latestVersion &&
+    pageWidth > 0 &&
+    pageHeight > 0
+
+  if (!showHeader && !showDiffOverlay) {
+    return null
+  }
+
+  return (
+    <DiffOverlay
+      pageNumber={currentPage}
+      textDiffs={textDiffs}
+      annotationDiffs={annotationDiffs}
+      untouchedAnnotations={untouchedAnnotations}
+      scale={scale}
+      viewportWidth={pageWidth}
+      viewportHeight={pageHeight}
+    />
+  )
 }

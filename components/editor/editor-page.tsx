@@ -1,6 +1,5 @@
 "use client"
 
-import {Loader2} from "lucide-react"
 import React from "react"
 
 import {setupPDFWorker} from "@/lib/pdf-worker-setup"
@@ -66,11 +65,7 @@ export function EditorPage({documentId}: EditorPageProps) {
   }, [documentId, document, editor, saveDocumentEditor, initialEditor])
 
   if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    )
+    return null
   }
 
   if (error) {

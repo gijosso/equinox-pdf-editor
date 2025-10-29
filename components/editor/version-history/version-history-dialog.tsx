@@ -21,7 +21,7 @@ interface VersionHistoryDialogProps {
 
 export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHistoryDialogProps) {
   const [updateDocument, {isLoading: updating}] = useUpdateDocumentMutation()
-  const {editor, setCurrentVersionId} = useEditorActions(documentId)
+  const {editor, setCurrentVersionId, setDiffMode} = useEditorActions(documentId)
   const {data: document} = useGetDocumentQuery(documentId, {skip: !documentId})
   const {toast} = useToast()
   const [selectedVersions, setSelectedVersions] = React.useState<string[]>([])
@@ -94,11 +94,10 @@ export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHi
         return
       }
 
-      const {setDiffMode} = useEditorActions(documentId)
       await setDiffMode(true, [currentVersionId, versionId])
       onOpenChange(false)
     },
-    [currentVersionId, documentId, onOpenChange],
+    [currentVersionId, setDiffMode, onOpenChange],
   )
 
   const sortedVersions = React.useMemo(() => {

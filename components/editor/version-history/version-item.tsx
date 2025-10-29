@@ -86,9 +86,9 @@ export function VersionItem({
               e.stopPropagation()
               handleCompare()
             }}
-            disabled={isLoading}
+            disabled={isCurrent || isLoading}
           >
-            Compare
+            Compare with Latest
           </Button>
         </div>
       </div>
