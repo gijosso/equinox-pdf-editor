@@ -4,55 +4,11 @@ import React from "react"
 
 import type {Annotation, AnnotationDiff, TextDiff, TextSpan} from "@/lib/types"
 
-type DiffType = "added" | "removed" | "modified" | "untouched"
-
-interface DiffOverlayConfig {
-  highlightClasses: string
-  outlineClasses: string
-  iconClasses: string
-  icon: string
-}
-
-const DIFF_OVERLAY_CONFIG: Record<DiffType, DiffOverlayConfig> = {
-  added: {
-    highlightClasses: "bg-green-500/50 border-green-500",
-    outlineClasses: "border-green-500",
-    iconClasses: "bg-green-500",
-    icon: "+",
-  },
-  removed: {
-    highlightClasses: "bg-red-500/50 border-red-500",
-    outlineClasses: "border-red-500",
-    iconClasses: "bg-red-500",
-    icon: "-",
-  },
-  modified: {
-    highlightClasses: "bg-yellow-500/50 border-yellow-500",
-    outlineClasses: "border-yellow-500",
-    iconClasses: "bg-yellow-500",
-    icon: "~",
-  },
-  untouched: {
-    highlightClasses: "bg-gray-500/30 border-gray-500",
-    outlineClasses: "border-gray-500",
-    iconClasses: "bg-gray-500",
-    icon: "=",
-  },
-} as const
-
-interface DiffOverlayProps {
-  textDiffs: TextDiff[]
-  annotationDiffs: AnnotationDiff[]
-  untouchedAnnotations: Annotation[]
-  pageNumber: number
-  scale: number
-  viewportWidth: number
-  viewportHeight: number
-}
+import {DIFF_OVERLAY_CONFIG} from "./diff-overlay-configs"
 
 interface DiffHighlightProps {
   span: TextSpan
-  type: DiffType
+  type: AnnotationDiff["type"]
   scale: number
 }
 
@@ -74,7 +30,7 @@ function DiffHighlight({span, type, scale}: DiffHighlightProps) {
 
 interface AnnotationDiffHighlightProps {
   annotation: AnnotationDiff["annotation"]
-  type: DiffType
+  type: AnnotationDiff["type"]
   scale: number
 }
 
@@ -123,6 +79,16 @@ function UntouchedAnnotationHighlight({annotation, scale}: UntouchedAnnotationHi
       </div>
     </div>
   )
+}
+
+interface DiffOverlayProps {
+  textDiffs: TextDiff[]
+  annotationDiffs: AnnotationDiff[]
+  untouchedAnnotations: Annotation[]
+  pageNumber: number
+  scale: number
+  viewportWidth: number
+  viewportHeight: number
 }
 
 export function DiffOverlay({

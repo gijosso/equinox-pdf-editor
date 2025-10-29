@@ -29,7 +29,7 @@ interface BaseAnnotationProps {
   documentId: string
 }
 
-export function BaseAnnotation({
+export function AnnotationBase({
   annotation,
   x,
   y,

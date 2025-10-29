@@ -5,7 +5,7 @@ import React from "react"
 import type {Annotation, Edit} from "@/lib/types"
 import {getAnnotationStyleConfig, isWithinAnnotationInteraction, updateAnnotationContent} from "@/lib/utils/annotations"
 
-import {BaseAnnotation} from "./base-annotation"
+import {AnnotationBase} from "./annotation-base"
 
 interface AnnotationNoteProps {
   annotation: Annotation
@@ -97,7 +97,7 @@ export function AnnotationNote({
   }, [isEditing])
 
   return (
-    <BaseAnnotation
+    <AnnotationBase
       annotation={annotation}
       x={x}
       y={y}
@@ -143,6 +143,6 @@ export function AnnotationNote({
           }}
         />
       </div>
-    </BaseAnnotation>
+    </AnnotationBase>
   )
 }

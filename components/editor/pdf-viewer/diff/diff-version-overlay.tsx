@@ -1,6 +1,5 @@
 "use client"
 
-import {X} from "lucide-react"
 import React from "react"
 
 import {annotationService} from "@/lib/db/annotations"
@@ -19,7 +18,7 @@ interface VersionDiffOverlayProps {
   renderOverlay?: boolean
 }
 
-export function VersionDiffOverlay({
+export function DiffVersionOverlay({
   documentId,
   scale,
   pageWidth,

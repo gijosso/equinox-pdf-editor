@@ -1,4 +1,5 @@
 export {DiffOverlay} from "./diff-overlay"
 export {DiffLegend} from "./diff-legend"
 export {DiffVersionBar as VersionComparisonBar} from "./diff-version-bar"
-export {VersionDiffOverlay} from "./version-diff-overlay"
+export {DiffVersionOverlay as VersionDiffOverlay} from "./diff-version-overlay"
+export {DIFF_OVERLAY_CONFIG} from "./diff-overlay-configs"

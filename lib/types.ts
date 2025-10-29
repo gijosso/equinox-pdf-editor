@@ -76,7 +76,7 @@ export interface Annotation {
   committedVersionId?: string // Version number this annotation was committed from (for display)
 }
 
-export type AnnotationDiffType = "added" | "removed" | "modified"
+export type AnnotationDiffType = "added" | "removed" | "modified" | "untouched"
 export interface AnnotationDiff {
   id: string
   type: AnnotationDiffType

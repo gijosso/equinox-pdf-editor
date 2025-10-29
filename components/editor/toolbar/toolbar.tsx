@@ -1,6 +1,6 @@
 "use client"
 
-import {Edit3, Highlighter, MousePointer, Square, StickyNote, ZoomIn, ZoomOut} from "lucide-react"
+import {ZoomIn, ZoomOut} from "lucide-react"
 import React from "react"
 
 import {Button} from "@/components/ui/button"
@@ -8,18 +8,9 @@ import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/compon
 import {useEditorActions, useGetDocumentQuery} from "@/lib/store/api"
 import type {EditorToolType} from "@/lib/types"
 
+import {EDITOR_TOOL_CONFIGS} from "./toolbar-configs"
 import {ToolbarPage} from "./toolbar-page"
 import {ToolbarSearch} from "./toolbar-search"
-
-type EditorToolConfig = {type: EditorToolType; icon: React.ElementType; label: string}
-
-const EDITOR_TOOL_CONFIGS = {
-  select: {type: "select", icon: MousePointer, label: "Select Text"},
-  highlight: {type: "highlight", icon: Highlighter, label: "Highlight"},
-  note: {type: "note", icon: StickyNote, label: "Sticky Note"},
-  redaction: {type: "redaction", icon: Square, label: "Redaction"},
-  text_edit: {type: "text_edit", icon: Edit3, label: "Edit Text"},
-} as const satisfies {[K in EditorToolType]: EditorToolConfig}
 
 interface ToolbarProps {
   documentId: string

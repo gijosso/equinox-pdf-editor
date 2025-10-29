@@ -10,7 +10,7 @@ import {LazySearchHighlights} from "@/components/lazy"
 import {Button} from "@/components/ui/button"
 import {usePDFBlob} from "@/hooks/use-pdf-blob"
 import {setupPDFWorker} from "@/lib/pdf-worker-setup"
-import {useEditorActions, useGetDocumentEditorQuery, useSaveDocumentEditorMutation} from "@/lib/store/api"
+import {useEditorActions, useSaveDocumentEditorMutation} from "@/lib/store/api"
 
 import {AnnotationCreator, AnnotationOverlay} from "../annotations"
 import {TextEditOverlay} from "../text-edit"

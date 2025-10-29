@@ -8,15 +8,13 @@ import {ScrollArea} from "@/components/ui/scroll-area"
 import {useGetDocumentEditorQuery, useGetEditsByVersionQuery} from "@/lib/store/api"
 import type {Edit as EditType} from "@/lib/types"
 
-type EditActionType = EditType["type"]
-
 interface EditActionConfig {
   icon: React.ReactNode
   color: string
   description: string
 }
 
-const EDIT_ACTION_CONFIG: Record<EditActionType, EditActionConfig> = {
+const EDIT_ACTION_CONFIG: Record<EditType["type"], EditActionConfig> = {
   annotation_added: {
     icon: <Plus className="h-4 w-4" />,
     color: "text-green-500",

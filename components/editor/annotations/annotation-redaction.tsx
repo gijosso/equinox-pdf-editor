@@ -3,7 +3,7 @@
 import type {Annotation, Edit} from "@/lib/types"
 import {getAnnotationStyleConfig} from "@/lib/utils/annotations"
 
-import {BaseAnnotation} from "./base-annotation"
+import {AnnotationBase} from "./annotation-base"
 
 interface AnnotationRedactionProps {
   annotation: Annotation
@@ -32,7 +32,7 @@ export function AnnotationRedaction({
   const color = annotation.color || styleConfig.color
 
   return (
-    <BaseAnnotation
+    <AnnotationBase
       annotation={annotation}
       x={x}
       y={y}
@@ -59,6 +59,6 @@ export function AnnotationRedaction({
           }}
         />
       </div>
-    </BaseAnnotation>
+    </AnnotationBase>
   )
 }
