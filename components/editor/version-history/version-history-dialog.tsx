@@ -10,6 +10,7 @@ import {
   useGetVersionsByDocumentQuery,
   useUpdateDocumentMutation,
 } from "@/lib/store/api"
+import {PDFVersion} from "@/lib/types"
 
 import {VersionActions, VersionList} from "."
 
@@ -24,7 +25,7 @@ export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHi
   const {editor, setCurrentVersionId, setDiffMode} = useEditorActions(documentId)
   const {data: document} = useGetDocumentQuery(documentId, {skip: !documentId})
   const {toast} = useToast()
-  const [selectedVersions, setSelectedVersions] = React.useState<string[]>([])
+  const [selectedVersions, setSelectedVersions] = React.useState<PDFVersion[]>([])
   const currentVersionId = editor?.currentVersionId || null
 
   const {
@@ -40,23 +41,18 @@ export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHi
   }, [open])
 
   const handleLoadVersion = React.useCallback(
-    async (versionId: string) => {
+    async (version: PDFVersion) => {
       if (!documentId || !editor) {
-        return
-      }
-
-      const version = versions.find(v => v.id === versionId)
-      if (!version) {
         return
       }
 
       try {
         await updateDocument({
           documentId,
-          updates: {currentVersionId: versionId},
+          updates: {currentVersionId: version.id},
         }).unwrap()
 
-        await setCurrentVersionId(versionId)
+        await setCurrentVersionId(version.id)
         toast({
           title: "Version Loaded",
           description: `Switched to version ${version.versionNumber}`,
@@ -76,25 +72,28 @@ export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHi
     [documentId, editor, versions, updateDocument, setCurrentVersionId, toast, onOpenChange],
   )
 
-  const handleSelectVersion = React.useCallback((versionId: string) => {
-    setSelectedVersions(prev => {
-      if (prev.includes(versionId)) {
-        return prev.filter(id => id !== versionId)
-      } else if (prev.length < 2) {
-        return [...prev, versionId]
-      } else {
-        return [prev[1], versionId]
-      }
-    })
-  }, [])
+  const handleSelectVersion = React.useCallback(
+    (version: PDFVersion) => {
+      setSelectedVersions(prev => {
+        if (prev.some(v => v.id === version.id)) {
+          return prev.filter(v => v.id !== version.id)
+        } else if (prev.length < 2) {
+          return [...prev, version]
+        } else {
+          return [prev[1], version]
+        }
+      })
+    },
+    [setSelectedVersions],
+  )
 
   const handleCompareVersion = React.useCallback(
-    async (versionId: string) => {
+    async (version: PDFVersion) => {
       if (!currentVersionId) {
         return
       }
 
-      await setDiffMode(true, [currentVersionId, versionId])
+      await setDiffMode(true, [version.id, currentVersionId])
       onOpenChange(false)
     },
     [currentVersionId, setDiffMode, onOpenChange],

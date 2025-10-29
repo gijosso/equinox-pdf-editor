@@ -37,10 +37,7 @@ export function VersionDiffOverlay({
   const [oldestVersion, latestVersion] = React.useMemo(() => {
     const v1 = versions.find(v => v.id === compareVersionIds[0])
     const v2 = versions.find(v => v.id === compareVersionIds[1])
-    if (!v1 || !v2) {
-      return [undefined, undefined]
-    }
-    return v1.versionNumber < v2.versionNumber ? [v1, v2] : [v2, v1]
+    return [v1, v2]
   }, [versions, compareVersionIds])
 
   const [textDiffs, setTextDiffs] = React.useState<TextDiff[]>([])

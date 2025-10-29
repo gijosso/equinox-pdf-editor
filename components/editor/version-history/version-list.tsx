@@ -8,10 +8,10 @@ import {VersionItem} from "./version-item"
 interface VersionListProps {
   versions: PDFVersion[]
   currentVersionId: string | null
-  selectedVersions: string[]
-  onSelectVersion: (versionId: string) => void
-  onLoadVersion: (versionId: string) => void
-  onCompareVersion: (versionId: string) => void
+  selectedVersions: Pick<PDFVersion, "id" | "versionNumber">[]
+  onSelectVersion: (version: PDFVersion) => void
+  onLoadVersion: (version: PDFVersion) => void
+  onCompareVersion: (version: PDFVersion) => void
   isLoading: boolean
 }
 
@@ -51,7 +51,7 @@ export function VersionList({
             key={version.id}
             version={version}
             isCurrent={version.id === currentVersionId}
-            isSelected={selectedVersions.includes(version.id)}
+            isSelected={selectedVersions.some(v => v.id === version.id)}
             onSelect={onSelectVersion}
             onLoad={onLoadVersion}
             onCompare={onCompareVersion}

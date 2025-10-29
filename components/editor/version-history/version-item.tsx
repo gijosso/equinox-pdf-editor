@@ -11,9 +11,9 @@ interface VersionItemProps {
   version: PDFVersion
   isCurrent: boolean
   isSelected: boolean
-  onSelect: (versionId: string) => void
-  onLoad: (versionId: string) => void
-  onCompare: (versionId: string) => void
+  onSelect: (version: PDFVersion) => void
+  onLoad: (version: PDFVersion) => void
+  onCompare: (version: PDFVersion) => void
   isLoading: boolean
 }
 
@@ -27,16 +27,16 @@ export function VersionItem({
   isLoading,
 }: VersionItemProps) {
   const handleSelect = React.useCallback(() => {
-    onSelect(version.id)
-  }, [onSelect, version.id])
+    onSelect(version)
+  }, [onSelect, version])
 
   const handleLoad = React.useCallback(() => {
-    onLoad(version.id)
-  }, [onLoad, version.id])
+    onLoad(version)
+  }, [onLoad, version])
 
   const handleCompare = React.useCallback(() => {
-    onCompare(version.id)
-  }, [onCompare, version.id])
+    onCompare(version)
+  }, [onCompare, version])
 
   return (
     <div

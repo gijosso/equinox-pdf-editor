@@ -4,9 +4,10 @@ import React from "react"
 
 import {Button} from "@/components/ui/button"
 import {useEditorActions} from "@/lib/store/api"
+import {PDFVersion} from "@/lib/types"
 
 interface VersionActionsProps {
-  selectedVersions: string[]
+  selectedVersions: PDFVersion[]
   onClose: () => void
   documentId: string
 }
@@ -16,7 +17,10 @@ export function VersionActions({selectedVersions, onClose, documentId}: VersionA
 
   const handleCompareSelected = React.useCallback(async () => {
     if (selectedVersions.length === 2) {
-      await setDiffMode(true, selectedVersions)
+      await setDiffMode(
+        true,
+        selectedVersions.sort((a, b) => a.versionNumber - b.versionNumber).map(v => v.id),
+      )
       onClose()
     }
   }, [selectedVersions, setDiffMode, onClose])
