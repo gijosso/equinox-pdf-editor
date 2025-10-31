@@ -50,17 +50,20 @@ export function PDFViewer({documentId}: PDFViewerProps) {
   const {blobUrl, loading, error} = usePDFBlob(documentId)
   const [pageDimensions, setPageDimensions] = React.useState<{width: number; height: number} | null>(null)
 
+  // Avoid resetting editor state after initial document load
+  const didInitRef = React.useRef(false)
+
   const onDocumentLoadSuccess = React.useCallback(
     ({numPages}: {numPages: number}) => {
+      if (didInitRef.current) return
+      didInitRef.current = true
       if (editor) {
         saveDocumentEditor({
           documentId,
           editor: {
             ...editor,
             totalPages: numPages,
-            currentPage: 1,
-            viewport: {x: 0, y: 0, zoom: 1},
-            // Don't reset diff mode - preserve it from persisted state
+            // Do not force-reset currentPage/viewport to prevent visible jumps
           },
         })
       }
@@ -73,7 +76,6 @@ export function PDFViewer({documentId}: PDFViewerProps) {
   }, [setDiffMode])
 
   const onPageLoadSuccess = React.useCallback((page: any) => {
-    // Lock page dimensions from the first loaded page to avoid layout shifts
     setPageDimensions(prev => prev ?? {width: page.width, height: page.height})
   }, [])
 
@@ -116,73 +118,73 @@ export function PDFViewer({documentId}: PDFViewerProps) {
         </div>
       )}
       <div className="flex justify-center items-center">
-        <div className="flex-1 overflow-auto">
-          <div className="flex justify-center items-center relative min-h-full w-full min-w-0">
-            <div
-              className="relative bg-white"
-              style={
-                pageDimensions
-                  ? {
-                      width: pageDimensions.width * viewport.zoom,
-                      height: pageDimensions.height * viewport.zoom,
+        <div className="flex flex-1 overflow-auto">
+          <div className="flex justify-center items-center relative min-h-full w-full">
+            <Document file={blobUrl} onLoadSuccess={onDocumentLoadSuccess}>
+              <TextEditor scale={viewport.zoom} documentId={documentId}>
+                <AnnotationCreator
+                  scale={viewport.zoom}
+                  pageWidth={pageDimensions?.width || 0}
+                  pageHeight={pageDimensions?.height || 0}
+                  documentId={documentId}
+                >
+                  <div
+                    className="relative"
+                    style={
+                      pageDimensions
+                        ? {
+                            width: pageDimensions.width * viewport.zoom,
+                            height: pageDimensions.height * viewport.zoom,
+                          }
+                        : undefined
                     }
-                  : undefined
-              }
-            >
-              <Document file={blobUrl} onLoadSuccess={onDocumentLoadSuccess} className="h-full w-full">
-                <TextEditor scale={viewport.zoom} documentId={documentId}>
-                  <AnnotationCreator
-                    scale={viewport.zoom}
-                    pageWidth={pageDimensions?.width || 0}
-                    pageHeight={pageDimensions?.height || 0}
-                    documentId={documentId}
                   >
-                    <div className="relative">
-                      <Page
-                        pageNumber={currentPage}
-                        renderTextLayer={true}
-                        className="border border-border"
+                    <Page
+                      pageNumber={currentPage}
+                      width={pageDimensions ? pageDimensions.width * viewport.zoom : undefined}
+                      scale={viewport.zoom}
+                      onLoadSuccess={onPageLoadSuccess}
+                      renderTextLayer
+                      renderAnnotationLayer={false}
+                      className="h-full w-full"
+                    />
+
+                    <LazySearchHighlights scale={viewport.zoom} documentId={documentId} />
+
+                    {pageDimensions && (
+                      <AnnotationOverlay
                         scale={viewport.zoom}
-                        onLoadSuccess={onPageLoadSuccess}
+                        pageWidth={pageDimensions.width}
+                        pageHeight={pageDimensions.height}
+                        documentId={documentId}
+                        className={isDiffMode || !isAnnotationTool ? "z-0" : "z-10"}
                       />
+                    )}
 
-                      <LazySearchHighlights scale={viewport.zoom} documentId={documentId} />
+                    {pageDimensions && (
+                      <TextEditOverlay
+                        scale={viewport.zoom}
+                        pageNumber={currentPage}
+                        documentId={documentId}
+                        className={isDiffMode || !isTextEditTool ? "z-0" : "z-10"}
+                      />
+                    )}
 
-                      {pageDimensions && (
-                        <AnnotationOverlay
-                          scale={viewport.zoom}
-                          pageWidth={pageDimensions.width}
-                          pageHeight={pageDimensions.height}
-                          documentId={documentId}
-                          className={isDiffMode || !isAnnotationTool ? "z-0" : "z-10"}
-                        />
-                      )}
-
-                      {pageDimensions && (
-                        <TextEditOverlay
-                          scale={viewport.zoom}
-                          pageNumber={currentPage}
-                          documentId={documentId}
-                          className={isDiffMode || !isTextEditTool ? "z-0" : "z-10"}
-                        />
-                      )}
-
-                      {/* Diff overlay on the PDF page */}
-                      {pageDimensions && (
-                        <VersionDiffOverlay
-                          documentId={documentId}
-                          scale={viewport.zoom}
-                          pageWidth={pageDimensions.width}
-                          pageHeight={pageDimensions.height}
-                          renderHeader={false}
-                          renderOverlay={true}
-                        />
-                      )}
-                    </div>
-                  </AnnotationCreator>
-                </TextEditor>
-              </Document>
-            </div>
+                    {/* Diff overlay on the PDF page */}
+                    {pageDimensions && (
+                      <VersionDiffOverlay
+                        documentId={documentId}
+                        scale={viewport.zoom}
+                        pageWidth={pageDimensions.width}
+                        pageHeight={pageDimensions.height}
+                        renderHeader={false}
+                        renderOverlay={true}
+                      />
+                    )}
+                  </div>
+                </AnnotationCreator>
+              </TextEditor>
+            </Document>
           </div>
         </div>
       </div>

@@ -72,7 +72,7 @@ function TextEditDisplay({textEdit, scale, onDelete, isReadOnly = false}: TextEd
   )
 }
 
-export function TextEditOverlay({scale, pageNumber, documentId, className}: TextEditOverlayProps) {
+function TextEditOverlayImpl({scale, pageNumber, documentId, className}: TextEditOverlayProps) {
   const {data: editor} = useGetDocumentEditorQuery(documentId, {skip: !documentId})
   const currentVersionId = editor?.currentVersionId || null
   const activeTool = editor?.activeTool || {type: "select"}
@@ -122,3 +122,5 @@ export function TextEditOverlay({scale, pageNumber, documentId, className}: Text
     </div>
   )
 }
+
+export const TextEditOverlay = React.memo(TextEditOverlayImpl)

@@ -91,7 +91,7 @@ interface DiffOverlayProps {
   viewportHeight: number
 }
 
-export function DiffOverlay({
+function DiffOverlayImpl({
   textDiffs,
   annotationDiffs,
   untouchedAnnotations,
@@ -152,3 +152,5 @@ export function DiffOverlay({
     </div>
   )
 }
+
+export const DiffOverlay = React.memo(DiffOverlayImpl)

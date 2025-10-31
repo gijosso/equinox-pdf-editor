@@ -18,7 +18,7 @@ interface AnnotationOverlayProps {
   className?: string
 }
 
-export function AnnotationOverlay({scale, documentId, className}: AnnotationOverlayProps) {
+function AnnotationOverlayImpl({scale, documentId, className}: AnnotationOverlayProps) {
   const {data: editor} = useGetDocumentEditorQuery(documentId, {skip: !documentId})
   const currentVersionId = editor?.currentVersionId || null
   const currentPage = editor?.currentPage || 1
@@ -104,3 +104,5 @@ export function AnnotationOverlay({scale, documentId, className}: AnnotationOver
 
   return <div className={`absolute inset-0 ${className}`}>{annotationComponents}</div>
 }
+
+export const AnnotationOverlay = React.memo(AnnotationOverlayImpl)
