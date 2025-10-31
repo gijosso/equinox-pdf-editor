@@ -1,8 +1,8 @@
 "use client"
 
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import * as React from "react"
 import {XIcon} from "lucide-react"
+import React from "react"
 
 import {cn} from "@/lib/utils"
 
