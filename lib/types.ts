@@ -1,17 +1,3 @@
-export interface NormalizedState {
-  documents: {
-    entities: Record<string, PDFDocument>
-    ids: string[]
-  }
-  versions: {
-    entities: Record<string, PDFVersion>
-    ids: string[]
-    byDocument: Record<string, string[]> // documentId -> versionIds[]
-  }
-  loading: boolean
-  error: string | null
-}
-
 export interface PDFDocument {
   id: string
   name: string
@@ -56,18 +42,24 @@ export interface Edit {
   data?: any // Additional data for the edit
 }
 
-export interface Annotation {
+export type Rect = {x: number; y: number; width: number; height: number}
+export type CreatedUpdated = {createdAt: string; updatedAt: string}
+export type DiffType = "added" | "removed" | "modified" | "untouched"
+export type ViewMode = "all" | "grouped"
+
+export type PositionedContent = Rect & {pageNumber: number} & CreatedUpdated
+
+export type DiffItem = Rect & {
+  id: string
+  pageNumber: number
+  annotationType: DiffType
+}
+
+export interface Annotation extends PositionedContent {
   id: string
   versionId: string // Reference to the version this annotation belongs to
   type: "highlight" | "note" | "redaction"
-  pageNumber: number
-  createdAt: string
-  updatedAt: string
   content: string
-  x: number
-  y: number
-  width: number
-  height: number
   text?: string
   color?: string
   fontSize?: number
@@ -77,7 +69,7 @@ export interface Annotation {
 
 export interface AnnotationDiff {
   id: string
-  type: "added" | "removed" | "modified" | "untouched"
+  type: DiffType
   annotation: Annotation
   oldAnnotation?: Annotation
 }
@@ -122,8 +114,8 @@ export interface DocumentEditor {
   compareVersionIds: string[]
 
   // Sidebar state
-  annotationsViewMode: "all" | "grouped"
-  textEditsViewMode: "all" | "grouped"
+  annotationsViewMode: ViewMode
+  textEditsViewMode: ViewMode
 }
 
 export interface VersionEditor {
@@ -158,8 +150,8 @@ export interface EditorRecord {
   historyIndex: number
   isDiffMode: boolean
   compareVersionIds: string[]
-  annotationsViewMode: "all" | "grouped"
-  textEditsViewMode: "all" | "grouped"
+  annotationsViewMode: ViewMode
+  textEditsViewMode: ViewMode
   createdAt: string
   updatedAt: string
 }
@@ -216,16 +208,11 @@ export interface VersionDiffResult {
 }
 
 // Text editing specific types
-export interface TextEdit {
+export interface TextEdit extends PositionedContent {
   id: string
   versionId: string
-  pageNumber: number
   originalText: string
   newText: string
-  x: number
-  y: number
-  width: number
-  height: number
   fontFamily?: string
   fontSize?: number
   fontWeight?: string | number
@@ -233,8 +220,6 @@ export interface TextEdit {
   operation?: TextEditOperation["type"]
   originalId?: string // ID of the original text edit for diff comparison across versions
   committedVersionId?: string // Version this text edit was committed from
-  createdAt: string
-  updatedAt: string
 }
 
 export interface FontInfo {
