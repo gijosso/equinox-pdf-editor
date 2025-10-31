@@ -9,7 +9,6 @@ import "react-pdf/dist/Page/TextLayer.css"
 import {LazySearchHighlights} from "@/components/lazy"
 import {Button} from "@/components/ui/button"
 import {usePDFBlob} from "@/hooks/use-pdf-blob"
-import {setupPDFWorker} from "@/lib/pdf-worker-setup"
 import {useEditorActions, useSaveDocumentEditorMutation} from "@/lib/store/api"
 
 import {AnnotationCreator, AnnotationOverlay} from "../annotations"
@@ -22,9 +21,22 @@ interface PDFViewerProps {
 }
 
 export function PDFViewer({documentId}: PDFViewerProps) {
-  // Ensure PDF.js worker is set up
+  // Ensure PDF.js worker is set up (client-only)
   React.useEffect(() => {
-    setupPDFWorker()
+    let cancelled = false
+    ;(async () => {
+      try {
+        const {pdfjs} = await import("react-pdf")
+        if (!cancelled) {
+          pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
+        }
+      } catch (error) {
+        console.error("Failed to setup PDF worker:", error)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const {setDiffMode, editor} = useEditorActions(documentId)

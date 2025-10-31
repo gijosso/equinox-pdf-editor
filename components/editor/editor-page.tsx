@@ -2,7 +2,6 @@
 
 import React from "react"
 
-import {setupPDFWorker} from "@/lib/pdf-worker-setup"
 import {useGetDocumentEditorQuery, useGetDocumentQuery, useSaveDocumentEditorMutation} from "@/lib/store/api"
 import type {DocumentEditor, EditorTool} from "@/lib/types"
 
@@ -18,11 +17,6 @@ interface EditorPageProps {
 }
 
 export function EditorPage({documentId}: EditorPageProps) {
-  // Ensure PDF.js worker is set up early
-  React.useEffect(() => {
-    setupPDFWorker()
-  }, [])
-
   const [saveDocumentEditor] = useSaveDocumentEditorMutation()
   const {data: document, isLoading, error} = useGetDocumentQuery(documentId, {skip: !documentId})
   const {data: editor} = useGetDocumentEditorQuery(documentId, {skip: !documentId})
