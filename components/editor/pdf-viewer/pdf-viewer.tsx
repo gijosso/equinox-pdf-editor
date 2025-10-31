@@ -144,7 +144,6 @@ export function PDFViewer({documentId}: PDFViewerProps) {
                     <Page
                       pageNumber={currentPage}
                       width={pageDimensions ? pageDimensions.width * viewport.zoom : undefined}
-                      scale={viewport.zoom}
                       onLoadSuccess={onPageLoadSuccess}
                       renderTextLayer
                       renderAnnotationLayer={false}
