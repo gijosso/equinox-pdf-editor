@@ -38,19 +38,21 @@ export function AnnotationNote({
 
   const handleDoubleClick = () => {
     // Don't allow editing locked annotations
-    if (locked) return
+    if (locked) {
+      return
+    }
 
     setIsEditing(true)
     setEditContent(annotation.content || "")
   }
 
-  const handleSave = () => {
+  const handleSave = React.useCallback(() => {
     const updatedAnnotation = updateAnnotationContent(annotation, editContent, {
       editType: "annotation_text_changed",
     })
     onUpdate?.(updatedAnnotation, "annotation_text_changed")
     setIsEditing(false)
-  }
+  }, [annotation, editContent, onUpdate])
 
   const handleCancel = () => {
     setIsEditing(false)
@@ -86,7 +88,7 @@ export function AnnotationNote({
 
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [isEditing, editContent, annotation, onUpdate])
+  }, [isEditing, editContent, annotation, onUpdate, handleSave])
 
   // Focus textarea when editing
   React.useEffect(() => {

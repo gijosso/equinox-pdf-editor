@@ -18,7 +18,7 @@ export const versionsApi = createApi({
         // Versions no longer have blobs - they're stored at document level
         return {data: result.data}
       },
-      providesTags: (result, error, documentId) => [
+      providesTags: (_result, _error, documentId) => [
         {type: "Version", id: `document-${documentId}`},
         {type: "Document", id: documentId},
       ],

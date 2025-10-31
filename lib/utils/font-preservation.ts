@@ -66,7 +66,9 @@ export function calculateTextWidth(text: string, fontInfo: FontInfo): number {
   const canvas = document.createElement("canvas")
   const context = canvas.getContext("2d")
 
-  if (!context) return text.length * fontInfo.fontSize * 0.6 // Rough estimate
+  if (!context) {
+    return text.length * fontInfo.fontSize * 0.6 // Rough estimate
+  }
 
   context.font = `${fontInfo.fontWeight} ${fontInfo.fontSize}px ${fontInfo.fontFamily}`
   return context.measureText(text).width
@@ -76,7 +78,7 @@ export function calculateTextWidth(text: string, fontInfo: FontInfo): number {
  * Calculates the height of text with specific font information
  */
 export function calculateTextHeight(fontInfo: FontInfo): number {
-  return fontInfo.fontSize * fontInfo.lineHeight
+  return fontInfo.fontSize * (fontInfo.lineHeight || 1)
 }
 
 /**
@@ -111,12 +113,12 @@ export function mergeFontInfoFromSpans(textSpans: TextSpan[]): FontInfo {
   const color = baseSpan.color || "#000000"
 
   // Check if all spans have consistent font properties
-  const isConsistent = textSpans.every(
-    span =>
-      (span.fontFamily || "Helvetica") === fontFamily &&
-      (span.fontSize || 12) === fontSize &&
-      (span.fontWeight || "normal") === fontWeight,
-  )
+  // const isConsistent = textSpans.every(
+  //   span =>
+  //     (span.fontFamily || "Helvetica") === fontFamily &&
+  //     (span.fontSize || 12) === fontSize &&
+  //     (span.fontWeight || "normal") === fontWeight,
+  // )
 
   return {
     fontFamily,
@@ -134,10 +136,10 @@ export function mergeFontInfoFromSpans(textSpans: TextSpan[]): FontInfo {
 export function applyFontInfoToElement(element: HTMLElement, fontInfo: FontInfo): void {
   element.style.fontFamily = fontInfo.fontFamily
   element.style.fontSize = `${fontInfo.fontSize}px`
-  element.style.fontWeight = fontInfo.fontWeight
-  element.style.color = fontInfo.color
+  element.style.fontWeight = fontInfo.fontWeight.toString()
+  element.style.color = fontInfo.color || "#000000"
   element.style.letterSpacing = `${fontInfo.letterSpacing}px`
-  element.style.lineHeight = fontInfo.lineHeight.toString()
+  element.style.lineHeight = fontInfo.lineHeight?.toString() || "1"
 }
 
 /**

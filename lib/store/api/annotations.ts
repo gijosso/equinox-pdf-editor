@@ -133,7 +133,7 @@ export const annotationsApi = createApi({
         return {data: null}
       },
       invalidatesTags: (result, error, {id}) => [{type: "Annotation", id}],
-      async onQueryStarted({id, versionId}, {dispatch, queryFulfilled}) {
+      async onQueryStarted({id, versionId}, {queryFulfilled}) {
         try {
           await queryFulfilled
           // Track edit for annotation deletion

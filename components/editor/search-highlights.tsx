@@ -13,7 +13,7 @@ interface SearchHighlightOverlayProps {
 
 export function SearchHighlightOverlay({scale, documentId}: SearchHighlightOverlayProps) {
   const {data: editor} = useGetDocumentEditorQuery(documentId, {skip: !documentId})
-  const searchResults = editor?.searchResults || []
+  const searchResults = React.useMemo(() => editor?.searchResults || [], [editor?.searchResults])
   const currentSearchIndex = editor?.currentSearchIndex || 0
   const currentPage = editor?.currentPage || 1
 

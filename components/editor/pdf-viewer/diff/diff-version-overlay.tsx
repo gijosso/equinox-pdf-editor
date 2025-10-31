@@ -29,7 +29,7 @@ export function DiffVersionOverlay({
 }: VersionDiffOverlayProps) {
   const {editor} = useEditorActions(documentId)
   const isDiffMode = editor?.isDiffMode || false
-  const compareVersionIds = editor?.compareVersionIds || []
+  const compareVersionIds = React.useMemo(() => editor?.compareVersionIds || [], [editor?.compareVersionIds])
   const currentPage = editor?.currentPage || 1
 
   // Get versions for diff comparison
@@ -39,7 +39,9 @@ export function DiffVersionOverlay({
       versions.find(v => v.id === compareVersionIds[0]),
       versions.find(v => v.id === compareVersionIds[1]),
     ]
-    if (!a || !b) return [undefined, undefined]
+    if (!a || !b) {
+      return [undefined, undefined]
+    }
     return a.versionNumber <= b.versionNumber ? [a, b] : [b, a]
   }, [versions, compareVersionIds])
 
@@ -128,14 +130,19 @@ export function DiffVersionOverlay({
         const annUntouched: Annotation[] = []
         for (const a2 of annotations2) {
           const a1 = annotations1.find(x => x.originalId === a2.originalId)
-          if (!a1) annDiffs.push({id: a2.id, type: "added", annotation: a2})
-          else if (areAnnotationsDifferent(a1, a2))
+          if (!a1) {
+            annDiffs.push({id: a2.id, type: "added", annotation: a2})
+          } else if (areAnnotationsDifferent(a1, a2)) {
             annDiffs.push({id: a2.id, type: "modified", annotation: a2, oldAnnotation: a1})
-          else annUntouched.push(a2)
+          } else {
+            annUntouched.push(a2)
+          }
         }
         for (const a1 of annotations1) {
           const existsLater = annotations2.find(a2 => a2.originalId === a1.originalId)
-          if (!existsLater) annDiffs.push({id: a1.id, type: "removed", annotation: a1})
+          if (!existsLater) {
+            annDiffs.push({id: a1.id, type: "removed", annotation: a1})
+          }
         }
 
         let itemsFromAnnotations: DiffItem[] = buildAnnotationItems(annDiffs, annUntouched)
@@ -153,8 +160,9 @@ export function DiffVersionOverlay({
 
         for (const e2 of textEdits2) {
           const e1 = textEdits1.find(x => (x.originalId || x.id) === (e2.originalId || e2.id))
-          if (!e1) teDiffs.push({...e2, annotationType: "added"})
-          else if (
+          if (!e1) {
+            teDiffs.push({...e2, annotationType: "added"})
+          } else if (
             e1.x !== e2.x ||
             e1.y !== e2.y ||
             e1.width !== e2.width ||
@@ -162,19 +170,22 @@ export function DiffVersionOverlay({
             e1.newText !== e2.newText ||
             e1.originalText !== e2.originalText ||
             e1.operation !== e2.operation
-          )
+          ) {
             teDiffs.push({...e2, annotationType: "modified"})
-          else teUntouched.push({...e2, annotationType: "untouched"})
+          } else {
+            teUntouched.push({...e2, annotationType: "untouched"})
+          }
         }
         for (const e1 of textEdits1) {
           const existsLater = textEdits2.find(e2 => (e2.originalId || e2.id) === (e1.originalId || e1.id))
-          if (!existsLater)
+          if (!existsLater) {
             teDiffs.push({
               ...e1,
               annotationType: "removed",
               versionId: latestVersion.id,
               id: e1.id,
             })
+          }
         }
 
         const textEditItems = buildTextEditItems(teDiffs).concat(buildTextEditItems(teUntouched))
@@ -188,7 +199,7 @@ export function DiffVersionOverlay({
     }
 
     calculateDiffs()
-  }, [isDiffMode, oldestVersion, latestVersion])
+  }, [isDiffMode, oldestVersion, latestVersion, compareVersionIds, buildAnnotationItems, buildTextEditItems])
 
   // Header bar should only render when diff mode is active and renderHeader is true
   const showHeader = renderHeader && isDiffMode && compareVersionIds.length === 2 && oldestVersion && latestVersion

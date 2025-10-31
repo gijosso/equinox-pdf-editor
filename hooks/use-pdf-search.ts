@@ -17,9 +17,9 @@ interface UsePDFSearchResult {
 
 export function usePDFSearch(documentId: string, debounceTime: number = 300): UsePDFSearchResult {
   const {editor, updateEditor} = useEditorActions(documentId)
+  const searchResults = React.useMemo(() => editor?.searchResults || [], [editor?.searchResults])
 
   const searchQuery = editor?.searchQuery || ""
-  const searchResults = editor?.searchResults || []
   const currentSearchIndex = editor?.currentSearchIndex || 0
   const hasHadSearchQuery = React.useRef(false)
 

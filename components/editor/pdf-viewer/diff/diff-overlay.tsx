@@ -85,7 +85,9 @@ interface DiffOverlayProps {
 function DiffOverlayImpl({diffItems, pageNumber, scale, viewportWidth, viewportHeight}: DiffOverlayProps) {
   const pageItems = React.useMemo(() => diffItems.filter(i => i.pageNumber === pageNumber), [diffItems, pageNumber])
 
-  if (pageItems.length === 0) return null
+  if (pageItems.length === 0) {
+    return null
+  }
 
   return (
     <div className="absolute inset-0 pointer-events-none z-10" style={{width: viewportWidth, height: viewportHeight}}>

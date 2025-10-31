@@ -138,7 +138,7 @@ export function withErrorBoundary<P extends object>(
 
 // Hook for functional components to trigger error boundary
 export function useErrorHandler() {
-  return (error: Error, errorInfo?: React.ErrorInfo) => {
+  return (error: Error, _errorInfo?: React.ErrorInfo) => {
     // This will trigger the error boundary if called during render
     throw error
   }

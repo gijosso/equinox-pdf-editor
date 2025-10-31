@@ -55,7 +55,9 @@ export function PDFViewer({documentId}: PDFViewerProps) {
 
   const onDocumentLoadSuccess = React.useCallback(
     ({numPages}: {numPages: number}) => {
-      if (didInitRef.current) return
+      if (didInitRef.current) {
+        return
+      }
       didInitRef.current = true
       if (editor) {
         saveDocumentEditor({

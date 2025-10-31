@@ -1,6 +1,5 @@
 import {createApi, fetchBaseQuery} from "@reduxjs/toolkit/query/react"
 
-import {db} from "@/lib/db/database"
 import {textEditService} from "@/lib/db/text-edits"
 import {store} from "@/lib/store"
 import type {TextEdit} from "@/lib/types"
@@ -70,7 +69,7 @@ export const textEditsApi = createApi({
         {type: "TextEdit", id: `version-${versionId}`},
         {type: "TextEdit", id: `version-${versionId}-page-${pageNumber}`},
       ],
-      async onQueryStarted(args, {dispatch, queryFulfilled}) {
+      async onQueryStarted(args, {queryFulfilled}) {
         try {
           const result = await queryFulfilled
           const textEditId = result.data
@@ -124,18 +123,18 @@ export const textEditsApi = createApi({
     }),
 
     deleteTextEdit: builder.mutation<null, {id: string; versionId: string}>({
-      queryFn: async ({id, versionId}) => {
+      queryFn: async ({id}) => {
         const result = await textEditService.deleteTextEdit(id)
         if (!result.success) {
           return {error: {status: "CUSTOM_ERROR", error: result.error?.message || "Unknown error"}}
         }
         return {data: null}
       },
-      invalidatesTags: (result, error, {id, versionId}) => [
+      invalidatesTags: (_result, _error, {id, versionId}) => [
         {type: "TextEdit", id},
         {type: "TextEdit", id: `version-${versionId}`},
       ],
-      async onQueryStarted({id, versionId}, {dispatch, queryFulfilled}) {
+      async onQueryStarted({id, versionId}, {queryFulfilled}) {
         try {
           await queryFulfilled
 

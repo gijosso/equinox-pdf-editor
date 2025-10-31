@@ -39,7 +39,7 @@ export function Toolbar({documentId}: ToolbarProps) {
   )
 
   const activeTool = editor?.activeTool || {type: "select"}
-  const viewport = editor?.viewport || {x: 0, y: 0, zoom: 1}
+  const viewport = React.useMemo(() => editor?.viewport || {x: 0, y: 0, zoom: 1}, [editor?.viewport])
   const zoomPercentage = React.useMemo(() => Math.round(viewport.zoom * 100), [viewport.zoom])
 
   const handleZoomIn = React.useCallback(async () => {

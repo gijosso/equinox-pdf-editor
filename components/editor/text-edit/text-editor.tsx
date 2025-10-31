@@ -58,7 +58,9 @@ export function TextEditor({scale, documentId, children}: TextEditorProps) {
 
   // Handle delete operation
   const handleDeleteOperation = React.useCallback(async () => {
-    if (!textSelection) return
+    if (!textSelection) {
+      return
+    }
 
     const success = await deleteTextEdit(textSelection)
     if (success) {

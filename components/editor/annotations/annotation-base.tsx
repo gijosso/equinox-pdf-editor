@@ -51,7 +51,9 @@ export function AnnotationBase({
   const [isDeleting, setIsDeleting] = React.useState(false)
 
   const handleDelete = React.useCallback(async () => {
-    if (!editor?.currentVersionId || isDeleting) return
+    if (!editor?.currentVersionId || isDeleting) {
+      return
+    }
 
     setIsDeleting(true)
     try {

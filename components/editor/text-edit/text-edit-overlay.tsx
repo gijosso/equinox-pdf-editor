@@ -90,7 +90,9 @@ function TextEditOverlayImpl({scale, pageNumber, documentId, className}: TextEdi
 
   const handleDelete = React.useCallback(
     async (textEditId: string) => {
-      if (!currentVersionId) return
+      if (!currentVersionId) {
+        return
+      }
 
       try {
         await deleteTextEdit({id: textEditId, versionId: currentVersionId}).unwrap()

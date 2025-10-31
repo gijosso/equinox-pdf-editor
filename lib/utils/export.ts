@@ -23,7 +23,7 @@ export async function createChangeLogPage(pdfDoc: PDFDocument, options: ChangeLo
 
   // Add change log page
   const changeLogPage = pdfDoc.addPage([595, 842]) // A4 size
-  const {width, height} = changeLogPage.getSize()
+  const {height} = changeLogPage.getSize()
 
   // Title
   changeLogPage.drawText("Document Change Log", {
@@ -139,7 +139,7 @@ function calculateAnnotationsHeight(annotations: Annotation[]): number {
   const annotationsByPage = groupAnnotationsByPage(annotations)
   let totalHeight = 0
 
-  Object.entries(annotationsByPage).forEach(([pageNum, pageAnnotations]) => {
+  Object.entries(annotationsByPage).forEach(([_pageNum, pageAnnotations]) => {
     totalHeight += 10 // Page header height
     totalHeight += pageAnnotations.length * 9 // Annotation items height
   })
@@ -151,7 +151,9 @@ function groupAnnotationsByPage(annotations: Annotation[]): Record<number, Annot
   return annotations.reduce(
     (acc, annotation) => {
       const pageNum = annotation.pageNumber // Already 1-based
-      if (!acc[pageNum]) acc[pageNum] = []
+      if (!acc[pageNum]) {
+        acc[pageNum] = []
+      }
       acc[pageNum].push(annotation)
       return acc
     },
@@ -253,7 +255,7 @@ export async function addOriginalPages(pdfDoc: PDFDocument, originalPdfBytes: Ar
     const copiedPages = await pdfDoc.copyPages(originalPdf, pageIndices)
 
     // Add pages to new document
-    copiedPages.forEach((page, index) => {
+    copiedPages.forEach(page => {
       pdfDoc.addPage(page)
     })
   } catch (error) {
@@ -300,7 +302,7 @@ export async function applyTextEditsToPDF(pdfDoc: PDFDocument, textEdits: TextEd
 }
 
 async function applyTextEditToPage(page: PDFPage, textEdit: TextEdit): Promise<void> {
-  const {width, height} = page.getSize()
+  const {height} = page.getSize()
 
   // Convert PDF coordinates to page coordinates
   // PDF coordinates: (0,0) is bottom-left, (width, height) is top-right

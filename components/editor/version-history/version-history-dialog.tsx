@@ -69,7 +69,7 @@ export function VersionHistoryDialog({open, onOpenChange, documentId}: VersionHi
         })
       }
     },
-    [documentId, editor, versions, updateDocument, setCurrentVersionId, toast, onOpenChange],
+    [documentId, editor, updateDocument, setCurrentVersionId, toast, onOpenChange],
   )
 
   const handleSelectVersion = React.useCallback(

@@ -129,10 +129,22 @@ export function SaveVersionDialog({open, onOpenChange, onVersionSaved, documentI
         description: "There was an error saving the version. Please try again.",
         variant: "destructive",
       })
+      console.error("Failed to save version:", error)
     } finally {
       setIsLoading(false)
     }
-  }, [documentId, message, hasEdits, annotations, editor, saveDocumentEditor, toast, onOpenChange, onVersionSaved])
+  }, [
+    documentId,
+    message,
+    hasEdits,
+    annotations,
+    editor,
+    saveDocumentEditor,
+    toast,
+    onOpenChange,
+    onVersionSaved,
+    currentVersionId,
+  ])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

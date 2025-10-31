@@ -17,7 +17,7 @@ export const editsApi = createApi({
         }
         return {data: result.data || []}
       },
-      providesTags: (result, error, versionId) => [
+      providesTags: (result, _error, versionId) => [
         {type: "Edit", id: `version-${versionId}`},
         ...(result || []).map(({id}) => ({type: "Edit" as const, id})),
       ],
@@ -34,7 +34,7 @@ export const editsApi = createApi({
         }
         return {data: result.data || ""}
       },
-      invalidatesTags: (result, error, {versionId}) => [{type: "Edit", id: `version-${versionId}`}],
+      invalidatesTags: (_result, _error, {versionId}) => [{type: "Edit", id: `version-${versionId}`}],
     }),
 
     deleteEditsByVersion: builder.mutation<null, string>({
@@ -45,15 +45,18 @@ export const editsApi = createApi({
         }
         return {data: null}
       },
-      invalidatesTags: (result, error, versionId) => [{type: "Edit", id: `version-${versionId}`}],
+      invalidatesTags: (_result, _error, versionId) => [{type: "Edit", id: `version-${versionId}`}],
     }),
 
     hasEdits: builder.query<boolean, string>({
       queryFn: async versionId => {
-        const hasEdits = await editService.hasEdits(versionId)
-        return {data: hasEdits}
+        const result = await editService.hasEdits(versionId)
+        if (!result.success) {
+          return {error: {status: "CUSTOM_ERROR", error: result.error?.message || "Unknown error"}}
+        }
+        return {data: result.data || false}
       },
-      providesTags: (result, error, versionId) => [{type: "Edit", id: `version-${versionId}`}],
+      providesTags: (_result, _error, versionId) => [{type: "Edit", id: `version-${versionId}`}],
     }),
   }),
 })

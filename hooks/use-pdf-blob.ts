@@ -46,7 +46,9 @@ export function usePDFBlob(documentId: string): UsePDFBlobResult {
     setLoading(true)
     ;(async () => {
       const result = await documentService.getDocumentBlob(documentId)
-      if (cancelled) return
+      if (cancelled) {
+        return
+      }
       if (!result.success) {
         setError(result.error.message || "Failed to load PDF")
         setLoading(false)

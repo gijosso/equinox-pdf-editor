@@ -334,10 +334,18 @@ export function getAnnotationCursorStyle(
   isCreating: boolean = false,
   isReadOnly: boolean = false,
 ): string {
-  if (isReadOnly) return "default"
-  if (isCreating) return "crosshair"
-  if (toolType === "select") return "default"
-  if (toolType === "text_edit") return "text"
+  if (isReadOnly) {
+    return "default"
+  }
+  if (isCreating) {
+    return "crosshair"
+  }
+  if (toolType === "select") {
+    return "default"
+  }
+  if (toolType === "text_edit") {
+    return "text"
+  }
   return "crosshair"
 }
 

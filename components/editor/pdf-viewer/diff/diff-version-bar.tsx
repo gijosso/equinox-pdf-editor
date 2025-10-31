@@ -15,7 +15,7 @@ export function DiffVersionBar({documentId, className = ""}: VersionComparisonBa
   const {editor} = useEditorActions(documentId)
   const isDiffMode = editor?.isDiffMode || false
   const {data: versions = []} = useGetVersionsByDocumentQuery(documentId, {skip: !documentId || !isDiffMode})
-  const compareVersionIds = editor?.compareVersionIds || []
+  const compareVersionIds = React.useMemo(() => editor?.compareVersionIds || [], [editor?.compareVersionIds])
 
   const [oldestVersion, latestVersion] = React.useMemo(() => {
     const v1 = versions.find(v => v.id === compareVersionIds[0])

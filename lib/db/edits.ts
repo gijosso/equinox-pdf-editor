@@ -1,5 +1,3 @@
-import {Dexie, Table} from "dexie"
-
 import type {Edit} from "@/lib/types"
 import {DatabaseError, type Result, withDatabaseErrorHandling} from "@/lib/utils/error-handling"
 import {generateEditId} from "@/lib/utils/id"

@@ -36,7 +36,6 @@ export class PDFSearchService {
         highlightAll: options.highlightAll || true,
       }
 
-      let resultIndex = 0
       for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
         const page = await pdf.getPage(pageNum)
         const textContent = await page.getTextContent()
@@ -44,14 +43,7 @@ export class PDFSearchService {
         // Get page viewport for coordinate calculations
         const viewport = page.getViewport({scale: 1})
 
-        const pageResults = await this.searchInPageText(
-          textContent,
-          query,
-          pageNum,
-          viewport,
-          searchOptions,
-          resultIndex,
-        )
+        const pageResults = await this.searchInPageText(textContent, query, pageNum, viewport, searchOptions)
 
         searchResults.push(...pageResults)
       }
@@ -74,7 +66,6 @@ export class PDFSearchService {
     pageNumber: number,
     viewport: any,
     options: any,
-    resultIndex: number,
   ): Promise<SearchResult[]> {
     const results: SearchResult[] = []
     const searchText = options.caseSensitive ? query : query.toLowerCase()
