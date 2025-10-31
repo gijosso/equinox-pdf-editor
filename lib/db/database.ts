@@ -21,7 +21,8 @@ export class Database extends Dexie {
       editorStates: "id, documentId, currentVersionId, createdAt, updatedAt, [documentId+updatedAt]",
       versionEditorStates: "id, versionId, createdAt, updatedAt, [versionId+updatedAt]",
       edits: "id, versionId, type, annotationId, timestamp, [versionId+type], [versionId+annotationId]",
-      textEdits: "id, versionId, pageNumber, createdAt, [versionId+pageNumber]",
+      textEdits:
+        "id, versionId, pageNumber, originalText, newText, x, y, width, height, fontFamily, fontSize, fontWeight, color, operation, originalId, committedVersionId, createdAt, updatedAt, [versionId+pageNumber]",
     })
   }
 }

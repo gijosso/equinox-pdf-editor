@@ -12,11 +12,16 @@ export const editorApi = createApi({
   endpoints: builder => ({
     getDocumentEditor: builder.query<DocumentEditor | undefined, string>({
       queryFn: async documentId => {
-        const result = await atomicService.loadDocumentEditor(documentId)
-        if (!result.success) {
-          return {error: {status: "CUSTOM_ERROR", error: result.error.message}}
+        try {
+          const result = await atomicService.loadDocumentEditor(documentId)
+          if (!result.success) {
+            return {error: {status: "CUSTOM_ERROR" as const, error: result.error.message}}
+          }
+          return {data: result.data ?? undefined}
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Failed to load document editor"
+          return {error: {status: "CUSTOM_ERROR" as const, error: message}}
         }
-        return {data: result.data}
       },
       providesTags: (result, error, documentId) => [{type: "Editor", id: `document-${documentId}`}],
     }),

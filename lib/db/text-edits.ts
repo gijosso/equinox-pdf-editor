@@ -18,6 +18,8 @@ export interface AddTextEditOptions {
   fontWeight?: string | number
   color?: string
   operation?: "insert" | "delete" | "replace"
+  originalId?: string
+  committedVersionId?: string
 }
 
 export const textEditService = {
@@ -40,6 +42,8 @@ export const textEditService = {
           fontWeight: options.fontWeight,
           color: options.color,
           operation: options.operation,
+          originalId: options.originalId,
+          committedVersionId: options.committedVersionId,
           createdAt: now,
           updatedAt: now,
         }

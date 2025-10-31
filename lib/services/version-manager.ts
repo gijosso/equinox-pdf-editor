@@ -1,7 +1,9 @@
 import {annotationService} from "@/lib/db/annotations"
 import {atomicService} from "@/lib/db/atomic"
-import type {Annotation, PDFVersion} from "@/lib/types"
+import {textEditService} from "@/lib/db/text-edits"
+import type {Annotation, PDFVersion, TextEdit} from "@/lib/types"
 import {DatabaseError, ErrorHandler} from "@/lib/utils/error-handling"
+import {generateTextEditId} from "@/lib/utils/id"
 
 import {documentService} from "../db"
 import {areAnnotationsDifferent} from "../utils/annotations"
@@ -100,6 +102,35 @@ export class VersionManagerService {
         const addAnnotationsResult = await atomicService.addAnnotationsToVersion(newVersion.id, annotationsToAdd)
         if (!addAnnotationsResult.success) {
           throw ErrorHandler.handle(addAnnotationsResult.error, {operation: "addAnnotations", versionId: newVersion.id})
+        }
+      }
+
+      // Duplicate text edits from the current version to the new version, preserving originalId
+      const textEditsResult = await textEditService.getTextEditsByVersion(document.currentVersionId)
+      if (!textEditsResult.success) {
+        throw ErrorHandler.handle(textEditsResult.error, {
+          operation: "getTextEditsByVersion",
+          versionId: document.currentVersionId,
+        })
+      }
+
+      const textEditsToAdd: TextEdit[] = textEditsResult.data.map(te => ({
+        ...te,
+        id: generateTextEditId(),
+        versionId: newVersion.id,
+        originalId: te.originalId || te.id,
+        committedVersionId: te.committedVersionId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }))
+
+      if (textEditsToAdd.length > 0) {
+        const addTextEditsResult = await atomicService.addTextEditsToVersion(newVersion.id, textEditsToAdd)
+        if (!addTextEditsResult.success) {
+          throw ErrorHandler.handle(addTextEditsResult.error, {
+            operation: "addTextEdits",
+            versionId: newVersion.id,
+          })
         }
       }
 

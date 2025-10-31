@@ -2,7 +2,7 @@
 
 import React from "react"
 
-import type {Annotation, AnnotationDiff, TextDiff, TextSpan} from "@/lib/types"
+import type {Annotation, AnnotationDiff, TextDiff, TextEdit, TextSpan} from "@/lib/types"
 
 import {DIFF_OVERLAY_CONFIG} from "./diff-overlay-configs"
 
@@ -85,6 +85,8 @@ interface DiffOverlayProps {
   textDiffs: TextDiff[]
   annotationDiffs: AnnotationDiff[]
   untouchedAnnotations: Annotation[]
+  textEditDiffs?: Array<{type: AnnotationDiff["type"]; edit: TextEdit}>
+  untouchedTextEdits?: TextEdit[]
   pageNumber: number
   scale: number
   viewportWidth: number
@@ -95,6 +97,8 @@ function DiffOverlayImpl({
   textDiffs,
   annotationDiffs,
   untouchedAnnotations,
+  textEditDiffs = [],
+  untouchedTextEdits = [],
   pageNumber,
   scale,
   viewportWidth,
@@ -108,6 +112,14 @@ function DiffOverlayImpl({
     () => untouchedAnnotations.filter(annotation => annotation.pageNumber === pageNumber),
     [untouchedAnnotations, pageNumber],
   )
+  const pageTextEditDiffs = React.useMemo(
+    () => textEditDiffs.filter(d => d.edit.pageNumber === pageNumber),
+    [textEditDiffs, pageNumber],
+  )
+  const pageUntouchedTextEdits = React.useMemo(
+    () => untouchedTextEdits.filter(e => e.pageNumber === pageNumber),
+    [untouchedTextEdits, pageNumber],
+  )
   const pageTextDiffs = React.useMemo(
     () =>
       textDiffs.filter(diff => {
@@ -117,7 +129,13 @@ function DiffOverlayImpl({
     [textDiffs, pageNumber],
   )
 
-  if (pageTextDiffs.length === 0 && pageAnnotationDiffs.length === 0 && pageUntouchedAnnotations.length === 0) {
+  if (
+    pageTextDiffs.length === 0 &&
+    pageAnnotationDiffs.length === 0 &&
+    pageUntouchedAnnotations.length === 0 &&
+    pageTextEditDiffs.length === 0 &&
+    pageUntouchedTextEdits.length === 0
+  ) {
     return null
   }
 
@@ -148,6 +166,51 @@ function DiffOverlayImpl({
 
       {pageUntouchedAnnotations.map((annotation, index) => (
         <UntouchedAnnotationHighlight key={`untouched-${index}`} annotation={annotation} scale={scale} />
+      ))}
+
+      {pageTextEditDiffs.map((diff, idx) => (
+        <AnnotationDiffHighlight
+          key={`textedit-${idx}`}
+          annotation={
+            {
+              id: diff.edit.id,
+              versionId: diff.edit.versionId,
+              type: "note",
+              pageNumber: diff.edit.pageNumber,
+              createdAt: diff.edit.createdAt,
+              updatedAt: diff.edit.updatedAt,
+              content: diff.edit.newText || diff.edit.originalText,
+              x: diff.edit.x,
+              y: diff.edit.y,
+              width: Math.max(diff.edit.width, 20),
+              height: diff.edit.height + 5,
+            } as any
+          }
+          type={diff.type}
+          scale={scale}
+        />
+      ))}
+
+      {pageUntouchedTextEdits.map((te, idx) => (
+        <UntouchedAnnotationHighlight
+          key={`textedit-untouched-${idx}`}
+          annotation={
+            {
+              id: te.id,
+              versionId: te.versionId,
+              type: "note",
+              pageNumber: te.pageNumber,
+              createdAt: te.createdAt,
+              updatedAt: te.updatedAt,
+              content: te.newText || te.originalText,
+              x: te.x,
+              y: te.y,
+              width: te.width,
+              height: te.height,
+            } as any
+          }
+          scale={scale}
+        />
       ))}
     </div>
   )

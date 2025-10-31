@@ -231,6 +231,8 @@ export interface TextEdit {
   fontWeight?: string | number
   color?: string
   operation?: TextEditOperation["type"]
+  originalId?: string // ID of the original text edit for diff comparison across versions
+  committedVersionId?: string // Version this text edit was committed from
   createdAt: string
   updatedAt: string
 }

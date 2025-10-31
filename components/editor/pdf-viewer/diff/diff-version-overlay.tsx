@@ -3,8 +3,9 @@
 import React from "react"
 
 import {annotationService} from "@/lib/db/annotations"
+import {textEditService} from "@/lib/db/text-edits"
 import {useEditorActions, useGetVersionsByDocumentQuery} from "@/lib/store/api"
-import type {Annotation, AnnotationDiff, TextDiff} from "@/lib/types"
+import type {Annotation, AnnotationDiff, TextDiff, TextEdit} from "@/lib/types"
 import {areAnnotationsDifferent} from "@/lib/utils/annotations"
 
 import {DiffOverlay} from "./diff-overlay"
@@ -42,6 +43,8 @@ export function DiffVersionOverlay({
   const [textDiffs, setTextDiffs] = React.useState<TextDiff[]>([])
   const [annotationDiffs, setAnnotationDiffs] = React.useState<AnnotationDiff[]>([])
   const [untouchedAnnotations, setUntouchedAnnotations] = React.useState<Annotation[]>([])
+  const [textEditDiffs, setTextEditDiffs] = React.useState<Array<{type: AnnotationDiff["type"]; edit: TextEdit}>>([])
+  const [untouchedTextEdits, setUntouchedTextEdits] = React.useState<TextEdit[]>([])
 
   // Track the last processed version comparison to avoid infinite re-renders
   const lastProcessedComparison = React.useRef<string | null>(null)
@@ -121,6 +124,47 @@ export function DiffVersionOverlay({
         setAnnotationDiffs(calculatedAnnotationDiffs)
         setUntouchedAnnotations(calculatedUntouchedAnnotations)
 
+        // Text edit diffs using originalId
+        const [textEdits1Result, textEdits2Result] = await Promise.all([
+          textEditService.getTextEditsByVersion(oldestVersion.id),
+          textEditService.getTextEditsByVersion(latestVersion.id),
+        ])
+
+        const textEdits1 = textEdits1Result.success ? textEdits1Result.data : []
+        const textEdits2 = textEdits2Result.success ? textEdits2Result.data : []
+
+        const calculatedTextEditDiffs: Array<{type: AnnotationDiff["type"]; edit: TextEdit}> = []
+        const calculatedUntouchedTextEdits: TextEdit[] = []
+
+        textEdits2.forEach(e2 => {
+          const found = textEdits1.find(e1 => (e1.originalId || e1.id) === (e2.originalId || e2.id))
+          if (!found) {
+            calculatedTextEditDiffs.push({type: "added", edit: e2})
+          } else if (
+            found.x !== e2.x ||
+            found.y !== e2.y ||
+            found.width !== e2.width ||
+            found.height !== e2.height ||
+            found.newText !== e2.newText ||
+            found.originalText !== e2.originalText ||
+            found.operation !== e2.operation
+          ) {
+            calculatedTextEditDiffs.push({type: "modified", edit: e2})
+          } else {
+            calculatedUntouchedTextEdits.push(e2)
+          }
+        })
+
+        textEdits1.forEach(e1 => {
+          const found = textEdits2.find(e2 => (e2.originalId || e2.id) === (e1.originalId || e1.id))
+          if (!found) {
+            calculatedTextEditDiffs.push({type: "removed", edit: e1})
+          }
+        })
+
+        setTextEditDiffs(calculatedTextEditDiffs)
+        setUntouchedTextEdits(calculatedUntouchedTextEdits)
+
         // Since we're using annotation-only commits, PDF content is preserved
         // No text diffs needed as the original PDF content remains unchanged
         setTextDiffs([])
@@ -129,6 +173,8 @@ export function DiffVersionOverlay({
         setTextDiffs([])
         setAnnotationDiffs([])
         setUntouchedAnnotations([])
+        setTextEditDiffs([])
+        setUntouchedTextEdits([])
       }
     }
 
@@ -162,6 +208,8 @@ export function DiffVersionOverlay({
       textDiffs={textDiffs}
       annotationDiffs={annotationDiffs}
       untouchedAnnotations={untouchedAnnotations}
+      textEditDiffs={textEditDiffs}
+      untouchedTextEdits={untouchedTextEdits}
       scale={scale}
       viewportWidth={pageWidth}
       viewportHeight={pageHeight}

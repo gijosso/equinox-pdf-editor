@@ -1,9 +1,10 @@
-import type {Annotation, DocumentEditor, PDFDocument, PDFVersion, VersionEditor} from "../types"
+import type {Annotation, DocumentEditor, PDFDocument, PDFVersion, TextEdit, VersionEditor} from "../types"
 import {DatabaseError, DocumentNotFoundError, type Result, withDatabaseErrorHandling} from "../utils/error-handling"
 import {annotationService} from "./annotations"
 import {db} from "./database"
 import {documentService} from "./documents"
 import {editorService} from "./editor"
+import {textEditService} from "./text-edits"
 import {versionService} from "./versions"
 
 export const atomicService = {
@@ -165,6 +166,38 @@ export const atomicService = {
         })
       },
       {operation: "addAnnotationsToVersion", versionId},
+    )
+  },
+
+  async addTextEditsToVersion(versionId: string, textEdits: TextEdit[]): Promise<Result<void, DatabaseError>> {
+    return withDatabaseErrorHandling(
+      async () => {
+        return await db.transaction("rw", [db.textEdits], async () => {
+          for (const te of textEdits) {
+            const result = await textEditService.addTextEdit({
+              versionId,
+              pageNumber: te.pageNumber,
+              originalText: te.originalText,
+              newText: te.newText,
+              x: te.x,
+              y: te.y,
+              width: te.width,
+              height: te.height,
+              fontFamily: te.fontFamily,
+              fontSize: te.fontSize,
+              fontWeight: te.fontWeight,
+              color: te.color,
+              operation: te.operation,
+              originalId: te.originalId,
+              committedVersionId: te.committedVersionId,
+            })
+            if (!result.success) {
+              throw result.error
+            }
+          }
+        })
+      },
+      {operation: "addTextEditsToVersion", versionId},
     )
   },
 
