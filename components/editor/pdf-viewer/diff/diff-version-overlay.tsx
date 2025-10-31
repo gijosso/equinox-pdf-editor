@@ -37,23 +37,26 @@ export function DiffVersionOverlay({
   const [oldestVersion, latestVersion] = React.useMemo(() => {
     const v1 = versions.find(v => v.id === compareVersionIds[0])
     const v2 = versions.find(v => v.id === compareVersionIds[1])
-    return [v1, v2]
+    if (!v1 || !v2) return [undefined, undefined]
+    return v1.versionNumber <= v2.versionNumber ? [v1, v2] : [v2, v1]
   }, [versions, compareVersionIds])
 
-  const [textDiffs, setTextDiffs] = React.useState<TextDiff[]>([])
   const [annotationDiffs, setAnnotationDiffs] = React.useState<AnnotationDiff[]>([])
   const [untouchedAnnotations, setUntouchedAnnotations] = React.useState<Annotation[]>([])
-  const [textEditDiffs, setTextEditDiffs] = React.useState<Array<{type: AnnotationDiff["type"]; edit: TextEdit}>>([])
-  const [untouchedTextEdits, setUntouchedTextEdits] = React.useState<TextEdit[]>([])
+  const [textEditDiffs, setTextEditDiffs] = React.useState<({annotationType: AnnotationDiff["type"]} & TextEdit)[]>([])
+  const [untouchedTextEdits, setUntouchedTextEdits] = React.useState<
+    ({annotationType: AnnotationDiff["type"]} & TextEdit)[]
+  >([])
 
   // Track the last processed version comparison to avoid infinite re-renders
   const lastProcessedComparison = React.useRef<string | null>(null)
 
   React.useEffect(() => {
     if (!isDiffMode || !oldestVersion || !latestVersion) {
-      setTextDiffs([])
       setAnnotationDiffs([])
       setUntouchedAnnotations([])
+      setTextEditDiffs([])
+      setUntouchedTextEdits([])
       lastProcessedComparison.current = null
       return
     }
@@ -66,9 +69,10 @@ export function DiffVersionOverlay({
     }
 
     if (!oldestVersion || !latestVersion) {
-      setTextDiffs([])
       setAnnotationDiffs([])
       setUntouchedAnnotations([])
+      setTextEditDiffs([])
+      setUntouchedTextEdits([])
       return
     }
 
@@ -133,13 +137,13 @@ export function DiffVersionOverlay({
         const textEdits1 = textEdits1Result.success ? textEdits1Result.data : []
         const textEdits2 = textEdits2Result.success ? textEdits2Result.data : []
 
-        const calculatedTextEditDiffs: Array<{type: AnnotationDiff["type"]; edit: TextEdit}> = []
-        const calculatedUntouchedTextEdits: TextEdit[] = []
+        const calculatedTextEditDiffs: typeof textEditDiffs = []
+        const calculatedUntouchedTextEdits: typeof textEditDiffs = []
 
         textEdits2.forEach(e2 => {
           const found = textEdits1.find(e1 => (e1.originalId || e1.id) === (e2.originalId || e2.id))
           if (!found) {
-            calculatedTextEditDiffs.push({type: "added", edit: e2})
+            calculatedTextEditDiffs.push({...e2, annotationType: "added"})
           } else if (
             found.x !== e2.x ||
             found.y !== e2.y ||
@@ -149,16 +153,22 @@ export function DiffVersionOverlay({
             found.originalText !== e2.originalText ||
             found.operation !== e2.operation
           ) {
-            calculatedTextEditDiffs.push({type: "modified", edit: e2})
+            calculatedTextEditDiffs.push({...e2, annotationType: "modified"})
           } else {
-            calculatedUntouchedTextEdits.push(e2)
+            calculatedUntouchedTextEdits.push({...e2, annotationType: "untouched"})
           }
         })
 
         textEdits1.forEach(e1 => {
           const found = textEdits2.find(e2 => (e2.originalId || e2.id) === (e1.originalId || e1.id))
           if (!found) {
-            calculatedTextEditDiffs.push({type: "removed", edit: e1})
+            // Synthesize a removed edit at same position so overlay can render it
+            calculatedTextEditDiffs.push({
+              ...e1,
+              annotationType: "removed",
+              versionId: latestVersion.id,
+              id: e1.id,
+            })
           }
         })
 
@@ -167,10 +177,8 @@ export function DiffVersionOverlay({
 
         // Since we're using annotation-only commits, PDF content is preserved
         // No text diffs needed as the original PDF content remains unchanged
-        setTextDiffs([])
       } catch (error) {
         console.error("Error calculating diffs:", error)
-        setTextDiffs([])
         setAnnotationDiffs([])
         setUntouchedAnnotations([])
         setTextEditDiffs([])
@@ -205,7 +213,6 @@ export function DiffVersionOverlay({
   return (
     <DiffOverlay
       pageNumber={currentPage}
-      textDiffs={textDiffs}
       annotationDiffs={annotationDiffs}
       untouchedAnnotations={untouchedAnnotations}
       textEditDiffs={textEditDiffs}

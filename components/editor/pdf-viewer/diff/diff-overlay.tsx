@@ -2,31 +2,9 @@
 
 import React from "react"
 
-import type {Annotation, AnnotationDiff, TextDiff, TextEdit, TextSpan} from "@/lib/types"
+import type {Annotation, AnnotationDiff, TextEdit} from "@/lib/types"
 
 import {DIFF_OVERLAY_CONFIG} from "./diff-overlay-configs"
-
-interface DiffHighlightProps {
-  span: TextSpan
-  type: AnnotationDiff["type"]
-  scale: number
-}
-
-function DiffHighlight({span, type, scale}: DiffHighlightProps) {
-  const config = DIFF_OVERLAY_CONFIG[type]
-  return (
-    <div
-      className={`absolute pointer-events-none border rounded-sm ${config.highlightClasses}`}
-      style={{left: span.x * scale, top: span.y * scale, width: span.width * scale, height: span.height * scale}}
-    >
-      <div
-        className={`absolute -top-2 -left-2 w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold text-white ${config.iconClasses}`}
-      >
-        {config.icon}
-      </div>
-    </div>
-  )
-}
 
 interface AnnotationDiffHighlightProps {
   annotation: AnnotationDiff["annotation"]
@@ -82,11 +60,10 @@ function UntouchedAnnotationHighlight({annotation, scale}: UntouchedAnnotationHi
 }
 
 interface DiffOverlayProps {
-  textDiffs: TextDiff[]
   annotationDiffs: AnnotationDiff[]
   untouchedAnnotations: Annotation[]
-  textEditDiffs?: Array<{type: AnnotationDiff["type"]; edit: TextEdit}>
-  untouchedTextEdits?: TextEdit[]
+  textEditDiffs?: ({annotationType: AnnotationDiff["type"]} & TextEdit)[]
+  untouchedTextEdits?: ({annotationType: AnnotationDiff["type"]} & TextEdit)[]
   pageNumber: number
   scale: number
   viewportWidth: number
@@ -94,7 +71,6 @@ interface DiffOverlayProps {
 }
 
 function DiffOverlayImpl({
-  textDiffs,
   annotationDiffs,
   untouchedAnnotations,
   textEditDiffs = [],
@@ -113,24 +89,15 @@ function DiffOverlayImpl({
     [untouchedAnnotations, pageNumber],
   )
   const pageTextEditDiffs = React.useMemo(
-    () => textEditDiffs.filter(d => d.edit.pageNumber === pageNumber),
+    () => textEditDiffs.filter(e => e.pageNumber === pageNumber),
     [textEditDiffs, pageNumber],
   )
   const pageUntouchedTextEdits = React.useMemo(
     () => untouchedTextEdits.filter(e => e.pageNumber === pageNumber),
     [untouchedTextEdits, pageNumber],
   )
-  const pageTextDiffs = React.useMemo(
-    () =>
-      textDiffs.filter(diff => {
-        if (diff.type === "equal") return false
-        return diff.spans?.some(span => span.pageNumber === pageNumber)
-      }),
-    [textDiffs, pageNumber],
-  )
 
   if (
-    pageTextDiffs.length === 0 &&
     pageAnnotationDiffs.length === 0 &&
     pageUntouchedAnnotations.length === 0 &&
     pageTextEditDiffs.length === 0 &&
@@ -141,20 +108,6 @@ function DiffOverlayImpl({
 
   return (
     <div className="absolute inset-0 pointer-events-none z-10" style={{width: viewportWidth, height: viewportHeight}}>
-      {pageTextDiffs.map((diff, diffIndex) => {
-        if (!diff.spans) return null
-        return diff.spans
-          .filter(span => span.pageNumber === pageNumber)
-          .map((span, spanIndex) => (
-            <DiffHighlight
-              key={`text-${diffIndex}-${spanIndex}`}
-              span={span}
-              type={diff.type === "insert" ? "added" : diff.type === "delete" ? "removed" : "modified"}
-              scale={scale}
-            />
-          ))
-      })}
-
       {pageAnnotationDiffs.map((diff, diffIndex) => (
         <AnnotationDiffHighlight
           key={`annotation-${diffIndex}`}
@@ -168,25 +121,25 @@ function DiffOverlayImpl({
         <UntouchedAnnotationHighlight key={`untouched-${index}`} annotation={annotation} scale={scale} />
       ))}
 
-      {pageTextEditDiffs.map((diff, idx) => (
+      {pageTextEditDiffs.map((edit, idx) => (
         <AnnotationDiffHighlight
           key={`textedit-${idx}`}
           annotation={
             {
-              id: diff.edit.id,
-              versionId: diff.edit.versionId,
+              id: edit.id,
+              versionId: edit.versionId,
               type: "note",
-              pageNumber: diff.edit.pageNumber,
-              createdAt: diff.edit.createdAt,
-              updatedAt: diff.edit.updatedAt,
-              content: diff.edit.newText || diff.edit.originalText,
-              x: diff.edit.x,
-              y: diff.edit.y,
-              width: Math.max(diff.edit.width, 20),
-              height: diff.edit.height + 5,
+              pageNumber: edit.pageNumber,
+              createdAt: edit.createdAt,
+              updatedAt: edit.updatedAt,
+              content: edit.newText || edit.originalText,
+              x: edit.x,
+              y: edit.y,
+              width: Math.max(edit.width, 20),
+              height: edit.height + 5,
             } as any
           }
-          type={diff.type}
+          type={edit.annotationType}
           scale={scale}
         />
       ))}
@@ -205,8 +158,8 @@ function DiffOverlayImpl({
               content: te.newText || te.originalText,
               x: te.x,
               y: te.y,
-              width: te.width,
-              height: te.height,
+              width: Math.max(te.width, 20),
+              height: te.height + 5,
             } as any
           }
           scale={scale}
